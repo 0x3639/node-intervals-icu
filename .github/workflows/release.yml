@@ -3,7 +3,7 @@ name: Release
 on:
   release:
     types: [published]
-  # GH Packages only — does not publish to npmjs (existing release.sh handles npm).
+  # GH Packages only - does not publish to npmjs (existing release.sh handles npm).
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +39,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           if npm view "$name@$version" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "intervals-icu@$version already on npmjs — CI will not republish."
+            echo "intervals-icu@$version already on npmjs - CI will not republish."
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
             echo "intervals-icu@$version not on npmjs. Publish via ./release.sh (CI does not publish to npmjs)."
