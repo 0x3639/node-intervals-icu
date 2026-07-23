@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  # GH Packages only — does not publish to npmjs (existing release.sh handles npm).
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # Existing release path is local release.sh (npm publish + gh release create).
+  # On GitHub Release, verify the version is already on npmjs (no CI republish).
+  npm:
+    if: github.event_name == 'release'
+    name: Verify npmjs publish (skip if present)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - name: Check npmjs version
+        id: npm
+        shell: bash
+        run: |
+          name="$(node -p "require('./package.json').name")"
+          version="$(node -p "require('./package.json').version")"
+          {
+            echo "name=$name"
+            echo "version=$version"
+          } >> "$GITHUB_OUTPUT"
+          if npm view "$name@$version" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "intervals-icu@$version already on npmjs — CI will not republish."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "intervals-icu@$version not on npmjs. Publish via ./release.sh (CI does not publish to npmjs)."
+          fi
+
+  github-packages:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://npm.pkg.github.com
+          scope: "@paladini"
+
+      - name: Read package metadata
+        id: package
+        shell: bash
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          {
+            echo "version=$version"
+            if [[ "$version" == *-* ]]; then echo "dist_tag=next"; else echo "dist_tag=latest"; fi
+          } >> "$GITHUB_OUTPUT"
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Check GitHub Packages version
+        id: ghp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          if npm view "@paladini/intervals-icu@${{ steps.package.outputs.version }}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish to GitHub Packages as @paladini/intervals-icu
+        if: steps.ghp.outputs.published == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm pkg set name=@paladini/intervals-icu
+          npm publish --access public --tag "${{ steps.package.outputs.dist_tag }}"
