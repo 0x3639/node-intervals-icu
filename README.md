@@ -1,6 +1,6 @@
 # intervals-icu
 
-<a href="https://paladini.github.io/harness-score/guide/maturity-model#l1-documented" title="Harness Score — AI coding harness maturity"><img alt="Harness Score L1 (Documented): measures AI-assisted development harness maturity with harness-score" src="https://paladini.github.io/harness-score/maturity/badge-l1.svg" height="20"></a>
+<a href="https://paladini.io/harness-score/guide/maturity-model#l1-%C2%B7-documented" title="Harness Score — AI coding harness maturity"><img alt="Harness Score L1 (Documented): measures AI-assisted development harness maturity with harness-score" src="https://paladini.github.io/harness-score/maturity/badge-l1.svg" height="20"></a>
 [![npm version](https://img.shields.io/npm/v/intervals-icu)](https://www.npmjs.com/package/intervals-icu)
 [![npm downloads](https://img.shields.io/npm/dm/intervals-icu)](https://www.npmjs.com/package/intervals-icu)
 [![license](https://img.shields.io/npm/l/intervals-icu)](./LICENSE)
