@@ -6,20 +6,20 @@
 [![license](https://img.shields.io/npm/l/intervals-icu)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
-The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API ÔÇö the training platform used by cyclists, runners, triathletes, and coaches worldwide.
+The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
 **100+ typed methods** across 16 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~21 KB minified.
 
 ## Features
 
-- **16 services, 100+ methods** ÔÇö athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, fitness, performance curves, search
-- **Full TypeScript types** ÔÇö ~100 exported interfaces with JSDoc on every public method
-- **Dual authentication** ÔÇö API key (personal use) or OAuth bearer token (third-party apps)
-- **File upload & download** ÔÇö multipart activity uploads (.fit/.tcx/.gpx/.zip), binary exports
-- **Auto-retry with backoff + jitter** ÔÇö configurable retries for 429/5xx, respects `Retry-After` header
-- **Rate limit tracking** ÔÇö `getRateLimitRemaining()` / `getRateLimitReset()` from response headers
-- **Dual output** ÔÇö ESM + CJS, tree-shakeable
-- **Minimal footprint** ÔÇö single runtime dependency, ~21 KB minified
+- **16 services, 100+ methods** — athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, fitness, performance curves, search
+- **Full TypeScript types** — ~100 exported interfaces with JSDoc on every public method
+- **Dual authentication** — API key (personal use) or OAuth bearer token (third-party apps)
+- **File upload & download** — multipart activity uploads (.fit/.tcx/.gpx/.zip), binary exports
+- **Auto-retry with backoff + jitter** — configurable retries for 429/5xx, respects `Retry-After` header
+- **Rate limit tracking** — `getRateLimitRemaining()` / `getRateLimitReset()` from response headers
+- **Dual output** — ESM + CJS, tree-shakeable
+- **Minimal footprint** — single runtime dependency, ~21 KB minified
 
 ## Installation
 
@@ -40,7 +40,7 @@ const client = new IntervalsClient({
 });
 
 const athlete = await client.athletes.getAthlete();
-console.log(`${athlete.name} ÔÇö FTP: ${athlete.ftp}`);
+console.log(`${athlete.name} — FTP: ${athlete.ftp}`);
 ```
 
 ### OAuth Bearer Token
@@ -179,11 +179,11 @@ See the full [Migration Guide](./docs/MIGRATION.md) for a complete list of remov
 
 Key changes:
 
-1. **All facade methods removed** ÔÇö use service accessors (e.g. `client.athletes.getAthlete()` instead of `client.getAthlete()`)
-2. **Activity IDs are strings** ÔÇö e.g. `'i55610271'`
-3. **Activity URLs fixed** ÔÇö single-activity endpoints now use `/activity/{id}`
-4. **Default timeout** ÔÇö increased from 10s to 30s
-5. **Auth config** ÔÇö `apiKey` is now optional; provide `apiKey` OR `accessToken`
+1. **All facade methods removed** — use service accessors (e.g. `client.athletes.getAthlete()` instead of `client.getAthlete()`)
+2. **Activity IDs are strings** — e.g. `'i55610271'`
+3. **Activity URLs fixed** — single-activity endpoints now use `/activity/{id}`
+4. **Default timeout** — increased from 10s to 30s
+5. **Auth config** — `apiKey` is now optional; provide `apiKey` OR `accessToken`
 
 ## Related Projects
 
@@ -192,7 +192,7 @@ The TypeScript/Node.js ecosystem has a few Intervals.icu API clients worth knowi
 | Library | npm | Approach | Coverage | Error handling |
 |---------|-----|----------|----------|---------------|
 | **intervals-icu** *(this library)* | `intervals-icu` | axios, TypeScript types | 16 services, 100+ endpoints | throws `IntervalsAPIError` |
-| **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` ÔÇö never throws |
+| **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` — never throws |
 
 **When to use `intervals-icu` (this library):**
 - You need the broadest API coverage (16 service groups including routes, gear, weather, custom items, fitness, performance, and search)
@@ -209,7 +209,7 @@ Both libraries serve the same core purpose and share similar design goals (TypeS
 
 ## License
 
-MIT ┬® [Fernando Paladini](https://github.com/paladini)
+MIT © [Fernando Paladini](https://github.com/paladini)
 
 ## Acknowledgments
 
