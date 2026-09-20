@@ -3,28 +3,50 @@
 // Diffs the SDK's HTTP calls against spec/openapi.json.
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { specOperations, sdkOperations, matchOperations } from './lib/spec-ops.mjs';
 
 const strict = process.argv.includes('--strict');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function loadSdkFiles() {
-  const dir = 'src/services';
+  const dir = path.join(root, 'src/services');
   const names = (await readdir(dir)).filter((n) => n.endsWith('.ts'));
   const files = await Promise.all(
     names.map(async (name) => ({ name, text: await readFile(path.join(dir, name), 'utf8') })),
   );
-  files.push({ name: 'client.ts', text: await readFile('src/client.ts', 'utf8') });
+  files.push({ name: 'client.ts', text: await readFile(path.join(root, 'src/client.ts'), 'utf8') });
   return files;
 }
 
-const spec = JSON.parse(await readFile('spec/openapi.json', 'utf8'));
+let spec;
+try {
+  spec = JSON.parse(await readFile(path.join(root, 'spec/openapi.json'), 'utf8'));
+} catch {
+  console.error('spec/openapi.json not found. Run: npm run spec:fetch');
+  process.exit(1);
+}
 const specOps = specOperations(spec);
-const sdkOps = sdkOperations(await loadSdkFiles());
+const sdkFiles = await loadSdkFiles();
+const sdkOps = sdkOperations(sdkFiles);
 const { matched, phantom, missing } = matchOperations(specOps, sdkOps);
+const specOpsCovered = new Set(matched.map((m) => m.spec.key)).size;
+
+const httpCallCount = sdkFiles.reduce(
+  (n, { text }) => n + (text.match(/httpClient\.(request|download|upload)\b/g) ?? []).length,
+  0,
+);
+if (httpCallCount !== sdkOps.length) {
+  console.error(
+    `Extraction mismatch: ${httpCallCount} httpClient calls in source but ${sdkOps.length} operations extracted. A call shape is not recognized by scripts/lib/spec-ops.mjs.`,
+  );
+  process.exit(1);
+}
 
 console.log(`Spec operations:      ${specOps.length}`);
 console.log(`SDK operations:       ${sdkOps.length}`);
-console.log(`Matched:              ${matched.length}`);
+console.log(`Matched (SDK ops):    ${matched.length}`);
+console.log(`Spec ops covered:     ${specOpsCovered}`);
 console.log(`SDK not in spec:      ${phantom.length}`);
 console.log(`Spec not in SDK:      ${missing.length}`);
 
