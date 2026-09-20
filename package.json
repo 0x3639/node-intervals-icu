@@ -26,6 +26,7 @@
     "spec:fetch": "node scripts/fetch-spec.mjs",
     "coverage:api": "node scripts/coverage.mjs",
     "spec:drift": "node scripts/check-spec-drift.mjs",
+    "audit:probe": "node scripts/audit-probe.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
