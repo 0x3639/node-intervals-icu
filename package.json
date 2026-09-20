@@ -24,6 +24,7 @@
     "test:watch": "vitest",
     "spec:fetch": "node scripts/fetch-spec.mjs",
     "coverage:api": "node scripts/coverage.mjs",
+    "spec:drift": "node scripts/check-spec-drift.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
