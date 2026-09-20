@@ -129,3 +129,13 @@ describe('IntervalsClient - Feature', () => {
   });
 });
 ```
+
+## Live tests
+
+`tests/live/*.live.test.ts` call the real Intervals.icu API. They are excluded from `npm test` and CI, and skip themselves unless both variables are set:
+
+```bash
+INTERVALS_API_KEY=your-key INTERVALS_ATHLETE_ID=i12345 npm run test:live
+```
+
+Set `INTERVALS_LIVE_WRITE=1` as well to enable tests that create and then delete data. Never point these at an account whose data you cannot afford to lose.

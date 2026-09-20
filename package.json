@@ -22,6 +22,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:live": "vitest run --config vitest.live.config.ts",
     "spec:fetch": "node scripts/fetch-spec.mjs",
     "coverage:api": "node scripts/coverage.mjs",
     "spec:drift": "node scripts/check-spec-drift.mjs",
