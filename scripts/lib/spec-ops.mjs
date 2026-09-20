@@ -71,6 +71,16 @@ export function specPathRegex(specPath) {
   return new RegExp(`^${out}$`);
 }
 
+/**
+ * Specificity of a spec path, for picking the best of several matching candidates:
+ * fewer `{...}` params wins; ties broken by more literal (non-param) characters.
+ */
+function specificity(path) {
+  const params = path.match(/\{[^}]*\}/g) ?? [];
+  const literalChars = path.replace(/\{[^}]*\}/g, '').length;
+  return { paramCount: params.length, literalChars };
+}
+
 /** Pair SDK operations with spec operations. */
 export function matchOperations(specOps, sdkOps) {
   const matched = [];
@@ -79,7 +89,14 @@ export function matchOperations(specOps, sdkOps) {
   const compiled = specOps.map((s) => ({ op: s, re: specPathRegex(s.path) }));
 
   for (const sdk of sdkOps) {
-    const hit = compiled.find(({ op, re }) => op.method === sdk.method && re.test(sdk.path));
+    const candidates = compiled.filter(({ op, re }) => op.method === sdk.method && re.test(sdk.path));
+    const hit = candidates.reduce((best, cur) => {
+      if (!best) return cur;
+      const b = specificity(best.op.path);
+      const c = specificity(cur.op.path);
+      if (c.paramCount !== b.paramCount) return c.paramCount < b.paramCount ? cur : best;
+      return c.literalChars > b.literalChars ? cur : best;
+    }, undefined);
     if (hit) {
       matched.push({ spec: hit.op, sdk });
       usedSpec.add(hit.op.key);

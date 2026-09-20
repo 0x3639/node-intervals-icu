@@ -116,4 +116,46 @@ describe('matchOperations', () => {
       'POST /download-workout{ext}',
     ]);
   });
+
+  it('picks the most specific spec path when multiple candidates match (regression)', () => {
+    // `/events/{eventId}` is listed BEFORE `/events/bulk-delete` on purpose: a naive
+    // `find()`-first-match would let the parameterized path swallow the SDK's literal
+    // bulk-delete call, wrongly reporting `/events/bulk-delete` as phantom and
+    // `/events/{eventId}` as matched instead of missing.
+    const spec = {
+      paths: {
+        '/api/v1/athlete/{id}/events/{eventId}': { put: { tags: ['Events'], summary: 'Update event' } },
+        '/api/v1/athlete/{id}/events/bulk-delete': { put: { tags: ['Events'], summary: 'Bulk delete events' } },
+      },
+    };
+    const specOps = specOperations(spec);
+    const sdk = sdkOperations([
+      {
+        name: 'events.service.ts',
+        text: "request({ method: 'PUT', url: `/athlete/${id}/events/bulk-delete` })",
+      },
+    ]);
+    const result = matchOperations(specOps, sdk);
+    expect(result.matched).toHaveLength(1);
+    expect(result.matched[0].spec.key).toBe('PUT /athlete/{id}/events/bulk-delete');
+    expect(result.phantom).toEqual([]);
+    expect(result.missing.map((m) => m.key)).toEqual(['PUT /athlete/{id}/events/{eventId}']);
+  });
+});
+
+describe('sdkOperations ignores non-call text', () => {
+  it('does not extract a TypeScript union type or a comment mentioning url:', () => {
+    const files = [
+      {
+        name: 'types.ts',
+        text: [
+          "interface Options { method: 'GET' | 'POST'; }",
+          "// NOTE: this service used to build the url: manually before httpClient existed.",
+          "request({ method: 'GET', url: `/real/path` });",
+        ].join('\n'),
+      },
+    ];
+    const keys = sdkOperations(files).map((o) => o.key);
+    expect(keys).toEqual(['GET /real/path']);
+  });
 });

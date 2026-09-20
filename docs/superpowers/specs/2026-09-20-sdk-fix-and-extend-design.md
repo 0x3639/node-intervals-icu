@@ -18,7 +18,7 @@ package scope, diverged from `paladini/node-intervals-icu`.
 | SDK operations | 121 |
 | SDK operations matching spec | 104 |
 | SDK operations not in spec | 17 |
-| Spec operations missing from SDK | 46 (103 distinct spec ops covered; two are hit by two SDK methods each) |
+| Spec operations missing from SDK | 45 (104 distinct spec ops covered; note that only `GET /activity/{id}/streams{ext}` is now hit by two SDK methods) |
 
 Matching rule: strip `/api/v1`, replace every `{param}` and `${expr}` with `{x}`,
 then drop a `{x}` that follows a non-slash character (this folds `{ext}` and the
@@ -46,7 +46,7 @@ then drop a `{x}` that follows a non-slash character (this folds `{ext}` and the
 | PUT /shared-event/{id} | shared-event.service | none |
 | DELETE /shared-event/{id} | shared-event.service | none |
 
-### The 46 spec operations missing from the SDK
+### The 45 spec operations missing from the SDK
 
 Grouped for delivery order (see Phase 3):
 
@@ -112,7 +112,7 @@ the only concrete implementation. Changes:
 | 0 | vendored spec, coverage script, CI, drift job, package rename | 3.0.0-alpha.0 |
 | 1 | live test harness, `AUDIT.md` with 17 verdicts (needs user's API key) | unchanged |
 | 2 | verb fixes, path fixes, deletions, regression tests | 3.0.0-alpha.1 |
-| 3 | five PRs adding 46 ops, coverage gate tightened to 149/149 | 3.0.0-beta.x |
+| 3 | five PRs adding 45 ops, coverage gate tightened to 149/149 | 3.0.0-beta.x |
 | 4 | changelog, migration guide, docs, `.windsurf/rules` refresh, tag | 3.0.0 |
 
 Phase 1 verdicts feed Phase 2. If a phantom route works live it is kept and
