@@ -22,6 +22,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "spec:fetch": "node scripts/fetch-spec.mjs",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
