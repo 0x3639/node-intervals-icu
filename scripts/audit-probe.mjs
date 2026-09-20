@@ -1,7 +1,12 @@
 // scripts/audit-probe.mjs
 // Usage: INTERVALS_API_KEY=... INTERVALS_ATHLETE_ID=i12345 node scripts/audit-probe.mjs > AUDIT.md
 // Probes each SDK route that disagrees with spec/openapi.json against the live API.
-// Read probes use real data. Write probes send a malformed body so nothing is created.
+// Read probes use real data. Write-verb probes send a malformed body where the route
+// takes a body, and use a sentinel id that cannot correspond to real data (wellness
+// date 1900-01-01, shared-event id 0) for bodyless DELETEs. Nothing is created or
+// modified.
+import { verdict } from './lib/audit-verdict.mjs';
+
 const BASE = 'https://intervals.icu/api/v1';
 const KEY = process.env.INTERVALS_API_KEY;
 const ATHLETE = process.env.INTERVALS_ATHLETE_ID;
@@ -16,13 +21,16 @@ async function call(method, path, { query, body, contentType } = {}) {
   for (const [k, v] of Object.entries(query ?? {})) url.searchParams.set(k, String(v));
   const headers = { authorization: AUTH };
   if (body !== undefined) headers['content-type'] = contentType ?? 'application/json';
-  const res = await fetch(url, { method, headers, body });
+  const res = await fetch(url, { method, headers, body, signal: AbortSignal.timeout(30_000) });
   const text = await res.text();
   return { status: res.status, snippet: text.replace(/\s+/g, ' ').slice(0, 80) };
 }
 
 async function firstId(path, query) {
-  const r = await fetch(`${BASE}${path}?${new URLSearchParams(query)}`, { headers: { authorization: AUTH } });
+  const r = await fetch(`${BASE}${path}?${new URLSearchParams(query)}`, {
+    headers: { authorization: AUTH },
+    signal: AbortSignal.timeout(30_000),
+  });
   if (!r.ok) return undefined;
   const arr = await r.json();
   return Array.isArray(arr) && arr.length ? arr[0].id : undefined;
@@ -55,15 +63,6 @@ const probes = [
   { name: 'shared-event delete (no spec route)', sdk: ['DELETE', '/shared-event/0'], spec: null },
 ];
 
-function verdict(sdkRes, specRes, isMalformed) {
-  const ok = (r) => r && (r.status < 300 || (isMalformed && (r.status === 400 || r.status === 415)));
-  if (ok(sdkRes)) return 'works-as-written';
-  if (ok(specRes)) return 'broken: fix to spec';
-  if (sdkRes?.status === 405) return 'broken: verb';
-  if (sdkRes?.status === 404) return specRes ? 'ambiguous' : 'broken: delete';
-  return 'ambiguous';
-}
-
 const rows = [];
 for (const p of probes) {
   if ('needs' in p && !p.needs) {
@@ -73,22 +72,25 @@ for (const p of probes) {
   const [sm, sp, so = {}] = p.sdk;
   const sdkRes = await call(sm, sp, so);
   const specRes = p.spec ? await call(p.spec[0], p.spec[1], p.spec[2] ?? {}) : null;
-  const malformed = so.body === BAD || p.spec?.[2]?.body === BAD;
+  const sdkMalformed = so.body === BAD;
+  const specMalformed = p.spec?.[2]?.body === BAD;
   const fmt = (m, path, r) => `${m} ${path.replace(ATHLETE, '{id}')} → ${r.status}`;
   rows.push(
-    `| ${p.name} | ${fmt(sm, sp, sdkRes)} | ${specRes ? fmt(p.spec[0], p.spec[1], specRes) : 'none'} | ${verdict(sdkRes, specRes, malformed)} |`,
+    `| ${p.name} | ${fmt(sm, sp, sdkRes)} | ${specRes ? fmt(p.spec[0], p.spec[1], specRes) : 'none'} | ${verdict(sdkRes, specRes, sdkMalformed, specMalformed)} |`,
   );
 }
 
 console.log(`# API audit
 
 Generated ${today} by \`scripts/audit-probe.mjs\` against the live API. Each row is an SDK operation that
-disagrees with \`spec/openapi.json\`. Write-verb probes send a malformed body, so a 400 or 415 means the
-route exists and rejected the input; nothing was created.
+disagrees with \`spec/openapi.json\`. Write-verb probes send a malformed body where the route takes a body
+(a 400 or 415 means the route exists and rejected the input); bodyless DELETEs use a sentinel id that cannot
+correspond to real data (wellness date 1900-01-01, shared-event id 0). Nothing is created or modified.
 
 Verdict legend: **works-as-written** keep and document as undocumented; **broken: fix to spec** change verb or
 path; **broken: verb** path exists, verb rejected; **broken: delete** route does not exist and spec has no
-replacement; **ambiguous** ask on the Intervals.icu forum.
+replacement; **skipped (no sample data)** no activity/route/workout id was available to probe with; **ambiguous**
+ask on the Intervals.icu forum.
 
 | Probe | SDK form | Spec form | Verdict |
 |---|---|---|---|
