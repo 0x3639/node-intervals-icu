@@ -1,6 +1,6 @@
 # Publishing to NPM Registry
 
-This guide explains how to correctly publish the `intervals-icu` library to the NPM Registry. The library is designed to be lightweight and work seamlessly with both JavaScript and TypeScript projects.
+This guide explains how to correctly publish the `@0x3639/intervals-icu` library to the NPM Registry. The library is designed to be lightweight and work seamlessly with both JavaScript and TypeScript projects.
 
 ## Table of Contents
 
@@ -204,7 +204,7 @@ This follows the modern Node.js dual package pattern recommended for new package
 ### After Publishing
 
 1. **Check NPM Registry**:
-   Visit `https://www.npmjs.com/package/intervals-icu` to verify the package is published
+   Visit `https://www.npmjs.com/package/@0x3639/intervals-icu` to verify the package is published
 
 2. **Test Installation in a New Project**:
 
@@ -217,14 +217,14 @@ This follows the modern Node.js dual package pattern recommended for new package
    npm init -y
    
    # Install your package
-   npm install intervals-icu
+   npm install @0x3639/intervals-icu
    ```
 
 3. **Test with JavaScript (CommonJS)**:
 
    Create `test-cjs.js`:
    ```javascript
-   const { IntervalsClient } = require('intervals-icu');
+   const { IntervalsClient } = require('@0x3639/intervals-icu');
    
    console.log('CommonJS import successful!');
    console.log('IntervalsClient:', typeof IntervalsClient);
@@ -236,7 +236,7 @@ This follows the modern Node.js dual package pattern recommended for new package
 
    Create `test-esm.mjs`:
    ```javascript
-   import { IntervalsClient } from 'intervals-icu';
+   import { IntervalsClient } from '@0x3639/intervals-icu';
    
    console.log('ES Module import successful!');
    console.log('IntervalsClient:', typeof IntervalsClient);
@@ -248,7 +248,7 @@ This follows the modern Node.js dual package pattern recommended for new package
 
    Create `test-ts.ts`:
    ```typescript
-   import { IntervalsClient, type IntervalsConfig } from 'intervals-icu';
+   import { IntervalsClient, type IntervalsConfig } from '@0x3639/intervals-icu';
    
    const config: IntervalsConfig = {
      apiKey: 'test-key'
@@ -269,7 +269,7 @@ This follows the modern Node.js dual package pattern recommended for new package
 Check the published package size:
 
 ```bash
-npm info intervals-icu
+npm info @0x3639/intervals-icu
 ```
 
 The unpacked size should be small (typically under 100KB for this library).
@@ -388,7 +388,7 @@ After successfully publishing:
 
 ## Package Metadata
 
-- **Package Name**: `intervals-icu`
+- **Package Name**: `@0x3639/intervals-icu`
 - **Author**: Fernando Paladini ([@paladini](https://github.com/paladini))
 - **NPM Profile**: [npmjs.com/~paladini](https://www.npmjs.com/~paladini)
 - **Repository**: [github.com/paladini/intervals-icu](https://github.com/paladini/intervals-icu)

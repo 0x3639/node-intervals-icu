@@ -1,10 +1,12 @@
-# intervals-icu
+# @0x3639/intervals-icu
 
 <a href="https://paladini.io/harness-score/guide/maturity-model#l1-%C2%B7-documented" title="Harness Score — AI coding harness maturity"><img alt="Harness Score L1 (Documented): measures AI-assisted development harness maturity with harness-score" src="https://paladini.github.io/harness-score/maturity/badge-l1.svg" height="20"></a>
-[![npm version](https://img.shields.io/npm/v/intervals-icu)](https://www.npmjs.com/package/intervals-icu)
-[![npm downloads](https://img.shields.io/npm/dm/intervals-icu)](https://www.npmjs.com/package/intervals-icu)
-[![license](https://img.shields.io/npm/l/intervals-icu)](./LICENSE)
+[![npm version](https://img.shields.io/npm/v/%400x3639%2Fintervals-icu)](https://www.npmjs.com/package/@0x3639/intervals-icu)
+[![npm downloads](https://img.shields.io/npm/dm/%400x3639%2Fintervals-icu)](https://www.npmjs.com/package/@0x3639/intervals-icu)
+[![license](https://img.shields.io/npm/l/%400x3639%2Fintervals-icu)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
+
+> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with full coverage of the Intervals.icu OpenAPI spec, a vendored spec snapshot, and CI-enforced coverage. See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
@@ -24,7 +26,7 @@ The most comprehensive TypeScript client for the [Intervals.icu](https://interva
 ## Installation
 
 ```bash
-npm install intervals-icu
+npm install @0x3639/intervals-icu
 ```
 
 ## Quick Start
@@ -32,7 +34,7 @@ npm install intervals-icu
 ### API Key Authentication
 
 ```typescript
-import { IntervalsClient } from 'intervals-icu';
+import { IntervalsClient } from '@0x3639/intervals-icu';
 
 const client = new IntervalsClient({
   apiKey: 'your-api-key',
@@ -132,7 +134,7 @@ interface IntervalsConfig {
 ## Error Handling
 
 ```typescript
-import { IntervalsClient, IntervalsAPIError } from 'intervals-icu';
+import { IntervalsClient, IntervalsAPIError } from '@0x3639/intervals-icu';
 
 try {
   await client.athletes.getAthlete();
@@ -158,7 +160,7 @@ import type {
   SportSettings, Folder, Gear, Chat, Message,
   WeatherConfig, Forecast, PowerCurveSet, PaceCurveSet,
   IntervalsConfig, PaginationOptions, ListActivitiesOptions,
-} from 'intervals-icu';
+} from '@0x3639/intervals-icu';
 ```
 
 ## Authentication
@@ -191,10 +193,10 @@ The TypeScript/Node.js ecosystem has a few Intervals.icu API clients worth knowi
 
 | Library | npm | Approach | Coverage | Error handling |
 |---------|-----|----------|----------|---------------|
-| **intervals-icu** *(this library)* | `intervals-icu` | axios, TypeScript types | 16 services, 100+ endpoints | throws `IntervalsAPIError` |
+| **intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 16 services, 100+ endpoints | throws `IntervalsAPIError` |
 | **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` — never throws |
 
-**When to use `intervals-icu` (this library):**
+**When to use `@0x3639/intervals-icu` (this library):**
 - You need the broadest API coverage (16 service groups including routes, gear, weather, custom items, fitness, performance, and search)
 - You prefer familiar `try/catch` error handling
 - You want a well-established npm package
@@ -209,7 +211,7 @@ Both libraries serve the same core purpose and share similar design goals (TypeS
 
 ## License
 
-MIT © [Fernando Paladini](https://github.com/paladini)
+MIT © [0x3639](https://github.com/0x3639). Original library © [Fernando Paladini](https://github.com/paladini).
 
 ## Acknowledgments
 
@@ -219,6 +221,6 @@ Special thanks to Filipe for the inspiration and the initial idea that led to th
 
 - [Intervals.icu API Documentation](https://intervals.icu/api/v1/docs)
 - [Intervals.icu Website](https://intervals.icu)
-- [GitHub Repository](https://github.com/paladini/node-intervals-icu)
-- [npm Package](https://www.npmjs.com/package/intervals-icu)
+- [GitHub Repository](https://github.com/0x3639/node-intervals-icu)
+- [npm Package](https://www.npmjs.com/package/@0x3639/intervals-icu)
 - [Changelog](./CHANGELOG.md)

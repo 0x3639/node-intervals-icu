@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0-alpha.0] - Unreleased
+
+Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/MIGRATION.md` once 3.0.0 ships.
+
+### Changed
+- **Package renamed** to `@0x3639/intervals-icu`. Install and import paths change; the API surface is unchanged in this alpha.
+
+### Added
+- `spec/openapi.json`: vendored snapshot of the Intervals.icu OpenAPI document
+- `npm run coverage:api`: diffs SDK routes against the vendored spec; enforced in CI
+- `npm run spec:drift`: weekly GitHub Action opens an issue when the live spec changes
+- CI workflow running lint, typecheck, tests and build on Node 18, 20, 22
+
 ## [2.2.1] - 2025-03-04
 
 ### Changed
