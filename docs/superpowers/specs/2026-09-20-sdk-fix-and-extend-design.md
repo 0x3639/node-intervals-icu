@@ -18,7 +18,7 @@ package scope, diverged from `paladini/node-intervals-icu`.
 | SDK operations | 121 |
 | SDK operations matching spec | 104 |
 | SDK operations not in spec | 17 |
-| Spec operations missing from SDK | 45 |
+| Spec operations missing from SDK | 46 (103 distinct spec ops covered; two are hit by two SDK methods each) |
 
 Matching rule: strip `/api/v1`, replace every `{param}` and `${expr}` with `{x}`,
 then drop a `{x}` that follows a non-slash character (this folds `{ext}` and the
@@ -46,7 +46,7 @@ then drop a `{x}` that follows a non-slash character (this folds `{ext}` and the
 | PUT /shared-event/{id} | shared-event.service | none |
 | DELETE /shared-event/{id} | shared-event.service | none |
 
-### The 45 spec operations missing from the SDK
+### The 46 spec operations missing from the SDK
 
 Grouped for delivery order (see Phase 3):
 

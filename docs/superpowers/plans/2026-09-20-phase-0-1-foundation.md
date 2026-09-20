@@ -452,7 +452,7 @@ In `package.json` `"scripts"`, add after `"spec:fetch"`:
 - [ ] **Step 3: Run it and record the baseline**
 
 Run: `npm run coverage:api; echo "exit=$?"`
-Expected: `Spec operations: 149`, `SDK operations: 121`, `Matched: 105`, `SDK not in spec: 16`, `Spec not in SDK: 44`, then `exit=1`. (The matcher folds `streams.csv` into `streams{ext}`, so one fewer phantom than the roadmap's hand count.) If numbers differ by one or two, inspect the lists; if a genuine SDK call is not being picked up, extend the regexes in Task 1 and add a test for that shape.
+Expected: `Spec operations: 149`, `SDK operations: 121`, `Matched: 105`, `SDK not in spec: 16`, `Spec not in SDK: 46`, then `exit=1`. (Verified 2026-09-20 by running this exact matcher against the vendored spec. The matcher folds `streams.csv` into `streams{ext}`, so one fewer phantom than the roadmap's hand count. `Matched` counts SDK methods, and two spec operations are each hit by two SDK methods: `GET /activity/{id}/streams{ext}` by `getStreams` and `getStreamsCSV`, and `PUT /athlete/{id}/events/{eventId}` by two event-update methods. So 103 distinct spec operations are covered and 46 are missing.) If numbers differ by one or two, inspect the lists; if a genuine SDK call is not being picked up, extend the regexes in Task 1 and add a test for that shape.
 
 - [ ] **Step 4: Commit**
 
