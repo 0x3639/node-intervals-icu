@@ -94,5 +94,5 @@ gh release create $NEW_VERSION \
 
 echo ""
 echo "✨ Tudo pronto!"
-echo "📦 NPM: https://www.npmjs.com/package/intervals-icu"
-echo "🏷️  GitHub Release: https://github.com/paladini/intervals-icu/releases/tag/$NEW_VERSION"
+echo "📦 NPM: https://www.npmjs.com/package/@0x3639/intervals-icu"
+echo "🏷️  GitHub Release: https://github.com/0x3639/node-intervals-icu/releases/tag/$NEW_VERSION"

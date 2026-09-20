@@ -19,10 +19,10 @@ Comprehensive guide for publishing the library to NPM Registry. Includes:
 - **Package Name**: `@0x3639/intervals-icu`
 - **Type**: TypeScript library with dual package support (CommonJS + ES Modules)
 - **Bundle Size**: ~10KB (packed), ~71KB (unpacked)
-- **Node Version**: >=16.0.0
+- **Node Version**: >=18.0.0
 - **Dependencies**: Only `axios` (runtime dependency)
 
-## Author
+## Original Author
 
 **Fernando Paladini**
 - GitHub: [@paladini](https://github.com/paladini)
