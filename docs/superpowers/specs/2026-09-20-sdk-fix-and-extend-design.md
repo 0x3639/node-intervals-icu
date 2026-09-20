@@ -112,7 +112,7 @@ the only concrete implementation. Changes:
 | 0 | vendored spec, coverage script, CI, drift job, package rename | 3.0.0-alpha.0 |
 | 1 | live test harness, `AUDIT.md` with 17 verdicts (needs user's API key) | unchanged |
 | 2 | verb fixes, path fixes, deletions, regression tests | 3.0.0-alpha.1 |
-| 3 | five PRs adding 45 ops, coverage gate tightened to 149/149 | 3.0.0-beta.x |
+| 3 | five PRs adding 46 ops, coverage gate tightened to 149/149 | 3.0.0-beta.x |
 | 4 | changelog, migration guide, docs, `.windsurf/rules` refresh, tag | 3.0.0 |
 
 Phase 1 verdicts feed Phase 2. If a phantom route works live it is kept and
