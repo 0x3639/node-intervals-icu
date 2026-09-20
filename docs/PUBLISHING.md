@@ -389,9 +389,9 @@ After successfully publishing:
 ## Package Metadata
 
 - **Package Name**: `@0x3639/intervals-icu`
-- **Author**: Fernando Paladini ([@paladini](https://github.com/paladini))
-- **NPM Profile**: [npmjs.com/~paladini](https://www.npmjs.com/~paladini)
-- **Repository**: [github.com/paladini/intervals-icu](https://github.com/paladini/intervals-icu)
+- **Author**: 0x3639 ([@0x3639](https://github.com/0x3639))
+- **NPM Profile**: [npmjs.com/~0x3639](https://www.npmjs.com/~0x3639)
+- **Repository**: [github.com/0x3639/node-intervals-icu](https://github.com/0x3639/node-intervals-icu)
 - **License**: MIT
 
 ---
@@ -408,4 +408,4 @@ npm publish              # Publish to NPM
 git push --follow-tags   # Push with tags
 ```
 
-For questions or issues, please open an issue on the [GitHub repository](https://github.com/paladini/intervals-icu/issues).
+For questions or issues, please open an issue on the [GitHub repository](https://github.com/0x3639/node-intervals-icu/issues).
