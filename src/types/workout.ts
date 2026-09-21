@@ -15,8 +15,12 @@ export interface Workout {
   type?: ActivityType | string;
   name?: string;
   description?: string;
-  /** Structured workout document */
-  workout_doc?: any;
+  /**
+   * Structured workout definition as produced by Intervals.icu (the `workout_doc` field
+   * on calendar workout events). Required by convertWorkout(); its schema is not modelled
+   * yet.
+   */
+  workout_doc?: unknown;
   /** Raw file contents (zwo, mrc, erg, fit) */
   file_contents?: string;
   /** Base64-encoded file contents */
