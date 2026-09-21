@@ -6,7 +6,7 @@ Status: approved (decisions: diverge from upstream now; delete phantom endpoints
 ## Goal
 
 Bring the SDK to 149/149 coverage of the Intervals.icu OpenAPI spec, fix the
-17 SDK operations that disagree with the spec, and make coverage and spec
+16 SDK operations that disagree with the spec, and make coverage and spec
 drift visible in CI so they cannot regress. Ship as v3.0.0 under a new
 package scope, diverged from `paladini/node-intervals-icu`.
 
@@ -17,14 +17,14 @@ package scope, diverged from `paladini/node-intervals-icu`.
 | Spec operations | 149 |
 | SDK operations | 121 |
 | SDK operations matching spec | 104 |
-| SDK operations not in spec | 17 |
+| SDK operations not in spec | 16 |
 | Spec operations missing from SDK | 45 (104 distinct spec ops covered; note that only `GET /activity/{id}/streams{ext}` is now hit by two SDK methods) |
 
 Matching rule: strip `/api/v1`, replace every `{param}` and `${expr}` with `{x}`,
 then drop a `{x}` that follows a non-slash character (this folds `{ext}` and the
 `{format}` suffix on `download-workout{format}` into the base path).
 
-### The 17 SDK operations not in the spec
+### The 16 SDK operations not in the spec
 
 | SDK op | File | Likely spec counterpart |
 |---|---|---|
@@ -32,7 +32,6 @@ then drop a `{x}` that follows a non-slash character (this folds `{ext}` and the
 | GET /download-workout{fmt} | workout.service (download) | POST same path |
 | GET /athlete/{id}/download-workout{fmt} | workout.service (download) | POST same path |
 | POST /activity/{id}/streams.csv | activity.service (upload) | PUT same path |
-| GET /activity/{id}/streams.csv | activity.service (download) | GET /activity/{id}/streams{ext} |
 | GET /chats | chat.service | GET /athlete/{id}/chats |
 | GET /athlete/{id}/routes/{id}/similarities | route.service | GET .../routes/{id}/similarity/{otherId} |
 | GET /athlete/{id}/fitness | fitness.service | none (maybe athlete-summary or wellness) |
@@ -45,6 +44,8 @@ then drop a `{x}` that follows a non-slash character (this folds `{ext}` and the
 | POST /shared-event | shared-event.service | none (only GET exists) |
 | PUT /shared-event/{id} | shared-event.service | none |
 | DELETE /shared-event/{id} | shared-event.service | none |
+
+`GET /activity/{id}/streams.csv` matches the spec's `streams{ext}` and is not disputed.
 
 ### The 45 spec operations missing from the SDK
 
@@ -114,7 +115,7 @@ the only concrete implementation. Changes:
 | Phase | Deliverable | Version |
 |---|---|---|
 | 0 | vendored spec, coverage script, CI, drift job, package rename | 3.0.0-alpha.0 |
-| 1 | live test harness, `AUDIT.md` with 17 verdicts (needs user's API key) | unchanged |
+| 1 | live test harness, `AUDIT.md` with 16 verdicts (needs user's API key) | unchanged |
 | 2 | verb fixes, path fixes, deletions, regression tests | 3.0.0-alpha.1 |
 | 3 | five PRs adding 45 ops, coverage gate tightened to 149/149 | 3.0.0-beta.x |
 | 4 | changelog, migration guide, docs, `.windsurf/rules` refresh, tag | 3.0.0 |
