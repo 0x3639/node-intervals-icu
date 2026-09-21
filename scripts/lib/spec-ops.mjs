@@ -107,3 +107,17 @@ export function matchOperations(specOps, sdkOps) {
   const missing = specOps.filter((s) => !usedSpec.has(s.key));
   return { matched, phantom, missing };
 }
+
+/**
+ * Split `phantom` ops (from `matchOperations`) against a known-phantom
+ * baseline: `newPhantom` is phantom ops not in the baseline (regressions),
+ * `resolved` is baseline keys no longer phantom (stale entries that must be
+ * removed for the baseline to shrink monotonically).
+ */
+export function applyBaseline(phantom, baselineKeys) {
+  const baseline = new Set(baselineKeys);
+  const phantomKeys = new Set(phantom.map((p) => p.key));
+  const newPhantom = phantom.filter((p) => !baseline.has(p.key));
+  const resolved = baselineKeys.filter((k) => !phantomKeys.has(k));
+  return { newPhantom, resolved };
+}

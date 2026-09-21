@@ -5,6 +5,7 @@ import {
   sdkOperations,
   specPathRegex,
   matchOperations,
+  applyBaseline,
 } from '../../scripts/lib/spec-ops.mjs';
 
 const miniSpec = {
@@ -140,6 +141,23 @@ describe('matchOperations', () => {
     expect(result.matched[0].spec.key).toBe('PUT /athlete/{id}/events/bulk-delete');
     expect(result.phantom).toEqual([]);
     expect(result.missing.map((m) => m.key)).toEqual(['PUT /athlete/{id}/events/{eventId}']);
+  });
+});
+
+describe('applyBaseline', () => {
+  it('splits phantom ops into new (regressions) and resolved (stale baseline entries)', () => {
+    const phantom = [{ key: 'GET /chats', source: 'chat.service.ts' }, { key: 'GET /search/athletes', source: 'search.service.ts' }];
+    const baselineKeys = ['GET /chats', 'DELETE /athlete/{id}/wellness/{date}'];
+    const { newPhantom, resolved } = applyBaseline(phantom, baselineKeys);
+    expect(newPhantom.map((p) => p.key)).toEqual(['GET /search/athletes']);
+    expect(resolved).toEqual(['DELETE /athlete/{id}/wellness/{date}']);
+  });
+
+  it('treats every phantom op as new when the baseline is empty', () => {
+    const phantom = [{ key: 'GET /chats' }, { key: 'GET /search/athletes' }];
+    const { newPhantom, resolved } = applyBaseline(phantom, []);
+    expect(newPhantom.map((p) => p.key).sort()).toEqual(['GET /chats', 'GET /search/athletes']);
+    expect(resolved).toEqual([]);
   });
 });
 

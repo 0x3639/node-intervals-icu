@@ -1,0 +1,20 @@
+{
+  "phantom": [
+    "DELETE /athlete/{x}/wellness/{x}",
+    "DELETE /shared-event/{x}",
+    "GET /activity/{x}/weather",
+    "GET /athlete/{x}/activity-summary",
+    "GET /athlete/{x}/download-fit-files",
+    "GET /athlete/{x}/download-workout{x}",
+    "GET /athlete/{x}/fitness",
+    "GET /athlete/{x}/power-vs-hr",
+    "GET /athlete/{x}/routes/{x}/similarities",
+    "GET /athlete/{x}/weather",
+    "GET /chats",
+    "GET /download-workout{x}",
+    "GET /search/athletes",
+    "POST /activity/{x}/streams.csv",
+    "POST /shared-event",
+    "PUT /shared-event/{x}"
+  ]
+}

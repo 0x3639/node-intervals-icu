@@ -1,13 +1,15 @@
 // scripts/coverage.mjs
-// Usage: node scripts/coverage.mjs [--strict]
+// Usage: node scripts/coverage.mjs [--strict] [--write-baseline]
 // Diffs the SDK's HTTP calls against spec/openapi.json.
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { specOperations, sdkOperations, matchOperations } from './lib/spec-ops.mjs';
+import { specOperations, sdkOperations, matchOperations, applyBaseline } from './lib/spec-ops.mjs';
 
 const strict = process.argv.includes('--strict');
+const writeBaselineFlag = process.argv.includes('--write-baseline');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const baselinePath = path.join(root, 'spec/coverage-baseline.json');
 
 async function loadSdkFiles() {
   const dir = path.join(root, 'src/services');
@@ -17,6 +19,28 @@ async function loadSdkFiles() {
   );
   files.push({ name: 'client.ts', text: await readFile(path.join(root, 'src/client.ts'), 'utf8') });
   return files;
+}
+
+async function loadBaseline() {
+  let raw;
+  try {
+    raw = await readFile(baselinePath, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      console.log(`Baseline: ${baselinePath} not found; treating as empty.`);
+      return [];
+    }
+    console.error(`Could not read ${baselinePath}: ${err.message}`);
+    process.exit(1);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    console.error(`${baselinePath} is not valid JSON: ${err.message}`);
+    process.exit(1);
+  }
+  return parsed.phantom ?? [];
 }
 
 let spec;
@@ -43,6 +67,13 @@ if (httpCallCount !== sdkOps.length) {
   process.exit(1);
 }
 
+if (writeBaselineFlag) {
+  const phantomKeys = [...new Set(phantom.map((p) => p.key))].sort();
+  await writeFile(baselinePath, `${JSON.stringify({ phantom: phantomKeys }, null, 2)}\n`);
+  console.log(`Wrote ${phantomKeys.length} phantom ops to ${baselinePath}`);
+  process.exit(0);
+}
+
 console.log(`Spec operations:      ${specOps.length}`);
 console.log(`SDK operations:       ${sdkOps.length}`);
 console.log(`Matched (SDK ops):    ${matched.length}`);
@@ -63,9 +94,38 @@ if (missing.length) {
   }
 }
 
-const failed = phantom.length > 0 || (strict && missing.length > 0);
-if (failed) {
-  console.error(`\nCoverage check failed${strict ? ' (strict)' : ''}.`);
+if (strict) {
+  const failed = phantom.length > 0 || missing.length > 0;
+  if (failed) {
+    console.error('\nCoverage check failed (strict).');
+    process.exit(1);
+  }
+  console.log('\nCoverage check passed.');
+  process.exit(0);
+}
+
+const baselineKeys = await loadBaseline();
+const { newPhantom, resolved } = applyBaseline(phantom, baselineKeys);
+
+console.log(`\nBaseline: ${baselineKeys.length} known phantom ops`);
+console.log(`New phantom (regressions): ${newPhantom.length}`);
+console.log(`Stale baseline entries: ${resolved.length}`);
+
+if (newPhantom.length) {
+  console.log('\nNew phantom ops (not in the baseline; fix, document, or add to spec/coverage-baseline.json):');
+  for (const p of [...newPhantom].sort((a, b) => a.key.localeCompare(b.key))) {
+    console.log(`  ${p.key}    <- ${p.source}`);
+  }
+}
+if (resolved.length) {
+  console.log('\nStale baseline entries (no longer phantom; remove from spec/coverage-baseline.json):');
+  for (const k of [...resolved].sort()) {
+    console.log(`  ${k}`);
+  }
+}
+
+if (newPhantom.length > 0 || resolved.length > 0) {
+  console.error('\nCoverage check failed.');
   process.exit(1);
 }
 console.log('\nCoverage check passed.');

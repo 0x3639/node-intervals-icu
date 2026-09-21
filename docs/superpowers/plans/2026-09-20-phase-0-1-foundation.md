@@ -512,7 +512,7 @@ jobs:
 - [ ] **Step 2: Sanity-check locally**
 
 Run: `npm run lint && npm run typecheck && npm test && npm run build`
-Expected: all exit 0. `npm run coverage:api` is expected to exit 1 until Phase 2 removes phantom ops. That is intentional: CI on this branch will be red at the coverage step until Phase 2 lands. Note this in the PR description.
+Expected: all exit 0. `npm run coverage:api` also exits 0: it is baselined against `spec/coverage-baseline.json` (the 16 currently-known phantom ops) and fails only on a regression (a new phantom op) or a stale baseline entry. CI is green on this branch; `node scripts/coverage.mjs --strict` ignores the baseline and still exits 1 until Phase 3 reaches 149/149.
 
 - [ ] **Step 3: Commit**
 
@@ -1087,7 +1087,7 @@ Run: `npm run lint && npm run typecheck && npm test && npm run build && npm run 
 Expected: all exit 0 (live suite reports skipped).
 
 Run: `npm run coverage:api; echo "exit=$?"`
-Expected: report printed, `exit=1` with 16 phantom ops. This is the known-red state until Phase 2.
+Expected: report printed, `exit=0`, with `Baseline: 16 known phantom ops`, `New phantom (regressions): 0`, `Stale baseline entries: 0`.
 
 - [ ] **Step 2: Push and open the PR**
 
@@ -1101,8 +1101,8 @@ gh pr create --title "Phase 0/1: vendored spec, coverage CI, live harness, packa
 - Adds a credential-gated live test harness (`npm run test:live`) and an audit probe that generates `AUDIT.md`
 - Removes `examples/manual-integration-test`, which referenced a method removed in v2.1
 
-## Known red
-The coverage step fails on this branch by design: 16 SDK operations do not exist in the spec. Phase 2 fixes or removes them. See `docs/superpowers/specs/2026-09-20-sdk-fix-and-extend-design.md`.
+## Coverage baseline
+16 SDK operations do not exist in the spec; `spec/coverage-baseline.json` records them so CI stays green while they're pending. `npm run coverage:api` fails only on a new phantom op or a stale baseline entry. Phase 2 fixes or removes the 16; each resolution should also shrink the baseline. See `docs/superpowers/specs/2026-09-20-sdk-fix-and-extend-design.md`.
 
 ## Next
 Run `npm run audit:probe` with real credentials and commit `AUDIT.md`. Phase 2's plan is written from those verdicts.

@@ -56,7 +56,7 @@ npx tsx examples/basic-usage.ts
 ## 🧰 Repo scripts
 
 - `npm run spec:fetch` — fetch the live Intervals.icu OpenAPI document and write it to `spec/openapi.json`
-- `npm run coverage:api` — diff the SDK's HTTP calls against the vendored spec (note: exits 1 on this branch by design until the phantom routes are fixed)
+- `npm run coverage:api` — diff the SDK's HTTP calls against the vendored spec. Fails only on regressions: a new SDK operation not in the spec and not in `spec/coverage-baseline.json` (16 already-known phantom ops), or a baseline entry that is no longer phantom (it must be removed so the baseline shrinks monotonically). Use `node scripts/coverage.mjs --write-baseline` to regenerate the baseline after resolving an entry, and `node scripts/coverage.mjs --strict` to ignore the baseline and fail on any phantom or missing op (the eventual 149/149 gate)
 - `npm run spec:drift` — compare the live spec against the vendored one and report drift
 - `npm run test:live` — run the live test suite against the real API (needs `INTERVALS_API_KEY` and `INTERVALS_ATHLETE_ID`)
 - `npm run audit:probe` — probe SDK routes that disagree with the spec against the live API (needs the same credentials). Default mode sends only GET requests; set `INTERVALS_LIVE_WRITE=1` to also run probes whose SDK or spec form uses POST/PUT/DELETE
