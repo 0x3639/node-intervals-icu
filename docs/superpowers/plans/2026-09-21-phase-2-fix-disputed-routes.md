@@ -46,7 +46,7 @@
 - Test: `tests/client.test.ts`
 
 **Interfaces:**
-- Produces: `download(url: string, options?: DownloadOptions | Record<string, unknown>): Promise<Buffer>` where `DownloadOptions = { method?: 'GET' | 'POST'; params?: Record<string, unknown>; data?: unknown }`. A plain object without `method`, `params`, or `data` keys is treated as legacy `params` (backward compatible). `UploadConfig` gains `method?: 'POST' | 'PUT'`.
+- Produces: `download(url: string, options?: DownloadOptions): Promise<Buffer>` where `DownloadOptions = { method?: 'GET' | 'POST'; params?: Record<string, unknown> | URLSearchParams; data?: unknown }`. The old `(url, params)` signature is removed outright (breaking for custom `IHttpClient` implementations; listed in the changelog). No key-sniffing overload: a caller who wants query params always passes `{ params }`. `UploadConfig` gains `method?: 'POST' | 'PUT'`. All six in-SDK `download` call sites are updated in this task.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -65,13 +65,33 @@ describe('download and upload verbs', () => {
     mockedAxios.create = vi.fn(() => mockInstance);
   });
 
-  it('download defaults to GET with params (legacy signature)', async () => {
+  it('download defaults to GET with no params when called with only a url', async () => {
     const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
     await client.activities.downloadFile('a1');
     const call = requestMock.mock.calls[0][0];
     expect(call.method).toBe('GET');
     expect(call.url).toBe('/activity/a1/file');
+    expect(call.params).toBeUndefined();
     expect(call.responseType).toBe('arraybuffer');
+  });
+
+  it('download keeps a query param literally named data or method in the query, never the body', async () => {
+    const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+    const http: any = (client as any).httpClient;
+    await http.download('/x', { params: { data: 'raw', method: 'q' } });
+    const call = requestMock.mock.calls[0][0];
+    expect(call.method).toBe('GET');
+    expect(call.params).toEqual({ data: 'raw', method: 'q' });
+    expect(call.data).toBeUndefined();
+  });
+
+  it('download accepts URLSearchParams for repeated keys', async () => {
+    const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+    const http: any = (client as any).httpClient;
+    const params = new URLSearchParams([['ids', 'a1'], ['ids', 'a2']]);
+    await http.download('/x', { method: 'POST', params });
+    const call = requestMock.mock.calls[0][0];
+    expect(call.params).toBe(params);
   });
 
   it('download can POST with query params and no body', async () => {
@@ -109,7 +129,7 @@ describe('download and upload verbs', () => {
 - [ ] **Step 2: Run to verify failure**
 
 Run: `npx vitest run tests/client.test.ts -t "download and upload verbs"`
-Expected: FAIL. The legacy test fails because `download` calls `client.get`, not `client.request`; the POST tests fail because `method` is ignored.
+Expected: FAIL. The GET test fails because `download` calls `client.get`, not `client.request`; the POST, collision, and URLSearchParams tests fail because `method` is ignored and the second argument is treated as params.
 
 - [ ] **Step 3: Change the interface**
 
@@ -130,7 +150,8 @@ export interface UploadConfig {
 export interface DownloadOptions {
   /** HTTP verb. Defaults to GET. */
   method?: 'GET' | 'POST';
-  params?: Record<string, unknown>;
+  /** Query parameters. Use URLSearchParams when a key must repeat (e.g. `ids=a&ids=b`). */
+  params?: Record<string, unknown> | URLSearchParams;
   /** JSON body, only meaningful with POST. */
   data?: unknown;
 }
@@ -140,11 +161,10 @@ and
 
 ```ts
   /**
-   * Download a file as a Buffer.
-   * The second argument is either DownloadOptions or, for backward compatibility,
-   * a plain params object.
+   * Download a file as a Buffer. Query parameters always go in `options.params`;
+   * there is no positional params overload.
    */
-  download(url: string, options?: DownloadOptions | Record<string, unknown>): Promise<Buffer>;
+  download(url: string, options?: DownloadOptions): Promise<Buffer>;
 ```
 
 - [ ] **Step 4: Change the axios implementation**
@@ -171,32 +191,27 @@ In `src/core/axios-http-client.ts`, import `DownloadOptions` and replace the `up
     });
   }
 
-  private static isDownloadOptions(value: unknown): value is DownloadOptions {
-    if (!value || typeof value !== 'object') return false;
-    return 'method' in value || 'params' in value || 'data' in value;
-  }
-
-  async download(url: string, options?: DownloadOptions | Record<string, unknown>): Promise<Buffer> {
-    const opts: DownloadOptions = AxiosHttpClient.isDownloadOptions(options)
-      ? options
-      : { params: options as Record<string, unknown> | undefined };
+  async download(url: string, options: DownloadOptions = {}): Promise<Buffer> {
     return this.withRetry(async () => {
       const response = await this.client.request({
-        method: opts.method ?? 'GET',
+        method: options.method ?? 'GET',
         url,
-        params: opts.params,
-        data: opts.data,
+        params: options.params,
+        data: options.data,
         responseType: 'arraybuffer',
+        // axios serializes URLSearchParams natively; a plain object uses its default encoder.
       });
       return Buffer.from(response.data);
     });
   }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [ ] **Step 5: Update the in-SDK callers that passed positional params**
 
-Run: `npx vitest run tests/client.test.ts`
-Expected: PASS, including the four new tests. Then `npm test` to confirm nothing else used `client.get` for downloads (the activities and workouts suites mock `request`, so they should pass unchanged).
+`npm run typecheck` now fails at every `download(url, someParams)` call. Fix each: `src/services/activity.service.ts` `downloadFitFiles` becomes `download(url, { params })` (Task 2 changes it to POST); `src/services/workout.service.ts` `downloadWorkout`/`downloadWorkoutForAthlete` become `download(url, { params: { id: workoutId } })` (Task 6 replaces them). Calls that passed only a url are unchanged.
+
+Run: `npm run typecheck && npx vitest run tests/client.test.ts && npm test`
+Expected: all PASS, including the six new tests.
 
 - [ ] **Step 6: Export the new type and commit**
 
@@ -293,14 +308,20 @@ Create `tests/live/phase2.live.test.ts` (Task 7 extends it):
 import { describe, it, expect } from 'vitest';
 import { LIVE, liveClient, athleteId } from './setup.js';
 
+const today = () => new Date().toISOString().slice(0, 10);
+const yearAgo = () => new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+
+/** Latest activity id, or undefined when the account has none. */
+async function latestActivityId() {
+  const [latest] = await liveClient().activities.listActivities({ oldest: yearAgo(), newest: today() });
+  return latest?.id;
+}
+
 describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
-  it('downloadFitFiles returns a zip for the most recent activity', async () => {
-    const client = liveClient();
-    const today = new Date().toISOString().slice(0, 10);
-    const yearAgo = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
-    const [latest] = await client.activities.listActivities({ oldest: yearAgo, newest: today });
-    if (!latest?.id) return; // account has no activities; nothing to assert
-    const zip = await client.activities.downloadFitFiles([latest.id]);
+  it('downloadFitFiles returns a zip for the most recent activity', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip(); // reported as skipped, not passed
+    const zip = await liveClient().activities.downloadFitFiles([id as string]);
     expect(zip.subarray(0, 2).toString()).toBe('PK');
   });
 });
@@ -751,18 +772,27 @@ Expected: `"phantom": []` in `spec/coverage-baseline.json`; `Undocumented (allow
 Append to `tests/live/phase2.live.test.ts`:
 
 ```ts
-  it('listChats, getSummary, getPowerHRCurve, getForecast, getWeatherSummary respond', async () => {
-    const client = liveClient();
-    const today = new Date().toISOString().slice(0, 10);
-    const yearAgo = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
-    expect(Array.isArray(await client.chats.listChats())).toBe(true);
-    expect(Array.isArray(await client.athletes.getSummary({ start: yearAgo, end: today }))).toBe(true);
-    expect(await client.performance.getPowerHRCurve({ start: yearAgo, end: today })).toBeTypeOf('object');
-    expect(await client.weather.getForecast()).toBeTypeOf('object');
-    const [latest] = await client.activities.listActivities({ oldest: yearAgo, newest: today });
-    if (latest?.id) expect(await client.activities.getWeatherSummary(latest.id)).toBeTypeOf('object');
-    const [route] = await client.routes.list();
-    if (route?.route_id) expect(await client.routes.getSimilarity(route.route_id, route.route_id)).toBeTypeOf('object');
+  it('listChats responds', async () => {
+    expect(Array.isArray(await liveClient().chats.listChats())).toBe(true);
+  });
+  it('getSummary responds', async () => {
+    expect(Array.isArray(await liveClient().athletes.getSummary({ start: yearAgo(), end: today() }))).toBe(true);
+  });
+  it('getPowerHRCurve responds', async () => {
+    expect(await liveClient().performance.getPowerHRCurve({ start: yearAgo(), end: today() })).toBeTypeOf('object');
+  });
+  it('getForecast responds', async () => {
+    expect(await liveClient().weather.getForecast()).toBeTypeOf('object');
+  });
+  it('getWeatherSummary responds for the latest activity', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    expect(await liveClient().activities.getWeatherSummary(id as string)).toBeTypeOf('object');
+  });
+  it('getSimilarity responds for the first route', async (ctx) => {
+    const [route] = await liveClient().routes.list();
+    if (!route?.route_id) ctx.skip();
+    expect(await liveClient().routes.getSimilarity(route.route_id as number, route.route_id as number)).toBeTypeOf('object');
   });
 ```
 
@@ -805,7 +835,7 @@ Under `## [Unreleased]` add:
 - `client.weather.getWeather()` renamed to `getForecast()` and calls `/weather-forecast`.
 - `client.routes.getSimilarities(routeId)` replaced by `getSimilarity(routeId, otherRouteId)` returning one `RouteSimilarity`.
 - `client.activities.downloadFitFiles()` sends POST; `updateStreamsCSV()` sends PUT.
-- `IHttpClient.download()` accepts `{ method, params, data }`; `upload()` accepts `method`.
+- `IHttpClient.download(url, options)` replaces `download(url, params)`: query params go in `options.params` (object or `URLSearchParams`), `options.method` may be `POST`, `options.data` is a JSON body. `upload()` accepts `method`.
 
 ### Added
 - `client.athletes.getSummary()`, `client.events.downloadWorkout(eventId, format)`, `client.workouts.convertWorkout()`.
