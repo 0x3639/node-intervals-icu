@@ -408,11 +408,20 @@ function topLevelObjectProperties(text) {
   if (text[i] !== '{') return null;
   let depth = 0;
   let expectKey = false;
-  // Handle a top-level `key: value` pair whose key text is `id`, starting at
-  // the index just after the key. Records literal/invalid method and url values.
+  // Handle a top-level member whose key text is `id`, starting at the index
+  // just after the key. Only two member forms are understood: `key: value`
+  // and the shorthand `key,` / `key }`. Anything else after a key -- a `(`
+  // (method shorthand), another identifier (`get method()`), a `\` (an
+  // escaped identifier such as `meth\u006fd`), `=` -- is a form this parser
+  // cannot resolve, so the object is flagged dynamic and the call is reported
+  // as unparsed rather than defaulted.
   const consumeKeyValue = (id, afterKey) => {
     let j = afterKey;
     while (j < n && /\s/.test(text[j])) j++;
+    if (text[j] !== ':' && text[j] !== ',' && text[j] !== '}') {
+      result.dynamic = true;
+      return j;
+    }
     if (text[j] === ':') {
       j++;
       while (j < n && /\s/.test(text[j])) j++;
@@ -437,9 +446,12 @@ function topLevelObjectProperties(text) {
     if (ch === "'" || ch === '"') {
       const [len, raw] = readString(text, i);
       if (expectKey && depth === 1) {
-        // A quoted key (`"method": ...`) names the same property as a bare one.
+        // A quoted key (`"method": ...`) names the same property as a bare one,
+        // unless it contains an escape sequence, which is not decoded here.
         expectKey = false;
-        i = consumeKeyValue(raw.slice(1, -1), i + len);
+        if (raw.includes('\\')) result.dynamic = true;
+        else i = consumeKeyValue(raw.slice(1, -1), i + len);
+        if (result.dynamic) i += len;
         continue;
       }
       i += len;
@@ -492,6 +504,12 @@ function topLevelObjectProperties(text) {
       expectKey = false;
       i = consumeKeyValue(id, i + id.length);
       continue;
+    }
+    if (expectKey && depth === 1) {
+      // Any other token in key position (a numeric key, `*gen()`, a private
+      // name, a stray backslash) is a member form this parser does not model.
+      result.dynamic = true;
+      expectKey = false;
     }
     i++;
   }

@@ -526,6 +526,47 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
       expect(unparsed).toEqual([]);
     });
 
+    it('(Codex round 4) an escaped quoted key is unparsed, not read as unrelated', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "meth\\u006fd": "POST" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('(Codex round 4) an escaped identifier key is unparsed', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { meth\\u006fd: "POST" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('(Codex round 4) an accessor property is unparsed for download and upload', () => {
+      const files = [
+        { name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { get method() { return "POST"; } });' },
+        { name: 'b.ts', text: 'this.httpClient.upload({ url: `/y${id}`, file, get method() { return "PUT"; } });' },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(2);
+    });
+
+    it('(Codex round 4) a method-shorthand member and an escaped upload method key are unparsed', () => {
+      const files = [
+        { name: 'a.ts', text: 'this.httpClient.upload({ url: `/y${id}`, file, method() { return "PUT"; } });' },
+        { name: 'b.ts', text: 'this.httpClient.upload({ url: `/z${id}`, file, "meth\\u006fd": "PUT" });' },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(2);
+    });
+
+    it('(Codex round 4) a numeric or otherwise unrecognized key form is unparsed', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { 0: "x" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
     it('a trailing comma with no options argument still defaults to GET', () => {
       const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`,);' }];
       const { ops, unparsed } = sdkOperations(files);

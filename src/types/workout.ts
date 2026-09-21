@@ -43,9 +43,10 @@ export interface Workout {
 /**
  * Body for `workouts.convertWorkout()` / `convertWorkoutForAthlete()`.
  *
- * The live API returns HTTP 500 unless `name`, `description`, `type` and `workout_doc`
- * are all present (verified 2026-09-21, see AUDIT.md), so they are required here.
- * Any other `Workout` field may be included.
+ * Live probes (AUDIT.md, 2026-09-21) showed that a body carrying `name`, `description`,
+ * `type` and `workout_doc` converts, and that the earlier minimal body without
+ * `workout_doc` returns HTTP 500. The fields were not probed one at a time, so all four
+ * are required here as a conservative contract. Any other `Workout` field may be included.
  */
 export interface WorkoutConversionInput extends Partial<Workout> {
   name: string;

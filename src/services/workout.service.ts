@@ -57,10 +57,11 @@ export class WorkoutService {
    * The workout is sent in the body; it does not need to exist in the library.
    * Uses the global endpoint (no athlete-specific settings such as FTP).
    *
-   * The live API returns HTTP 500 unless the body carries `name`, `description`, `type`
-   * and `workout_doc` (verified against the real service), so `WorkoutConversionInput`
-   * requires all four. A convenient source of `workout_doc` is an existing calendar
-   * workout event's `workout_doc` field.
+   * `WorkoutConversionInput` requires `name`, `description`, `type` and `workout_doc`:
+   * live probes (AUDIT.md) showed a body with all four converts and a body without
+   * `workout_doc` returns HTTP 500; the fields were not probed individually, so all four
+   * are required as a conservative contract. A convenient source of `workout_doc` is an
+   * existing calendar workout event's `workout_doc` field.
    */
   async convertWorkout(workout: WorkoutConversionInput, format: WorkoutFormat): Promise<Buffer> {
     return this.httpClient.download(`/download-workout${format}`, { method: 'POST', data: workout });

@@ -64,8 +64,9 @@ const similar = await client.routes.getSimilarity(routeId, otherRouteId);
 
 // convertWorkout POSTs a workout body instead of downloading an existing library
 // workout by id. The body type, WorkoutConversionInput, requires `name`, `description`,
-// `type` and `workout_doc` — the live API returns HTTP 500 without all four. Every
-// field on a calendar Event is optional, so narrow one before converting it:
+// `type` and `workout_doc`: live probes showed a body with all four converts and a body
+// without `workout_doc` returns HTTP 500 (see AUDIT.md; fields were not probed one at a
+// time). Every field on a calendar Event is optional, so narrow one before converting it:
 import type { Event, WorkoutConversionInput } from '@0x3639/intervals-icu';
 
 // Check runtime shapes, not just truthiness: the API response is external data.
