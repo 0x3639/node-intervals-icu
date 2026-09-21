@@ -61,15 +61,15 @@ async function main() {
 
     // 6. Fitness (CTL/ATL/TSB)
     console.log('\n=== Fitness ===');
-    const fitness = await client.fitness.getFitness({ oldest, newest });
-    const latest = fitness[fitness.length - 1];
+    const summary = await client.athletes.getSummary({ start: oldest, end: newest });
+    const latest = summary[summary.length - 1];
     if (latest) {
       console.log(`Latest: fitness=${latest.fitness}, fatigue=${latest.fatigue}, form=${latest.form}`);
     }
 
     // 7. Weather
     console.log('\n=== Weather ===');
-    const weather = await client.weather.getWeather();
+    const weather = await client.weather.getForecast();
     const forecast = weather.forecasts?.[0];
     if (forecast) {
       console.log(`Next: ${forecast.temp}°, feels like ${forecast.feels_like}°, wind ${forecast.wind_speed} m/s`);
