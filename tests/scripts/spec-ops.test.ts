@@ -584,6 +584,24 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
       expect(unparsed).toEqual([]);
     });
 
+    it('(Codex round 5) an indexed-access type before an explicit method is skipped whole, for as and satisfies', () => {
+      const files = [
+        {
+          name: 'a.ts',
+          text: 'this.httpClient.download(`/x${id}`, {\n  data: value as SomeVeryLongType[SomeVeryLongIndex],\n  method: \'POST\',\n});',
+        },
+        {
+          name: 'b.ts',
+          text: 'this.httpClient.download(`/y${id}`, {\n  data: value satisfies SomeVeryLongType[SomeVeryLongIndex],\n  method: \'POST\',\n});',
+        },
+        { name: 'c.ts', text: "this.httpClient.upload({ url: `/z${id}`, file: f as Buffers[number], method: 'PUT' });" },
+        { name: 'd.ts', text: 'this.httpClient.request({ method: \'DELETE\', url: `/w`, params: p as Opts["k"] });' },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['DELETE /w', 'POST /x{x}', 'POST /y{x}', 'PUT /z{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
     it('a trailing comma with no options argument still defaults to GET', () => {
       const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`,);' }];
       const { ops, unparsed } = sdkOperations(files);
