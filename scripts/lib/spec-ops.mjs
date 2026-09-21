@@ -406,7 +406,8 @@ const TYPE_ASSERTION_RE = /^(?:as|satisfies)(?=\s)/;
 /**
  * Length of the type expression starting at `i` (just after `as`/`satisfies`):
  * everything up to the next `,` or `}` at bracket depth 0, treating `<...>`,
- * `(...)`, `[...]` and `{...}` as nested. Chained `as X as Y` is covered
+ * `(...)`, `[...]` and `{...}` as nested and skipping string / template
+ * literal types (`'a,b'`, `\`x,${T}\``) whole. Chained `as X as Y` is covered
  * because the scan only stops at `,` / `}`.
  */
 function skipTypeAnnotation(text, i) {
@@ -415,6 +416,14 @@ function skipTypeAnnotation(text, i) {
   let bracket = 0;
   while (i < text.length) {
     const ch = text[i];
+    if (ch === "'" || ch === '"') {
+      i += readString(text, i)[0];
+      continue;
+    }
+    if (ch === '`') {
+      i += readTemplate(text, i, false)[0];
+      continue;
+    }
     if (ch === '<') angle++;
     else if (ch === '>') angle = Math.max(0, angle - 1);
     else if (ch === '(' || ch === '[' || ch === '{') bracket++;
@@ -529,7 +538,8 @@ function topLevelObjectProperties(text) {
     if (depth === 1 && !expectKey && /[\s)\]]/.test(text[i - 1] ?? ' ') && TYPE_ASSERTION_RE.test(text.slice(i))) {
       // `value as Some<Type, Args>` / `value satisfies T`: skip the type so a
       // comma inside its generic arguments is not read as a member separator.
-      i += skipTypeAnnotation(text, i + TYPE_ASSERTION_RE.exec(text.slice(i))[0].length);
+      const keyword = TYPE_ASSERTION_RE.exec(text.slice(i))[0].length;
+      i += keyword + skipTypeAnnotation(text, i + keyword);
       continue;
     }
     if (expectKey && depth === 1 && /[A-Za-z_$]/.test(ch)) {

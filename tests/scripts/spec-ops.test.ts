@@ -574,9 +574,13 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
         { name: 'c.ts', text: "this.httpClient.download(`/c${id}`, { params: opts satisfies Partial<Map<string, number>> });" },
         { name: 'd.ts', text: "this.httpClient.upload({ url: `/d${id}`, file: buf as unknown as Blob, fileName });" },
         { name: 'e.ts', text: "this.httpClient.request({ method: 'GET', url: `/e`, params: canvas, bias: gas });" },
+        { name: 'f.ts', text: "this.httpClient.request({ method: 'GET', url: `/f`, params: { sep: s as 'a,b' | \"c,d\", tpl: t as `x,${string}` } });" },
+        { name: 'g.ts', text: "this.httpClient.download(`/g${id}`, { params: q as 'p,q', method: 'POST' });" },
+        { name: 'h.ts', text: "this.httpClient.download(`/h${id}`, { params: q as `p,${T}`, method: 'POST' });" },
+        { name: 'i.ts', text: "this.httpClient.upload({ url: `/i${id}`, file: f as unknown as Blob, method: 'PUT' });" },
       ];
       const { ops, unparsed } = sdkOperations(files);
-      expect(ops.map((o) => o.key).sort()).toEqual(['GET /a', 'GET /b', 'GET /c{x}', 'GET /e', 'POST /d{x}']);
+      expect(ops.map((o) => o.key).sort()).toEqual(['GET /a', 'GET /b', 'GET /c{x}', 'GET /e', 'GET /f', 'POST /d{x}', 'POST /g{x}', 'POST /h{x}', 'PUT /i{x}']);
       expect(unparsed).toEqual([]);
     });
 
