@@ -385,7 +385,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `specOperations`, `sdkOperations`, `matchOperations` from `scripts/lib/spec-ops.mjs`.
-- Produces: CLI. Exit 0 when no phantom ops. Exit 1 when any phantom op. With `--strict`, exit 1 when any missing op too.
+- Produces: CLI. Exit 0 when the baselined coverage gate passes: no new phantom ops, no lost coverage of previously covered spec ops, and no stale baseline entries. Exit 1 on any of those. With `--strict`, the baseline is ignored entirely: exit 1 when any phantom op or any missing op.
 
 - [ ] **Step 1: Write the CLI**
 
@@ -512,7 +512,7 @@ jobs:
 - [ ] **Step 2: Sanity-check locally**
 
 Run: `npm run lint && npm run typecheck && npm test && npm run build`
-Expected: all exit 0. `npm run coverage:api` also exits 0: it is baselined against `spec/coverage-baseline.json` (the 16 currently-known phantom ops) and fails only on a regression (a new phantom op) or a stale baseline entry. CI is green on this branch; `node scripts/coverage.mjs --strict` ignores the baseline and still exits 1 until Phase 3 reaches 149/149.
+Expected: all exit 0. `npm run coverage:api` also exits 0: it is baselined against `spec/coverage-baseline.json` (the 16 currently-known phantom ops and the 104 currently-covered spec ops) and fails only on a new phantom op, lost coverage of a previously covered spec op, or a stale baseline entry. CI is green on this branch; `node scripts/coverage.mjs --strict` ignores the baseline and still exits 1 until Phase 3 reaches 149/149.
 
 - [ ] **Step 3: Commit**
 
@@ -1104,7 +1104,7 @@ gh pr create --title "Phase 0/1: vendored spec, coverage CI, live harness, packa
 - Removes `examples/manual-integration-test`, which referenced a method removed in v2.1
 
 ## Coverage baseline
-16 SDK operations do not exist in the spec; `spec/coverage-baseline.json` records them so CI stays green while they're pending. `npm run coverage:api` fails only on a new phantom op or a stale baseline entry. Phase 2 fixes or removes the 16; each resolution should also shrink the baseline. See `docs/superpowers/specs/2026-09-20-sdk-fix-and-extend-design.md`.
+16 SDK operations do not exist in the spec; `spec/coverage-baseline.json` records them (and the 104 currently-covered spec ops) so CI stays green while they're pending. `npm run coverage:api` fails only on a new phantom op, lost coverage of a previously covered spec op, or a stale baseline entry. Phase 2 fixes or removes the 16; each resolution should also shrink the baseline. See `docs/superpowers/specs/2026-09-20-sdk-fix-and-extend-design.md`.
 
 ## Next
 Run `npm run audit:probe` with real credentials and commit `AUDIT.md`. Phase 2's plan is written from those verdicts.

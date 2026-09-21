@@ -9,6 +9,10 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: spec-drift
+  cancel-in-progress: false
+
 jobs:
   drift:
     runs-on: ubuntu-latest
