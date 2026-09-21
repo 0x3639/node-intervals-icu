@@ -1,9 +1,13 @@
 /**
  * Compile-time contract for WorkoutConversionInput. Checked by `npm run typecheck:tests`
  * (tsconfig.tests.json); never executed. Each `@ts-expect-error` line fails the build if the
- * type ever starts accepting a payload the live API rejects with HTTP 500 (see AUDIT.md).
+ * type ever loosens. The live probes in AUDIT.md showed that a body with all four fields
+ * converts and a body without `workout_doc` returns HTTP 500; they did not test each field
+ * in isolation, so the per-field cases below pin the type's contract, not individual probes.
+ *
+ * Imported from the package entrypoint so the public export of each type is pinned too.
  */
-import type { Event, WorkoutConversionInput, WorkoutDoc } from '../../src/types/index.js';
+import type { Event, WorkoutConversionInput, WorkoutDoc } from '../../src/index.js';
 
 const doc: WorkoutDoc = { steps: [{ duration: 1200, power: { value: 85, units: '%ftp' } }] };
 

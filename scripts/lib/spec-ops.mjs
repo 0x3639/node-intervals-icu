@@ -408,10 +408,41 @@ function topLevelObjectProperties(text) {
   if (text[i] !== '{') return null;
   let depth = 0;
   let expectKey = false;
+  // Handle a top-level `key: value` pair whose key text is `id`, starting at
+  // the index just after the key. Records literal/invalid method and url values.
+  const consumeKeyValue = (id, afterKey) => {
+    let j = afterKey;
+    while (j < n && /\s/.test(text[j])) j++;
+    if (text[j] === ':') {
+      j++;
+      while (j < n && /\s/.test(text[j])) j++;
+      if (id === 'method' || id === 'url') {
+        if (text[j] === "'" || text[j] === '"') {
+          result[id] = { literal: readString(text, j)[1].slice(1, -1) };
+        } else if (text[j] === '`') {
+          result[id] = { literal: readTemplate(text, j, false)[1].slice(1, -1) };
+        } else {
+          result[id] = { invalid: true };
+        }
+      }
+      return j;
+    }
+    // Shorthand property (`id,` or `id }`): not a `key: value` pair.
+    if (id === 'method' || id === 'url') result[id] = { invalid: true };
+    return j;
+  };
+
   while (i < n) {
     const ch = text[i];
     if (ch === "'" || ch === '"') {
-      i += readString(text, i)[0];
+      const [len, raw] = readString(text, i);
+      if (expectKey && depth === 1) {
+        // A quoted key (`"method": ...`) names the same property as a bare one.
+        expectKey = false;
+        i = consumeKeyValue(raw.slice(1, -1), i + len);
+        continue;
+      }
+      i += len;
       continue;
     }
     if (ch === '`') {
@@ -458,28 +489,8 @@ function topLevelObjectProperties(text) {
     }
     if (expectKey && depth === 1 && /[A-Za-z_$]/.test(ch)) {
       const id = /^[A-Za-z_$][A-Za-z0-9_$]*/.exec(text.slice(i))[0];
-      i += id.length;
       expectKey = false;
-      let j = i;
-      while (j < n && /\s/.test(text[j])) j++;
-      if (text[j] === ':') {
-        j++;
-        while (j < n && /\s/.test(text[j])) j++;
-        if (id === 'method' || id === 'url') {
-          if (text[j] === "'" || text[j] === '"') {
-            result[id] = { literal: readString(text, j)[1].slice(1, -1) };
-          } else if (text[j] === '`') {
-            result[id] = { literal: readTemplate(text, j, false)[1].slice(1, -1) };
-          } else {
-            result[id] = { invalid: true };
-          }
-        }
-        i = j;
-        continue;
-      }
-      // Shorthand property (`id,` or `id }`): not a `key: value` pair.
-      if (id === 'method' || id === 'url') result[id] = { invalid: true };
-      i = j;
+      i = consumeKeyValue(id, i + id.length);
       continue;
     }
     i++;

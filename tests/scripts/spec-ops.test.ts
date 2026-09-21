@@ -501,6 +501,31 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
       expect(unparsed).toEqual([]);
     });
 
+    it('a quoted "method" key is read like an identifier key (Codex round 3)', () => {
+      const files = [
+        { name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "method": "POST" });' },
+        { name: 'b.ts', text: "this.httpClient.request({ 'method': 'PUT', 'url': `/y` });" },
+        { name: 'c.ts', text: "this.httpClient.upload({ 'url': `/z${id}`, 'method': 'PUT', file });" },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['POST /x{x}', 'PUT /y', 'PUT /z{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
+    it('a quoted "method" key with a non-literal value is unparsed, not defaulted', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "method": verb });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a quoted key that is not method/url is skipped and the default still applies', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "Content-Type": "text/csv" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key)).toEqual(['GET /x{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
     it('a trailing comma with no options argument still defaults to GET', () => {
       const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`,);' }];
       const { ops, unparsed } = sdkOperations(files);
