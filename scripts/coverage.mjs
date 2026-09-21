@@ -64,18 +64,15 @@ try {
 }
 const specOps = specOperations(spec);
 const sdkFiles = await loadSdkFiles();
-const sdkOps = sdkOperations(sdkFiles);
+const { ops: sdkOps, unparsed } = sdkOperations(sdkFiles);
 const { matched, phantom, missing } = matchOperations(specOps, sdkOps);
 const specOpsCovered = new Set(matched.map((m) => m.spec.key)).size;
 
-const httpCallCount = sdkFiles.reduce(
-  (n, { text }) => n + (text.match(/httpClient\.(request|download|upload)\b/g) ?? []).length,
-  0,
-);
-if (httpCallCount !== sdkOps.length) {
-  console.error(
-    `Extraction mismatch: ${httpCallCount} httpClient calls in source but ${sdkOps.length} operations extracted. A call shape is not recognized by scripts/lib/spec-ops.mjs.`,
-  );
+if (unparsed.length > 0) {
+  console.error('Unparsed httpClient calls; extend scripts/lib/spec-ops.mjs');
+  for (const u of unparsed) {
+    console.error(`  ${u.source}: ${u.kind} — ${u.snippet}`);
+  }
   process.exit(1);
 }
 

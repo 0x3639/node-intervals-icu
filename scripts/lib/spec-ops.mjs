@@ -28,23 +28,258 @@ export function specOperations(spec) {
   return ops;
 }
 
-const REQUEST_RE = /method:\s*'(GET|POST|PUT|DELETE|PATCH)',\s*url:\s*(?:`([^`]+)`|'([^']+)')/g;
-const DOWNLOAD_RE = /\.?download\(\s*`([^`]+)`(?:\s*,\s*\{[^}]*method:\s*'(GET|POST)')?/g;
-const UPLOAD_RE = /\.?upload<[^>]*>\(\s*\{\s*url:\s*`([^`]+)`/g;
+/**
+ * Strip comments from `text` while leaving string and template-literal
+ * contents untouched (so a `//` or `/* ` inside a string, or inside a
+ * `${...}` expression nested in a template literal, is never mistaken for a
+ * comment). Single- and double-quoted strings, and backtick template
+ * literals (including their `${...}` holes, which are themselves scanned as
+ * code and so may contain further comments, strings or nested templates),
+ * are copied through verbatim; `// ...` to end of line and `/* ... *` `/`
+ * blocks are dropped.
+ */
+export function stripComments(text) {
+  let out = '';
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const ch = text[i];
+    if (ch === '/' && text[i + 1] === '/') {
+      while (i < n && text[i] !== '\n') i++;
+      continue;
+    }
+    if (ch === '/' && text[i + 1] === '*') {
+      i += 2;
+      while (i < n && !(text[i] === '*' && text[i + 1] === '/')) i++;
+      i += 2;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      const [consumed, chunk] = readString(text, i);
+      out += chunk;
+      i += consumed;
+      continue;
+    }
+    if (ch === '`') {
+      const [consumed, chunk] = readTemplate(text, i, true);
+      out += chunk;
+      i += consumed;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return out;
+}
 
-/** Extract `{ method, path }` pairs from SDK source files by pattern matching. */
+/** Read a quoted string starting at `text[i]` (the opening quote). Returns `[charsConsumed, verbatimText]`. */
+function readString(text, i) {
+  const quote = text[i];
+  const start = i;
+  i++;
+  const n = text.length;
+  while (i < n && text[i] !== quote) {
+    i += text[i] === '\\' ? 2 : 1;
+  }
+  if (i < n) i++; // closing quote
+  return [i - start, text.slice(start, i)];
+}
+
+/**
+ * Read a backtick template literal starting at `text[i]`. When `stripInner`
+ * is true, comments inside `${...}` holes are dropped (this is the
+ * `stripComments` entry point); when false, the raw text is copied through
+ * (used by the call-argument scanner, which runs on already-stripped text).
+ * Returns `[charsConsumed, text]`.
+ */
+function readTemplate(text, i, stripInner) {
+  const start = i;
+  const n = text.length;
+  i++; // opening backtick
+  while (i < n) {
+    if (text[i] === '\\') {
+      i += 2;
+      continue;
+    }
+    if (text[i] === '`') {
+      i++;
+      break;
+    }
+    if (text[i] === '$' && text[i + 1] === '{') {
+      i += 2;
+      let depth = 1;
+      while (i < n && depth > 0) {
+        if (text[i] === '{') {
+          depth++;
+          i++;
+        } else if (text[i] === '}') {
+          depth--;
+          i++;
+        } else if (stripInner && text[i] === '/' && text[i + 1] === '/') {
+          while (i < n && text[i] !== '\n') i++;
+        } else if (stripInner && text[i] === '/' && text[i + 1] === '*') {
+          i += 2;
+          while (i < n && !(text[i] === '*' && text[i + 1] === '/')) i++;
+          i += 2;
+        } else if (text[i] === "'" || text[i] === '"') {
+          i += readString(text, i)[0];
+        } else if (text[i] === '`') {
+          i += readTemplate(text, i, stripInner)[0];
+        } else {
+          i++;
+        }
+      }
+      continue;
+    }
+    i++;
+  }
+  return [i - start, text.slice(start, i)];
+}
+
+/** Skip a `<...>` type-argument list starting at `text[i]` (the `<`). Returns the index just past the matching `>`, or -1 if unbalanced. */
+function skipTypeArgs(text, i) {
+  let depth = 0;
+  const n = text.length;
+  while (i < n) {
+    if (text[i] === '<') {
+      depth++;
+      i++;
+    } else if (text[i] === '>') {
+      depth--;
+      i++;
+      if (depth === 0) return i;
+    } else {
+      i++;
+    }
+  }
+  return -1;
+}
+
+/** Find the index of the `)` matching the `(` at `text[openIndex]`, skipping over strings and templates. Returns -1 if unbalanced. */
+function findMatchingParen(text, openIndex) {
+  let depth = 1;
+  let i = openIndex + 1;
+  const n = text.length;
+  while (i < n && depth > 0) {
+    const ch = text[i];
+    if (ch === "'" || ch === '"') {
+      i += readString(text, i)[0];
+      continue;
+    }
+    if (ch === '`') {
+      i += readTemplate(text, i, false)[0];
+      continue;
+    }
+    if (ch === '(') depth++;
+    else if (ch === ')') depth--;
+    i++;
+  }
+  return depth === 0 ? i - 1 : -1;
+}
+
+const ANCHOR_RE = /httpClient\.(request|download|upload)\b/g;
+
+/**
+ * Find every `httpClient.(request|download|upload)` call in already
+ * comment-stripped `text`: an optional balanced `<...>` type-argument list
+ * followed by a balanced-paren argument list. Anything that is not actually
+ * called (no `(` follows, once an optional type-argument list is skipped)
+ * is not a call and is skipped rather than reported.
+ */
+function findCalls(text) {
+  const calls = [];
+  ANCHOR_RE.lastIndex = 0;
+  let m;
+  while ((m = ANCHOR_RE.exec(text))) {
+    const kind = m[1];
+    let i = ANCHOR_RE.lastIndex;
+    while (i < text.length && /\s/.test(text[i])) i++;
+    if (text[i] === '<') {
+      const end = skipTypeArgs(text, i);
+      if (end === -1) {
+        ANCHOR_RE.lastIndex = i + 1;
+        continue;
+      }
+      i = end;
+      while (i < text.length && /\s/.test(text[i])) i++;
+    }
+    if (text[i] !== '(') {
+      ANCHOR_RE.lastIndex = i;
+      continue;
+    }
+    const close = findMatchingParen(text, i);
+    if (close === -1) {
+      ANCHOR_RE.lastIndex = i + 1;
+      continue;
+    }
+    calls.push({ kind, argsText: text.slice(i + 1, close), fullText: text.slice(m.index, close + 1) });
+    ANCHOR_RE.lastIndex = close + 1;
+  }
+  return calls;
+}
+
+const METHOD_RE = /method:\s*(['"])(GET|POST|PUT|DELETE|PATCH)\1/;
+const URL_RE = /url:\s*(?:`([^`]*)`|'([^']*)'|"([^"]*)")/;
+const FIRST_ARG_RE = /^\s*(?:`([^`]*)`|'([^']*)'|"([^"]*)")/;
+
+/** Run a "quote or template literal" regex (with alternative capture groups) and return whichever group matched, or `undefined`. */
+function matchLiteral(re, str) {
+  const m = re.exec(str);
+  if (!m) return undefined;
+  return m[1] ?? m[2] ?? m[3];
+}
+
+function snippetOf(fullText) {
+  return fullText.replace(/\s+/g, ' ').trim().slice(0, 200);
+}
+
+/**
+ * Extract `{ method, path }` pairs from SDK source files. Anchored to real
+ * `httpClient.request/download/upload(...)` calls (see `findCalls`): every
+ * such call is either fully parsed into `ops`, or -- when its method or url
+ * cannot be extracted, e.g. a shorthand property or a value built from a
+ * variable -- reported in `unparsed` instead of silently guessed at or
+ * dropped.
+ */
 export function sdkOperations(files) {
   const ops = [];
+  const unparsed = [];
   const push = (method, rawPath, source) => {
     const path = normalizeSdkPath(rawPath);
     ops.push({ method, path, key: `${method} ${path}`, source });
   };
+
   for (const { name, text } of files) {
-    for (const m of text.matchAll(REQUEST_RE)) push(m[1], m[2] ?? m[3], name);
-    for (const m of text.matchAll(DOWNLOAD_RE)) push(m[2] ?? 'GET', m[1], name);
-    for (const m of text.matchAll(UPLOAD_RE)) push('POST', m[1], name);
+    const stripped = stripComments(text);
+    for (const { kind, argsText, fullText } of findCalls(stripped)) {
+      if (kind === 'request') {
+        const methodMatch = METHOD_RE.exec(argsText);
+        const url = matchLiteral(URL_RE, argsText);
+        if (!methodMatch || url === undefined) {
+          unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
+          continue;
+        }
+        push(methodMatch[2], url, name);
+      } else if (kind === 'download') {
+        const url = matchLiteral(FIRST_ARG_RE, argsText);
+        if (url === undefined) {
+          unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
+          continue;
+        }
+        const methodMatch = METHOD_RE.exec(argsText);
+        push(methodMatch ? methodMatch[2] : 'GET', url, name);
+      } else {
+        // upload: always POST.
+        const url = matchLiteral(URL_RE, argsText);
+        if (url === undefined) {
+          unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
+          continue;
+        }
+        push('POST', url, name);
+      }
+    }
   }
-  return ops;
+  return { ops, unparsed };
 }
 
 /**
