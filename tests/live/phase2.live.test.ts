@@ -51,6 +51,21 @@ describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
     expect(zwo.toString()).toContain('<workout_file');
   });
 
+  it('convertWorkoutForAthlete returns a Zwift file for a workout derived from a calendar event', async (ctx) => {
+    const event = await firstCalendarWorkoutEvent();
+    if (!event) ctx.skip(); // reported as skipped, not passed
+    const zwo = await liveClient().workouts.convertWorkoutForAthlete(
+      {
+        name: event!.name,
+        description: event!.description,
+        type: event!.type,
+        workout_doc: (event as any).workout_doc,
+      },
+      '.zwo',
+    );
+    expect(zwo.toString()).toContain('<workout_file');
+  });
+
   it('events.downloadWorkout returns a Zwift file for a calendar workout event', async (ctx) => {
     const event = await firstCalendarWorkoutEvent();
     if (!event) ctx.skip(); // reported as skipped, not passed

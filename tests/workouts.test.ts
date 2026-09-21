@@ -136,5 +136,18 @@ describe('IntervalsClient - Workouts', () => {
       expect(seen[1].url).toBe('/athlete/i1/download-workout.fit');
       expect((c.workouts as any).downloadWorkout).toBeUndefined();
     });
+
+    it('convertWorkoutForAthlete POSTs the workout to /athlete/{id}/download-workout{ext}', async () => {
+      const seen: any[] = [];
+      setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return Buffer.from('<workout_file/>'); });
+      const c = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const body = { name: 'Tempo', description: '- 20m 85%', type: 'Ride' };
+      const out = await c.workouts.convertWorkoutForAthlete(body, '.zwo');
+      expect(seen[0].method).toBe('POST');
+      expect(seen[0].url).toBe('/athlete/i1/download-workout.zwo');
+      expect(seen[0].data).toEqual(body);
+      expect(seen[0].responseType).toBe('arraybuffer');
+      expect(out.toString()).toBe('<workout_file/>');
+    });
   });
 });
