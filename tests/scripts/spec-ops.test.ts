@@ -72,7 +72,7 @@ describe('sdkOperations', () => {
     },
     {
       name: 'activity.service.ts',
-      text: 'return this.httpClient.download(`/athlete/${id}/download-fit-files`, params);',
+      text: "return this.httpClient.download(`/athlete/${id}/download-fit-files`, { method: 'POST', params });",
     },
     {
       name: 'workout.service.ts',
@@ -93,9 +93,9 @@ describe('sdkOperations', () => {
     expect(unparsed).toEqual([]);
     const keys = ops.map((o) => o.key).sort();
     expect(keys).toEqual([
-      'GET /athlete/{x}/download-fit-files',
       'GET /athlete/{x}/wellness',
       'GET /pace_distances',
+      'POST /athlete/{x}/download-fit-files',
       'POST /athlete/{x}/folders/{x}/import-workout',
       'POST /download-workout{x}',
     ]);
@@ -414,6 +414,45 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
     const { ops, unparsed } = sdkOperations(files);
     expect(ops.map((o) => o.key)).toEqual(['POST /activity/{x}/streams.csv']);
     expect(unparsed).toEqual([]);
+  });
+
+  describe('fail-closed on non-literal methods (Codex post-merge round-2 item 4)', () => {
+    it('a download() whose options argument is a variable, not an object literal, is unparsed (not guessed as GET)', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, opts);' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+      expect(unparsed[0].kind).toBe('download');
+    });
+
+    it('a download() whose method value is a variable is unparsed (not guessed as GET)', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { method: verb, data });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a download() whose method literal is not a known verb is unparsed', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { method: 'post' });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('an upload() whose method value is a variable is unparsed (not guessed as POST)', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.upload({ url: `/x${id}`, method, file });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+      expect(unparsed[0].kind).toBe('upload');
+    });
+
+    it('an upload() with method: someVar is unparsed', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.upload({ url: `/x${id}`, method: m, file });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
   });
 
   it('a download() whose url cannot be extracted (a bare identifier, not a literal) is unparsed', () => {

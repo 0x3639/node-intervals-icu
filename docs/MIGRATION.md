@@ -63,17 +63,22 @@ const weather = await client.weather.getForecast();
 const similar = await client.routes.getSimilarity(routeId, otherRouteId);
 
 // convertWorkout POSTs a workout body instead of downloading an existing library
-// workout by id. The body must include `workout_doc` — a body without it returns
-// HTTP 500 from the live API. A convenient source of `workout_doc` is an existing
-// calendar workout event:
-const [event] = await client.events.listEvents({ oldest: '2024-01-01', newest: '2024-12-31', category: ['WORKOUT'] });
-const zwo = await client.workouts.convertWorkout(
-  { name: event.name, description: event.description, type: event.type, workout_doc: event.workout_doc },
-  '.zwo',
-);
+// workout by id. The body type, WorkoutConversionInput, requires `name`, `description`,
+// `type` and `workout_doc` — the live API returns HTTP 500 without all four. Every
+// field on a calendar Event is optional, so narrow one before converting it:
+import type { Event, WorkoutConversionInput } from '@0x3639/intervals-icu';
 
-// Or download an existing calendar event's workout file directly by id:
-const zwo2 = await client.events.downloadWorkout(event.id, '.zwo');
+const isConvertible = (e: Event): e is Event & WorkoutConversionInput & { id: number } =>
+  typeof e.id === 'number' && !!e.name && !!e.description && !!e.type && !!e.workout_doc;
+
+const events = await client.events.listEvents({ oldest: '2024-01-01', newest: '2024-12-31', category: ['WORKOUT'] });
+const event = events.find(isConvertible);
+if (event) {
+  const zwo = await client.workouts.convertWorkout(event, '.zwo');
+
+  // Or download an existing calendar event's workout file directly by id:
+  const zwo2 = await client.events.downloadWorkout(event.id, '.zwo');
+}
 ```
 
 ---

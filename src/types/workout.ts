@@ -4,6 +4,13 @@
 import type { ActivityType } from './enums.js';
 
 /**
+ * Structured workout definition as produced by Intervals.icu (the `workout_doc` field on
+ * calendar workout events and library workouts). The vendored spec types it as an object
+ * of objects and models nothing further, so it is an open record here; it is never null.
+ */
+export type WorkoutDoc = Record<string, unknown>;
+
+/**
  * Workout in the library (folder/plan)
  */
 export interface Workout {
@@ -15,12 +22,8 @@ export interface Workout {
   type?: ActivityType | string;
   name?: string;
   description?: string;
-  /**
-   * Structured workout definition as produced by Intervals.icu (the `workout_doc` field
-   * on calendar workout events). Required by convertWorkout(); its schema is not modelled
-   * yet.
-   */
-  workout_doc?: unknown;
+  /** Structured workout definition; required by convertWorkout(). See WorkoutDoc. */
+  workout_doc?: WorkoutDoc;
   /** Raw file contents (zwo, mrc, erg, fit) */
   file_contents?: string;
   /** Base64-encoded file contents */
@@ -48,8 +51,8 @@ export interface WorkoutConversionInput extends Partial<Workout> {
   name: string;
   description: string;
   type: ActivityType | string;
-  /** Structured workout definition, e.g. a calendar workout event's `workout_doc`. */
-  workout_doc: unknown;
+  /** Structured workout definition, e.g. a calendar workout event's `workout_doc`. Never null. */
+  workout_doc: WorkoutDoc;
 }
 
 /** Extended workout data for create/update (includes file content fields) */

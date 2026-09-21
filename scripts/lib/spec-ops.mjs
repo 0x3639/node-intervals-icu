@@ -486,6 +486,19 @@ function literalMethod(props) {
 }
 
 /**
+ * Resolve the verb of a download()/upload() options object, which may omit
+ * `method` and take `fallback`. Returns `undefined` (unparsed) when the
+ * options are not an object literal, or when a `method` property is present
+ * but is not a literal, known verb -- an absent method is a default, an
+ * unextractable one is not.
+ */
+function methodOrDefault(props, fallback) {
+  if (props === null) return undefined;
+  if (props.method === undefined) return fallback;
+  return literalMethod(props);
+}
+
+/**
  * Extract `{ method, path }` pairs from SDK source files. Anchored to real
  * `httpClient.request/download/upload(...)` calls (see `findCalls`): every
  * such call is either fully parsed into `ops`, or -- when its method or url
@@ -521,17 +534,25 @@ export function sdkOperations(files) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
         }
-        const method = optsArg !== undefined ? literalMethod(topLevelObjectProperties(optsArg)) : undefined;
-        push(method ?? 'GET', url, name);
-      } else {
-        // upload: POST unless an explicit top-level `method: 'PUT'` says otherwise.
-        const uploadProps = topLevelObjectProperties(argsText);
-        const url = literalUrl(uploadProps);
-        if (url === undefined) {
+        // GET unless an object-literal options argument says otherwise; a
+        // non-literal options argument or method value is unparsed, not guessed.
+        const method = optsArg !== undefined ? methodOrDefault(topLevelObjectProperties(optsArg), 'GET') : 'GET';
+        if (method === undefined) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
         }
-        push(literalMethod(uploadProps) ?? 'POST', url, name);
+        push(method, url, name);
+      } else {
+        // upload: POST unless an explicit top-level `method: 'PUT'` says otherwise;
+        // a non-literal method value is unparsed, not guessed.
+        const uploadProps = topLevelObjectProperties(argsText);
+        const url = literalUrl(uploadProps);
+        const method = methodOrDefault(uploadProps, 'POST');
+        if (url === undefined || method === undefined) {
+          unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
+          continue;
+        }
+        push(method, url, name);
       }
     }
   }

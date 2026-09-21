@@ -67,7 +67,7 @@ export type {
   Wellness, WellnessInput,
 
   // Workout
-  Workout, WorkoutEx, WorkoutInput, WorkoutFormat, DuplicateWorkoutsDTO,
+  Workout, WorkoutEx, WorkoutInput, WorkoutDoc, WorkoutConversionInput, WorkoutFormat, DuplicateWorkoutsDTO,
 
   // Sport Settings
   SportSettings,
