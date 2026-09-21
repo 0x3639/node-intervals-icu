@@ -1,6 +1,6 @@
-# Contributing to intervals-icu
+# Contributing to @0x3639/intervals-icu
 
-Thank you for your interest in contributing to `intervals-icu`! This project aims to provide a comprehensive and easy-to-use TypeScript client for the Intervals.icu API. Every contribution helps make this library better for the entire community.
+Thank you for your interest in contributing to `@0x3639/intervals-icu`! This project aims to provide a comprehensive and easy-to-use TypeScript client for the Intervals.icu API. Every contribution helps make this library better for the entire community.
 
 ## 🌟 How You Can Help
 
@@ -34,8 +34,8 @@ Before suggesting a new feature:
 
 1. Fork and clone the repository:
 ```bash
-git clone https://github.com/YOUR_USERNAME/intervals-icu.git
-cd intervals-icu
+git clone https://github.com/YOUR_USERNAME/node-intervals-icu.git
+cd node-intervals-icu
 ```
 
 2. Install dependencies:
@@ -52,6 +52,14 @@ npm run build
 ```bash
 npx tsx examples/basic-usage.ts
 ```
+
+## 🧰 Repo scripts
+
+- `npm run spec:fetch` — fetch the live Intervals.icu OpenAPI document and write it to `spec/openapi.json`
+- `npm run coverage:api` — diff the SDK's HTTP calls against the vendored spec. Fails only on regressions: a new SDK operation not in the spec and not in `spec/coverage-baseline.json` (16 already-known phantom ops), a previously-covered spec operation that is no longer matched (lost coverage), or a baseline entry that is stale (a phantom op that's no longer phantom, or a newly-covered spec op not yet recorded — either must be added so the baseline stays accurate). Use `npm run coverage:api -- --write-baseline` (or `node scripts/coverage.mjs --write-baseline`) to regenerate the baseline after resolving an entry, and `node scripts/coverage.mjs --strict` to ignore the baseline and fail on any phantom or missing op (the eventual 149/149 gate)
+- `npm run spec:drift` — compare the live spec against the vendored one and report drift
+- `npm run test:live` — run the live test suite against the real API (needs `INTERVALS_API_KEY` and `INTERVALS_ATHLETE_ID`)
+- `npm run audit:probe` — probe SDK routes that disagree with the spec against the live API (needs the same credentials). Default mode sends only GET requests; set `INTERVALS_LIVE_WRITE=1` to also run probes whose SDK or spec form uses POST/PUT/DELETE
 
 ## 📝 Pull Request Process
 
@@ -82,7 +90,7 @@ This project uses TypeScript and follows these conventions:
 
 ## 🧪 Testing
 
-While we don't have automated tests yet, please test your changes manually:
+Automated tests live in `tests/` (unit tests with mocked axios) and `tests/scripts/` (script libraries). Run `npm test`. Live API tests are separate; see `tests/README.md`.
 
 - Test against a real Intervals.icu API key (or mock appropriately)
 - Verify that existing functionality still works
@@ -116,4 +124,4 @@ Feel free to open an issue with your question, or reach out to the maintainer. W
 
 ## 🙏 Thank You!
 
-Every contribution, no matter how small, is valuable and appreciated. Thank you for helping make `intervals-icu` better!
+Every contribution, no matter how small, is valuable and appreciated. Thank you for helping make `@0x3639/intervals-icu` better!

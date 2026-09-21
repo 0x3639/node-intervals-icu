@@ -11,5 +11,18 @@
   "rules": {
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/explicit-module-boundary-types": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["*.mjs"],
+      "parserOptions": {
+        "sourceType": "module",
+        "ecmaVersion": 2022
+      },
+      "env": {
+        "node": true,
+        "es2022": true
+      }
+    }
+  ]
 }

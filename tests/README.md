@@ -129,3 +129,15 @@ describe('IntervalsClient - Feature', () => {
   });
 });
 ```
+
+## Live tests
+
+`tests/live/*.live.test.ts` call the real Intervals.icu API. They are excluded from `npm test` and CI, and skip themselves unless both variables are set:
+
+```bash
+INTERVALS_API_KEY=your-key INTERVALS_ATHLETE_ID=i12345 npm run test:live
+```
+
+`INTERVALS_LIVE_WRITE=1` is reserved for future tests that create and then delete data; no such tests exist yet. It also enables the non-GET probes in `npm run audit:probe`. Never point these at an account whose data you cannot afford to lose.
+
+`npm run audit:probe` (see `scripts/audit-probe.mjs`) uses the same `INTERVALS_LIVE_WRITE=1` flag: by default it sends only GET requests, and skips any probe whose SDK or spec form uses POST/PUT/DELETE unless that flag is set.

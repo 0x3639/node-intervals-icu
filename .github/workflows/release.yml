@@ -39,10 +39,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           if npm view "$name@$version" version --registry=https://registry.npmjs.org >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
-            echo "intervals-icu@$version already on npmjs - CI will not republish."
+            echo "$name@$version already on npmjs - CI will not republish."
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
-            echo "intervals-icu@$version not on npmjs. Publish via ./release.sh (CI does not publish to npmjs)."
+            echo "$name@$version not on npmjs. Publish via ./release.sh (CI does not publish to npmjs)."
           fi
 
   github-packages:
@@ -58,7 +58,7 @@ jobs:
         with:
           node-version: 20
           registry-url: https://npm.pkg.github.com
-          scope: "@paladini"
+          scope: "@0x3639"
 
       - name: Read package metadata
         id: package
@@ -79,16 +79,15 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          if npm view "@paladini/intervals-icu@${{ steps.package.outputs.version }}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+          if npm view "@0x3639/intervals-icu@${{ steps.package.outputs.version }}" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
           else
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish to GitHub Packages as @paladini/intervals-icu
+      - name: Publish to GitHub Packages
         if: steps.ghp.outputs.published == 'false'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm pkg set name=@paladini/intervals-icu
           npm publish --access public --tag "${{ steps.package.outputs.dist_tag }}"
