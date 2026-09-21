@@ -139,3 +139,5 @@ INTERVALS_API_KEY=your-key INTERVALS_ATHLETE_ID=i12345 npm run test:live
 ```
 
 Set `INTERVALS_LIVE_WRITE=1` as well to enable tests that create and then delete data. Never point these at an account whose data you cannot afford to lose.
+
+`npm run audit:probe` (see `scripts/audit-probe.mjs`) uses the same `INTERVALS_LIVE_WRITE=1` flag: by default it sends only GET requests, and skips any probe whose SDK or spec form uses POST/PUT/DELETE unless that flag is set.
