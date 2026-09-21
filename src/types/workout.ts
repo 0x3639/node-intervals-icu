@@ -37,6 +37,21 @@ export interface Workout {
   [key: string]: unknown;
 }
 
+/**
+ * Body for `workouts.convertWorkout()` / `convertWorkoutForAthlete()`.
+ *
+ * The live API returns HTTP 500 unless `name`, `description`, `type` and `workout_doc`
+ * are all present (verified 2026-09-21, see AUDIT.md), so they are required here.
+ * Any other `Workout` field may be included.
+ */
+export interface WorkoutConversionInput extends Partial<Workout> {
+  name: string;
+  description: string;
+  type: ActivityType | string;
+  /** Structured workout definition, e.g. a calendar workout event's `workout_doc`. */
+  workout_doc: unknown;
+}
+
 /** Extended workout data for create/update (includes file content fields) */
 export type WorkoutEx = Workout;
 

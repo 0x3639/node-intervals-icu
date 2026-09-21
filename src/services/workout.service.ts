@@ -1,5 +1,5 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
-import type { Workout, WorkoutInput, WorkoutFormat, DuplicateWorkoutsDTO, PaginationOptions } from '../types/index.js';
+import type { Workout, WorkoutInput, WorkoutConversionInput, WorkoutFormat, DuplicateWorkoutsDTO, PaginationOptions } from '../types/index.js';
 
 /**
  * Service for library workout operations (workout templates in folders/plans)
@@ -57,17 +57,17 @@ export class WorkoutService {
    * The workout is sent in the body; it does not need to exist in the library.
    * Uses the global endpoint (no athlete-specific settings such as FTP).
    *
-   * A minimal body of just `{ name, description, type }` returns HTTP 500 on the live API
-   * (verified against the real service). The minimum body confirmed to convert successfully
-   * also includes `workout_doc` (e.g. taken from an existing calendar workout event's
-   * `workout_doc` field): `{ name, description, type, workout_doc }`.
+   * The live API returns HTTP 500 unless the body carries `name`, `description`, `type`
+   * and `workout_doc` (verified against the real service), so `WorkoutConversionInput`
+   * requires all four. A convenient source of `workout_doc` is an existing calendar
+   * workout event's `workout_doc` field.
    */
-  async convertWorkout(workout: Partial<Workout>, format: WorkoutFormat): Promise<Buffer> {
+  async convertWorkout(workout: WorkoutConversionInput, format: WorkoutFormat): Promise<Buffer> {
     return this.httpClient.download(`/download-workout${format}`, { method: 'POST', data: workout });
   }
 
   /** Same as convertWorkout but resolves the athlete's own settings (FTP, zones). */
-  async convertWorkoutForAthlete(workout: Partial<Workout>, format: WorkoutFormat, athleteId?: string): Promise<Buffer> {
+  async convertWorkoutForAthlete(workout: WorkoutConversionInput, format: WorkoutFormat, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.download(`/athlete/${id}/download-workout${format}`, { method: 'POST', data: workout });
   }

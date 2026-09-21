@@ -84,8 +84,8 @@ the only concrete implementation. Changes:
   `ActivityService` (curves, best-efforts, hr-load-model) stay put; the new
   service holds only the 13 new operations to avoid a breaking move.
 - `FitnessService` is removed; `athletes.getSummary` replaces it.
-- `spec/openapi.json` is the vendored contract. `scripts/coverage.ts` diffs
-  the SDK against it. `scripts/check-spec-drift.ts` refetches the live spec and
+- `spec/openapi.json` is the vendored contract. `scripts/coverage.mjs` diffs
+  the SDK against it. `scripts/check-spec-drift.mjs` refetches the live spec and
   reports a diff.
 - `src/types/generated.ts` is produced by `openapi-typescript` from the
   vendored spec and committed. Hand-written types in `src/types/*.ts` stay

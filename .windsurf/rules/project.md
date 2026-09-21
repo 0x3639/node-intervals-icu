@@ -4,7 +4,7 @@ description: Core project rules for the intervals-icu npm library (TypeScript cl
 
 # node-intervals-icu — TypeScript Client Library for Intervals.icu
 
-Open-source npm package (`intervals-icu`) providing a comprehensive, fully-typed TypeScript client for the [Intervals.icu](https://intervals.icu) API. Currently at **v3.0.0-alpha.1** with 15 services, 100+ methods, and ~100 exported types.
+Open-source npm package (`@0x3639/intervals-icu`) providing a comprehensive, fully-typed TypeScript client for the [Intervals.icu](https://intervals.icu) API. Currently at **v3.0.0-alpha.1** with 15 services, 100+ methods, and ~100 exported types.
 
 ## Stack
 - **Language**: TypeScript 5.3+ (strict mode)
