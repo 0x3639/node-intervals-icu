@@ -7,11 +7,13 @@ import type { Chat, Message, NewMessage, SendResponse } from '../types/index.js'
 export class ChatService {
   constructor(
     private httpClient: IHttpClient,
+    private defaultAthleteId: string,
   ) {}
 
-  /** List all chats for the authenticated user */
-  async listChats(): Promise<Chat[]> {
-    return this.httpClient.request<Chat[]>({ method: 'GET', url: `/chats` });
+  /** List chats (including groups) for the athlete, most recently active first */
+  async listChats(athleteId?: string): Promise<Chat[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Chat[]>({ method: 'GET', url: `/athlete/${id}/chats` });
   }
 
   /** List messages in a chat */

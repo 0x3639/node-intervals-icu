@@ -2,7 +2,7 @@ import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   Activity, ActivityInput, ListActivitiesOptions, UploadActivityOptions,
   UploadResponse, ActivityId, IntervalsDTO, Interval, ActivityStream,
-  UpdateStreamsResult, MapData, ActivityWeather, ActivityWeatherSummary,
+  UpdateStreamsResult, MapData, ActivityWeatherSummary,
   BestEfforts, PowerVsHRPlot, HRLoadModel, IcuSegment,
   Message, NewActivityMsg, NewMsg,
 } from '../types/index.js';
@@ -154,11 +154,6 @@ export class ActivityService {
   /** Get map data (bounds, latlngs, route, weather) */
   async getMap(activityId: string): Promise<MapData> {
     return this.httpClient.request<MapData>({ method: 'GET', url: `/activity/${activityId}/map` });
-  }
-
-  /** Get activity weather */
-  async getWeather(activityId: string): Promise<ActivityWeather> {
-    return this.httpClient.request<ActivityWeather>({ method: 'GET', url: `/activity/${activityId}/weather` });
   }
 
   /** Get activity weather summary */

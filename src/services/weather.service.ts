@@ -11,9 +11,9 @@ export class WeatherService {
   ) {}
 
   /** Get weather forecast for the athlete's location */
-  async getWeather(athleteId?: string): Promise<WeatherDTO> {
+  async getForecast(athleteId?: string): Promise<WeatherDTO> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<WeatherDTO>({ method: 'GET', url: `/athlete/${id}/weather` });
+    return this.httpClient.request<WeatherDTO>({ method: 'GET', url: `/athlete/${id}/weather-forecast` });
   }
 
   /** Get weather configuration (location) */

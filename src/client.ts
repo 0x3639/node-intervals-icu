@@ -103,7 +103,7 @@ export class IntervalsClient {
     this.sportSettings = new SportSettingsService(this.httpClient, athleteId);
     this.folders = new FolderService(this.httpClient, athleteId);
     this.gear = new GearService(this.httpClient, athleteId);
-    this.chats = new ChatService(this.httpClient);
+    this.chats = new ChatService(this.httpClient, athleteId);
     this.weather = new WeatherService(this.httpClient, athleteId);
     this.routes = new RouteService(this.httpClient, athleteId);
     this.customItems = new CustomItemService(this.httpClient, athleteId);

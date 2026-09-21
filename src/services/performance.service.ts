@@ -2,6 +2,7 @@ import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   PowerCurveSet, PaceCurveSet, HRCurveSet, PowerHRCurve,
   ActivityPowerCurvePayload, ActivityHRCurvePayload,
+  ActivityType, ActivityFilter,
 } from '../types/index.js';
 
 interface CurveOptions {
@@ -80,9 +81,12 @@ export class PerformanceService {
 
   // ── Power vs HR ──
 
-  /** Get power vs HR curve for an athlete over a date range */
-  async getPowerVsHR(options?: { oldest?: string; newest?: string }, athleteId?: string): Promise<PowerHRCurve> {
+  /** Get the athlete's power vs heart rate curve for a date range */
+  async getPowerHRCurve(
+    options: { start: string; end: string; type?: ActivityType; filters?: ActivityFilter[] },
+    athleteId?: string,
+  ): Promise<PowerHRCurve> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PowerHRCurve>({ method: 'GET', url: `/athlete/${id}/power-vs-hr`, params: options as Record<string, unknown> });
+    return this.httpClient.request<PowerHRCurve>({ method: 'GET', url: `/athlete/${id}/power-hr-curve`, params: options as Record<string, unknown> });
   }
 }

@@ -28,9 +28,9 @@ export class RouteService {
     return this.httpClient.request<AthleteRoute>({ method: 'PUT', url: `/athlete/${id}/routes/${routeId}`, data });
   }
 
-  /** Get similar routes */
-  async getSimilarities(routeId: number, athleteId?: string): Promise<RouteSimilarity[]> {
+  /** How similar is this route to another? */
+  async getSimilarity(routeId: number, otherRouteId: number, athleteId?: string): Promise<RouteSimilarity> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<RouteSimilarity[]>({ method: 'GET', url: `/athlete/${id}/routes/${routeId}/similarities` });
+    return this.httpClient.request<RouteSimilarity>({ method: 'GET', url: `/athlete/${id}/routes/${routeId}/similarity/${otherRouteId}` });
   }
 }
