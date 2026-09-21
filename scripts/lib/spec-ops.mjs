@@ -553,6 +553,12 @@ export function specPathRegex(specPath) {
     const ch = specPath[i];
     if (ch === '{') {
       const end = specPath.indexOf('}', i);
+      if (end === -1) {
+        // Unclosed brace: treat as a literal so the scan always advances.
+        out += '\\{';
+        i += 1;
+        continue;
+      }
       const inline = i > 0 && specPath[i - 1] !== '/';
       out += inline ? '(\\.[A-Za-z0-9]+|\\{x\\})?' : '\\{x\\}';
       i = end + 1;

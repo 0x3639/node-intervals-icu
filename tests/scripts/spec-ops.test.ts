@@ -108,6 +108,12 @@ describe('sdkOperations', () => {
 });
 
 describe('specPathRegex', () => {
+  it('treats an unclosed brace as a literal instead of looping forever', () => {
+    const re = specPathRegex('/athlete/{id/events');
+    expect(re.test('/athlete/{id/events')).toBe(true);
+    expect(re.test('/athlete/{x}/events')).toBe(false);
+  });
+
   it('matches path params and optional inline extension', () => {
     const re = specPathRegex('/athlete/{id}/wellness{ext}');
     expect(re.test('/athlete/{x}/wellness')).toBe(true);

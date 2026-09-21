@@ -22,7 +22,7 @@ Before publishing, ensure you have:
    npm login
    ```
 3. **Repository Access**: Write access to the GitHub repository
-4. **Node.js**: Version 16.0.0 or higher (as specified in `package.json`)
+4. **Node.js**: Version 18.0.0 or higher (as specified in `package.json`)
 
 ## Pre-Publishing Checklist
 
