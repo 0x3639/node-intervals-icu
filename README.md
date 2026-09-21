@@ -6,7 +6,7 @@
 [![license](https://img.shields.io/npm/l/%400x3639%2Fintervals-icu)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
-> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — 114 of 149 spec operations covered, 0 SDK routes outside the spec (see [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
+> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — 114 of 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
