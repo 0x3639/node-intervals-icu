@@ -121,6 +121,12 @@ describe('specPathRegex', () => {
     expect(re.test('/athlete/{x}/workouts.zip')).toBe(true);
     expect(re.test('/athlete/{x}/workouts')).toBe(false);
   });
+
+  it('(Codex round-4 item 2) a whole-segment {param} only matches the normalized {x} placeholder, not a hard-coded value', () => {
+    const re = specPathRegex('/athlete/{id}/events');
+    expect(re.test('/athlete/{x}/events')).toBe(true);
+    expect(re.test('/athlete/not-an-id/events')).toBe(false);
+  });
 });
 
 describe('matchOperations', () => {
@@ -168,6 +174,20 @@ describe('matchOperations', () => {
     expect(result.matched[0].spec.key).toBe('PUT /athlete/{id}/events/bulk-delete');
     expect(result.phantom).toEqual([]);
     expect(result.missing.map((m) => m.key)).toEqual(['PUT /athlete/{id}/events/{eventId}']);
+  });
+
+  it('(Codex round-4 item 2) a hard-coded value in place of a whole-segment param does not satisfy the spec param: the SDK call is phantom and the spec op is missing', () => {
+    const spec = {
+      paths: { '/api/v1/athlete/{id}/events': { get: { tags: ['Events'], summary: 'List events' } } },
+    };
+    const specOps = specOperations(spec);
+    const { ops: sdk } = sdkOperations([
+      { name: 'events.service.ts', text: "this.httpClient.request({ method: 'GET', url: '/athlete/not-an-id/events' })" },
+    ]);
+    const result = matchOperations(specOps, sdk);
+    expect(result.matched).toEqual([]);
+    expect(result.phantom.map((p) => p.key)).toEqual(['GET /athlete/not-an-id/events']);
+    expect(result.missing.map((m) => m.key)).toEqual(['GET /athlete/{id}/events']);
   });
 });
 

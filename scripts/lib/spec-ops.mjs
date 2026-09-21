@@ -539,9 +539,12 @@ export function sdkOperations(files) {
 
 /**
  * Build a regex that accepts an SDK-normalized path for a given spec path.
- * `/{param}` segments accept any non-slash text (including the `{x}` placeholder).
- * An inline `{ext}` (a param not preceded by `/`) accepts nothing, a literal
- * `.csv`-style extension, or the `{x}` placeholder.
+ * A whole-segment `/{param}` matches only the normalized SDK placeholder
+ * `{x}` (see `normalizeSdkPath`) -- not an arbitrary hard-coded value -- so
+ * a real `${...}` template hole is required at that position, not a literal
+ * segment that merely happens to be in the right place. An inline `{ext}`
+ * (a param not preceded by `/`) accepts nothing, a literal `.csv`-style
+ * extension, or the `{x}` placeholder.
  */
 export function specPathRegex(specPath) {
   let out = '';
@@ -551,7 +554,7 @@ export function specPathRegex(specPath) {
     if (ch === '{') {
       const end = specPath.indexOf('}', i);
       const inline = i > 0 && specPath[i - 1] !== '/';
-      out += inline ? '(\\.[A-Za-z0-9]+|\\{x\\})?' : '[^/]+';
+      out += inline ? '(\\.[A-Za-z0-9]+|\\{x\\})?' : '\\{x\\}';
       i = end + 1;
       continue;
     }
