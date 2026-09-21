@@ -1,3 +1,83 @@
+# Migrating to v3
+
+This guide covers all breaking changes when upgrading from v2.x to v3.x. Every change here comes from fixing SDK routes that disagreed with the live Intervals.icu API — see [AUDIT.md](../AUDIT.md) for the live verdicts behind each one.
+
+## Removed methods
+
+| Removed method | Replacement |
+|---|---|
+| `client.fitness.getFitness()` | `client.athletes.getSummary()` |
+| `client.fitness.getSummaries()` | `client.athletes.getSummary()` |
+| `client.search.searchAthletes()` | none — the route never existed |
+| `client.wellness.deleteWellness()` | none — the API has no DELETE mapping for wellness records |
+| `client.activities.getWeather()` | `client.activities.getWeatherSummary()` (it was a duplicate) |
+| `client.workouts.downloadWorkout()` | `client.workouts.convertWorkout()`, or `client.events.downloadWorkout(eventId, format)` for a calendar event |
+| `client.workouts.downloadWorkoutForAthlete()` | `client.workouts.convertWorkoutForAthlete()`, or `client.events.downloadWorkout(eventId, format)` |
+
+## Renamed / fixed methods
+
+| Before | After |
+|---|---|
+| `client.chats.listChats()` — called `GET /chats` (404) | `client.chats.listChats()` — now calls `GET /athlete/{id}/chats` |
+| `client.performance.getPowerVsHR()` | `client.performance.getPowerHRCurve({ start, end })` — calls `/power-hr-curve` |
+| `client.weather.getWeather()` | `client.weather.getForecast()` — calls `/weather-forecast` |
+| `client.routes.getSimilarities(routeId)` — returned a list | `client.routes.getSimilarity(routeId, otherRouteId)` — returns a single `RouteSimilarity` |
+| `client.activities.downloadFitFiles()` — sent GET (405) | `client.activities.downloadFitFiles()` — now sends POST |
+| `client.activities.updateStreamsCSV()` — sent POST (405) | `client.activities.updateStreamsCSV()` — now sends PUT |
+
+Note: `client.activities.getPowerVsHR(activityId)` is unrelated and unchanged — it's a per-activity endpoint that was always spec-valid, distinct from the removed `client.performance.getPowerVsHR()`.
+
+## `IHttpClient.download()` signature change
+
+`download(url, options?)` replaces `download(url, params?)`. This only matters if you implement a custom `IHttpClient` — the built-in `AxiosHttpClient` handles the change transparently:
+
+```typescript
+// v2
+download(url: string, params?: Record<string, unknown>): Promise<Buffer>;
+
+// v3
+interface DownloadOptions {
+  method?: 'GET' | 'POST';
+  params?: Record<string, unknown> | URLSearchParams; // URLSearchParams lets a key repeat, e.g. ids=a&ids=b
+  data?: unknown; // JSON body, only meaningful with POST
+}
+download(url: string, options?: DownloadOptions): Promise<Buffer>;
+```
+
+`UploadConfig` (used by `upload()`) gained the same idea: an optional `method?: 'POST' | 'PUT'`, defaulting to `POST`.
+
+## Quick migration example
+
+```typescript
+// ─── Before (v2) ───
+const fitness = await client.fitness.getFitness({ oldest: '2024-01-01', newest: '2024-12-31' });
+const curve = await client.performance.getPowerVsHR();
+const weather = await client.weather.getWeather();
+const similar = await client.routes.getSimilarities(routeId);
+const zwo = await client.workouts.downloadWorkout(workoutId, '.zwo');
+
+// ─── After (v3) ───
+const summary = await client.athletes.getSummary({ start: '2024-01-01', end: '2024-12-31' });
+const curve = await client.performance.getPowerHRCurve({ start: '2024-01-01', end: '2024-12-31' });
+const weather = await client.weather.getForecast();
+const similar = await client.routes.getSimilarity(routeId, otherRouteId);
+
+// convertWorkout POSTs a workout body instead of downloading an existing library
+// workout by id. The body must include `workout_doc` — a body without it returns
+// HTTP 500 from the live API. A convenient source of `workout_doc` is an existing
+// calendar workout event:
+const [event] = await client.events.listEvents({ oldest: '2024-01-01', newest: '2024-12-31', category: ['WORKOUT'] });
+const zwo = await client.workouts.convertWorkout(
+  { name: event.name, description: event.description, type: event.type, workout_doc: event.workout_doc },
+  '.zwo',
+);
+
+// Or download an existing calendar event's workout file directly by id:
+const zwo2 = await client.events.downloadWorkout(event.id, '.zwo');
+```
+
+---
+
 # Migrating to intervals-icu v2
 
 This guide covers all breaking changes when upgrading from v1.x to v2.x.

@@ -1,5 +1,7 @@
 # API audit
 
+Status: all 16 rows resolved in 3.0.0-alpha.1 (Phase 2). Re-run the probe after any change to these routes.
+
 Generated 2026-09-21 by `scripts/audit-probe.mjs` against the live API. Each row is an SDK operation that
 disagrees with `spec/openapi.json`. Default mode sends only GET requests: a probe whose SDK or spec form
 uses POST/PUT/DELETE is skipped unless `INTERVALS_LIVE_WRITE=1` is set. Even in write mode, those probes

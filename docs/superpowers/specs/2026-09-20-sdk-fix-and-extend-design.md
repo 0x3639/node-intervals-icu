@@ -83,7 +83,7 @@ the only concrete implementation. Changes:
   `client.analytics`. Activity-level analytics that already live in
   `ActivityService` (curves, best-efforts, hr-load-model) stay put; the new
   service holds only the 13 new operations to avoid a breaking move.
-- `FitnessService` is removed unless Phase 1 shows its two routes work live.
+- `FitnessService` is removed; `athletes.getSummary` replaces it.
 - `spec/openapi.json` is the vendored contract. `scripts/coverage.ts` diffs
   the SDK against it. `scripts/check-spec-drift.ts` refetches the live spec and
   reports a diff.
@@ -119,7 +119,7 @@ the only concrete implementation. Changes:
 |---|---|---|
 | 0 | vendored spec, coverage script, CI, drift job, package rename | 3.0.0-alpha.0 |
 | 1 | live test harness, `AUDIT.md` with 16 verdicts (needs user's API key) | unchanged |
-| 2 | verb fixes, path fixes, deletions, regression tests | 3.0.0-alpha.1 |
+| 2 | verb fixes, path fixes, deletions, regression tests | done (3.0.0-alpha.1) — 114 of 149 spec operations covered, 0 phantom SDK ops, 3 allowlisted |
 | 3 | five PRs adding 45 ops, coverage gate tightened to 149/149 | 3.0.0-beta.x |
 | 4 | changelog, migration guide, docs, `.windsurf/rules` refresh, tag | 3.0.0 |
 
