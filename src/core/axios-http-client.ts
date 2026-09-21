@@ -45,6 +45,11 @@ export class AxiosHttpClient implements IHttpClient {
       baseURL: config.baseURL || 'https://intervals.icu/api/v1',
       timeout: config.timeout || 30000,
       headers,
+      // Serialize array query params as repeated keys (tags=a&tags=b) rather than
+      // axios's default bracket/index notation (tags[0]=a&tags[1]=b). The
+      // Intervals.icu API is a Spring backend, which binds repeated keys to a
+      // List/array parameter but does not understand indexed or bracketed keys.
+      paramsSerializer: { indexes: null },
     });
 
     this.setupInterceptors();

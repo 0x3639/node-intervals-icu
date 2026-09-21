@@ -64,6 +64,18 @@ describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
   it('getSummary responds', async () => {
     expect(Array.isArray(await liveClient().athletes.getSummary({ start: yearAgo(), end: today() }))).toBe(true);
   });
+  // Proves the `tags` array param binds without a server error under the repeated-key
+  // encoding (paramsSerializer: { indexes: null }); a nonexistent tag legitimately
+  // returns an empty (or unfiltered, depending on API behavior) array, so we only
+  // assert the shape, not emptiness.
+  it('getSummary with a tags array param responds', async () => {
+    const result = await liveClient().athletes.getSummary({
+      start: yearAgo(),
+      end: today(),
+      tags: ['nonexistent-tag-xyz'],
+    });
+    expect(Array.isArray(result)).toBe(true);
+  });
   it('getPowerHRCurve responds', async () => {
     expect(await liveClient().performance.getPowerHRCurve({ start: yearAgo(), end: today() })).toBeTypeOf('object');
   });

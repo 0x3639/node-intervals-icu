@@ -6,6 +6,7 @@
 // phantom list before any check runs, including --strict, since --strict is a stricter
 // check of the SAME comparison, not a bypass of routes we've already verified are real.
 // A stale allowlist entry (no longer phantom) fails the run in every mode.
+// The gate matches method + path only; query-parameter names and encodings are not checked.
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

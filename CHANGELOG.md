@@ -22,6 +22,7 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - `client.performance.getPowerVsHR()` renamed to `getPowerHRCurve({ start, end })` and calls `/power-hr-curve`.
 - `client.weather.getWeather()` renamed to `getForecast()` and calls `/weather-forecast`.
 - `client.routes.getSimilarities(routeId)` replaced by `getSimilarity(routeId, otherRouteId)` returning one `RouteSimilarity`.
+- `getPowerHRCurve` does not yet accept `filters`; object-valued query arrays have no verified encoding.
 - `client.activities.downloadFitFiles()` sends POST; `updateStreamsCSV()` sends PUT.
 - `IHttpClient.download(url, options)` replaces `download(url, params)`: query params go in `options.params` (object or `URLSearchParams`), `options.method` may be `POST`, `options.data` is a JSON body. `upload()` accepts `method`. Breaking only for custom `IHttpClient` implementations.
 

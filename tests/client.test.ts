@@ -82,6 +82,16 @@ describe('IntervalsClient - Core Functionality', () => {
         })
       );
     });
+
+    it('serializes array query params as repeated keys (no indexes/brackets)', () => {
+      const client = new IntervalsClient({
+        apiKey: 'test-api-key',
+      });
+
+      expect(client).toBeDefined();
+      const createCall = mockedAxios.create.mock.calls[0][0];
+      expect(createCall.paramsSerializer).toEqual({ indexes: null });
+    });
   });
 
   describe('Error Handling', () => {
