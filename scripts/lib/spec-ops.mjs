@@ -136,6 +136,113 @@ function readTemplate(text, i, stripInner) {
   return [i - start, text.slice(start, i)];
 }
 
+/** Mask the interior of a quoted string starting at `text[i]` (the opening quote): the quote characters are kept, every other character (including an escape's backslash and the character it escapes) becomes a single space, so the result has the same length as the consumed input. Returns `[charsConsumed, maskedText]`. */
+function maskQuotedAt(text, i) {
+  const quote = text[i];
+  const start = i;
+  i++;
+  const n = text.length;
+  let out = quote;
+  while (i < n && text[i] !== quote) {
+    if (text[i] === '\\') {
+      out += '  ';
+      i += 2;
+    } else {
+      out += ' ';
+      i++;
+    }
+  }
+  if (i < n) {
+    out += text[i];
+    i++;
+  }
+  return [i - start, out];
+}
+
+/** Mask a backtick template literal starting at `text[i]`: literal text between the backticks and outside any `${...}` hole is blanked to spaces, but a hole's contents (which may themselves contain code, including nested strings/templates) are copied through verbatim so they still count as code. Returns `[charsConsumed, maskedText]`. */
+function maskTemplateAt(text, i) {
+  const start = i;
+  const n = text.length;
+  let out = '`';
+  i++; // opening backtick
+  while (i < n) {
+    if (text[i] === '\\') {
+      out += '  ';
+      i += 2;
+      continue;
+    }
+    if (text[i] === '`') {
+      out += '`';
+      i++;
+      break;
+    }
+    if (text[i] === '$' && text[i + 1] === '{') {
+      out += '${';
+      i += 2;
+      let depth = 1;
+      while (i < n && depth > 0) {
+        if (text[i] === '{') {
+          depth++;
+          out += text[i];
+          i++;
+        } else if (text[i] === '}') {
+          depth--;
+          out += text[i];
+          i++;
+        } else if (text[i] === "'" || text[i] === '"') {
+          const [consumed, masked] = maskQuotedAt(text, i);
+          out += masked;
+          i += consumed;
+        } else if (text[i] === '`') {
+          const [consumed, masked] = maskTemplateAt(text, i);
+          out += masked;
+          i += consumed;
+        } else {
+          out += text[i];
+          i++;
+        }
+      }
+      continue;
+    }
+    out += ' ';
+    i++;
+  }
+  return [i - start, out];
+}
+
+/**
+ * Return a same-length copy of `text` where the contents of every
+ * single-quoted, double-quoted, and backtick template-literal string are
+ * replaced by spaces (quote/backtick characters are kept, and a template's
+ * `${...}` holes are copied through verbatim, since they are code). This
+ * guarantees an anchor pattern (e.g. `httpClient.request(`) can never be
+ * "found" inside string data -- only in real code -- while offsets into the
+ * masked text remain valid offsets into the original text.
+ */
+export function maskStrings(text) {
+  let out = '';
+  let i = 0;
+  const n = text.length;
+  while (i < n) {
+    const ch = text[i];
+    if (ch === "'" || ch === '"') {
+      const [consumed, masked] = maskQuotedAt(text, i);
+      out += masked;
+      i += consumed;
+      continue;
+    }
+    if (ch === '`') {
+      const [consumed, masked] = maskTemplateAt(text, i);
+      out += masked;
+      i += consumed;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return out;
+}
+
 /** Skip a `<...>` type-argument list starting at `text[i]` (the `<`). Returns the index just past the matching `>`, or -1 if unbalanced. */
 function skipTypeArgs(text, i) {
   let depth = 0;
@@ -180,46 +287,50 @@ function findMatchingParen(text, openIndex) {
 const ANCHOR_RE = /httpClient\.(request|download|upload)\b/g;
 
 /**
- * Find every `httpClient.(request|download|upload)` call in already
- * comment-stripped `text`: an optional balanced `<...>` type-argument list
- * followed by a balanced-paren argument list. Anything that is not actually
- * called (no `(` follows, once an optional type-argument list is skipped)
- * is not a call and is skipped rather than reported.
+ * Find every `httpClient.(request|download|upload)` call anchored in
+ * `masked` (the comment-stripped source with string/template contents
+ * blanked by `maskStrings` -- see that function -- so the anchor can never
+ * be "found" inside string data): an optional balanced `<...>` type-argument
+ * list followed by a balanced-paren argument list. Anything that is not
+ * actually called (no `(` follows, once an optional type-argument list is
+ * skipped) is not a call and is skipped rather than reported. `original` is
+ * the same-length, un-masked (but still comment-stripped) text that
+ * `argsText`/`fullText` are sliced from, so real string/template contents
+ * are available for property extraction.
  */
-function findCalls(text) {
+function findCalls(masked, original) {
   const calls = [];
   ANCHOR_RE.lastIndex = 0;
   let m;
-  while ((m = ANCHOR_RE.exec(text))) {
+  while ((m = ANCHOR_RE.exec(masked))) {
     const kind = m[1];
     let i = ANCHOR_RE.lastIndex;
-    while (i < text.length && /\s/.test(text[i])) i++;
-    if (text[i] === '<') {
-      const end = skipTypeArgs(text, i);
+    while (i < masked.length && /\s/.test(masked[i])) i++;
+    if (masked[i] === '<') {
+      const end = skipTypeArgs(masked, i);
       if (end === -1) {
         ANCHOR_RE.lastIndex = i + 1;
         continue;
       }
       i = end;
-      while (i < text.length && /\s/.test(text[i])) i++;
+      while (i < masked.length && /\s/.test(masked[i])) i++;
     }
-    if (text[i] !== '(') {
+    if (masked[i] !== '(') {
       ANCHOR_RE.lastIndex = i;
       continue;
     }
-    const close = findMatchingParen(text, i);
+    const close = findMatchingParen(masked, i);
     if (close === -1) {
       ANCHOR_RE.lastIndex = i + 1;
       continue;
     }
-    calls.push({ kind, argsText: text.slice(i + 1, close), fullText: text.slice(m.index, close + 1) });
+    calls.push({ kind, argsText: original.slice(i + 1, close), fullText: original.slice(m.index, close + 1) });
     ANCHOR_RE.lastIndex = close + 1;
   }
   return calls;
 }
 
-const METHOD_RE = /method:\s*(['"])(GET|POST|PUT|DELETE|PATCH)\1/;
-const URL_RE = /url:\s*(?:`([^`]*)`|'([^']*)'|"([^"]*)")/;
+const VERB_SET = new Set(VERBS.map((v) => v.toUpperCase()));
 const FIRST_ARG_RE = /^\s*(?:`([^`]*)`|'([^']*)'|"([^"]*)")/;
 
 /** Run a "quote or template literal" regex (with alternative capture groups) and return whichever group matched, or `undefined`. */
@@ -231,6 +342,147 @@ function matchLiteral(re, str) {
 
 function snippetOf(fullText) {
   return fullText.replace(/\s+/g, ' ').trim().slice(0, 200);
+}
+
+/**
+ * Split `argsText` (a call's argument list) into its top-level (depth-0)
+ * comma-separated argument texts, skipping strings/templates and nested
+ * `{}`/`[]`/`()` so an inner comma is never mistaken for an argument
+ * separator.
+ */
+function splitTopLevelArgs(argsText) {
+  const args = [];
+  let depth = 0;
+  let start = 0;
+  let i = 0;
+  const n = argsText.length;
+  while (i < n) {
+    const ch = argsText[i];
+    if (ch === "'" || ch === '"') {
+      i += readString(argsText, i)[0];
+      continue;
+    }
+    if (ch === '`') {
+      i += readTemplate(argsText, i, false)[0];
+      continue;
+    }
+    if (ch === '{' || ch === '[' || ch === '(') {
+      depth++;
+      i++;
+      continue;
+    }
+    if (ch === '}' || ch === ']' || ch === ')') {
+      depth--;
+      i++;
+      continue;
+    }
+    if (ch === ',' && depth === 0) {
+      args.push(argsText.slice(start, i));
+      i++;
+      start = i;
+      continue;
+    }
+    i++;
+  }
+  args.push(argsText.slice(start));
+  return args;
+}
+
+/**
+ * Parse the top-level (depth-1) properties of an object literal in `text`,
+ * which must, after leading whitespace, start with `{`; returns `null` when
+ * it does not. Only the `method` and `url` keys are recognized. Depth is
+ * tracked across `{}`, `[]`, `()`, skipping strings/templates, so a
+ * same-named property nested inside a nested object/array/call (depth 2+)
+ * is ignored -- only a `method`/`url` property immediately inside the
+ * outermost `{` (depth 1) is reported. Each recognized key maps to
+ * `{ literal }` when its value is a quoted or template-literal string, or
+ * `{ invalid: true }` when it is present but shorthand (`url,` / `url }`)
+ * or a non-literal expression (`method: someVar`).
+ */
+function topLevelObjectProperties(text) {
+  const result = {};
+  const n = text.length;
+  let i = 0;
+  while (i < n && /\s/.test(text[i])) i++;
+  if (text[i] !== '{') return null;
+  let depth = 0;
+  let expectKey = false;
+  while (i < n) {
+    const ch = text[i];
+    if (ch === "'" || ch === '"') {
+      i += readString(text, i)[0];
+      continue;
+    }
+    if (ch === '`') {
+      i += readTemplate(text, i, false)[0];
+      continue;
+    }
+    if (ch === '{') {
+      depth++;
+      i++;
+      if (depth === 1) expectKey = true;
+      continue;
+    }
+    if (ch === '[' || ch === '(') {
+      depth++;
+      i++;
+      continue;
+    }
+    if (ch === '}' || ch === ']' || ch === ')') {
+      depth--;
+      i++;
+      continue;
+    }
+    if (ch === ',' && depth === 1) {
+      expectKey = true;
+      i++;
+      continue;
+    }
+    if (/\s/.test(ch)) {
+      i++;
+      continue;
+    }
+    if (expectKey && depth === 1 && /[A-Za-z_$]/.test(ch)) {
+      const id = /^[A-Za-z_$][A-Za-z0-9_$]*/.exec(text.slice(i))[0];
+      i += id.length;
+      expectKey = false;
+      let j = i;
+      while (j < n && /\s/.test(text[j])) j++;
+      if (text[j] === ':') {
+        j++;
+        while (j < n && /\s/.test(text[j])) j++;
+        if (id === 'method' || id === 'url') {
+          if (text[j] === "'" || text[j] === '"') {
+            result[id] = { literal: readString(text, j)[1].slice(1, -1) };
+          } else if (text[j] === '`') {
+            result[id] = { literal: readTemplate(text, j, false)[1].slice(1, -1) };
+          } else {
+            result[id] = { invalid: true };
+          }
+        }
+        i = j;
+        continue;
+      }
+      // Shorthand property (`id,` or `id }`): not a `key: value` pair.
+      if (id === 'method' || id === 'url') result[id] = { invalid: true };
+      i = j;
+      continue;
+    }
+    i++;
+  }
+  return result;
+}
+
+/** A recognized top-level `url` property: a literal string/template value. */
+function literalUrl(props) {
+  return props?.url && 'literal' in props.url ? props.url.literal : undefined;
+}
+
+/** A recognized top-level `method` property: a literal, known HTTP verb. */
+function literalMethod(props) {
+  const lit = props?.method && 'literal' in props.method ? props.method.literal : undefined;
+  return lit !== undefined && VERB_SET.has(lit) ? lit : undefined;
 }
 
 /**
@@ -251,26 +503,29 @@ export function sdkOperations(files) {
 
   for (const { name, text } of files) {
     const stripped = stripComments(text);
-    for (const { kind, argsText, fullText } of findCalls(stripped)) {
+    const masked = maskStrings(stripped);
+    for (const { kind, argsText, fullText } of findCalls(masked, stripped)) {
       if (kind === 'request') {
-        const methodMatch = METHOD_RE.exec(argsText);
-        const url = matchLiteral(URL_RE, argsText);
-        if (!methodMatch || url === undefined) {
+        const props = topLevelObjectProperties(argsText);
+        const method = literalMethod(props);
+        const url = literalUrl(props);
+        if (method === undefined || url === undefined) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
         }
-        push(methodMatch[2], url, name);
+        push(method, url, name);
       } else if (kind === 'download') {
-        const url = matchLiteral(FIRST_ARG_RE, argsText);
+        const [firstArg, optsArg] = splitTopLevelArgs(argsText);
+        const url = matchLiteral(FIRST_ARG_RE, firstArg ?? '');
         if (url === undefined) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
         }
-        const methodMatch = METHOD_RE.exec(argsText);
-        push(methodMatch ? methodMatch[2] : 'GET', url, name);
+        const method = optsArg !== undefined ? literalMethod(topLevelObjectProperties(optsArg)) : undefined;
+        push(method ?? 'GET', url, name);
       } else {
         // upload: always POST.
-        const url = matchLiteral(URL_RE, argsText);
+        const url = literalUrl(topLevelObjectProperties(argsText));
         if (url === undefined) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;

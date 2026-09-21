@@ -372,3 +372,84 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
     expect(unparsed[0].kind).toBe('upload');
   });
 });
+
+describe('sdkOperations executable-calls-only, top-level-properties-only (Codex round-4 item 1)', () => {
+  const CALL = "this.httpClient.request({ method: 'GET', url: '/fake' })";
+
+  it('(a) the exact call text inside a single-quoted string is not a call', () => {
+    const files = [{ name: 'a.ts', text: `const s = '${CALL.replace(/'/g, "\\'")}';` }];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops).toEqual([]);
+    expect(unparsed).toEqual([]);
+  });
+
+  it('(a) the exact call text inside a double-quoted string is not a call', () => {
+    const files = [{ name: 'a.ts', text: `const s = "${CALL}";` }];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops).toEqual([]);
+    expect(unparsed).toEqual([]);
+  });
+
+  it('(a) the exact call text inside a template-literal string is not a call', () => {
+    const files = [{ name: 'a.ts', text: `const s = \`${CALL}\`;` }];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops).toEqual([]);
+    expect(unparsed).toEqual([]);
+  });
+
+  it('(b) a top-level shorthand `url` with a nested literal `url` is unparsed, not the nested value', () => {
+    const files = [
+      {
+        name: 'a.ts',
+        text: 'this.httpClient.request({ method: "GET", url, params: { url: "/nested" } });',
+      },
+    ];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops).toEqual([]);
+    expect(unparsed).toHaveLength(1);
+    expect(unparsed[0].kind).toBe('request');
+  });
+
+  it('(c) a top-level shorthand `method` with a nested literal `method` is unparsed', () => {
+    const files = [
+      {
+        name: 'a.ts',
+        text: "this.httpClient.request({ method, url: '/x', headers: { method: 'POST' } });",
+      },
+    ];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops).toEqual([]);
+    expect(unparsed).toHaveLength(1);
+    expect(unparsed[0].kind).toBe('request');
+  });
+
+  it('(d) a nested `url` inside `params` is ignored; the top-level template url wins', () => {
+    const files = [
+      {
+        name: 'a.ts',
+        text: "this.httpClient.request({ method: 'GET', url: `/x/${id}`, params: { url: '/nested' } });",
+      },
+    ];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops.map((o) => o.key)).toEqual(['GET /x/{x}']);
+    expect(unparsed).toEqual([]);
+  });
+
+  it('(e) a real multi-line request with an intervening nested `data: { method: "zzz" }` still parses the top-level method/url', () => {
+    const files = [
+      {
+        name: 'a.ts',
+        text: [
+          'this.httpClient.request({',
+          "  method: 'PUT',",
+          "  data: { method: 'zzz' },",
+          '  url: `/x`,',
+          '});',
+        ].join('\n'),
+      },
+    ];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops.map((o) => o.key)).toEqual(['PUT /x']);
+    expect(unparsed).toEqual([]);
+  });
+});
