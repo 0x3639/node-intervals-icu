@@ -35,4 +35,9 @@ describe('path fixes (AUDIT.md)', () => {
   it('activities.getWeather no longer exists', () => {
     expect((client.activities as any).getWeather).toBeUndefined();
   });
+
+  it('removed routes are gone: searchAthletes, deleteWellness', () => {
+    expect((client.search as any).searchAthletes).toBeUndefined();
+    expect((client.wellness as any).deleteWellness).toBeUndefined();
+  });
 });

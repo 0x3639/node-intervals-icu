@@ -48,10 +48,4 @@ export class WellnessService {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.upload<Wellness[]>({ url: `/athlete/${id}/wellness`, file, fileName });
   }
-
-  /** Delete a wellness entry by date */
-  async deleteWellness(date: string, athleteId?: string): Promise<void> {
-    const id = athleteId || this.defaultAthleteId;
-    await this.httpClient.request<void>({ method: 'DELETE', url: `/athlete/${id}/wellness/${date}` });
-  }
 }

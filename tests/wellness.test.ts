@@ -73,10 +73,6 @@ describe('IntervalsClient - Wellness', () => {
     expect(updated.updated).toBeDefined();
   });
 
-  it('should delete a wellness entry', async () => {
-    await expect(client.wellness.deleteWellness('2024-01-15')).resolves.toBeUndefined();
-  });
-
   it('should validate wellness data structure', async () => {
     const wellness = await client.wellness.listWellness({
       oldest: '2024-01-01',

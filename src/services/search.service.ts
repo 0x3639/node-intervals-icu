@@ -1,5 +1,5 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
-import type { ActivitySearchResult, AthleteSearchResult } from '../types/index.js';
+import type { ActivitySearchResult } from '../types/index.js';
 
 /**
  * Service for search operations
@@ -21,15 +21,6 @@ export class SearchService {
       method: 'GET',
       url: `/athlete/${id}/activities/search`,
       params: { q: query, ...options } as Record<string, unknown>,
-    });
-  }
-
-  /** Search athletes by name or email (coach accounts) */
-  async searchAthletes(query: string): Promise<AthleteSearchResult[]> {
-    return this.httpClient.request<AthleteSearchResult[]>({
-      method: 'GET',
-      url: `/search/athletes`,
-      params: { q: query } as Record<string, unknown>,
     });
   }
 }
