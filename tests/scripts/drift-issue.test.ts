@@ -68,4 +68,64 @@ describe('upsertDriftIssue', () => {
     });
     expect(github.rest.issues.createLabel).not.toHaveBeenCalled();
   });
+
+  it('(d) swallows a 422 from createLabel (a concurrent run already created it)', async () => {
+    const github = mockGithub({
+      getLabel: vi.fn().mockRejectedValue({ status: 404 }),
+      createLabel: vi.fn().mockRejectedValue({ status: 422, message: 'already_exists' }),
+      listForRepo: vi.fn().mockResolvedValue({ data: [] }),
+      create: vi.fn().mockResolvedValue({ data: { number: 9 } }),
+    });
+
+    const result = await upsertDriftIssue({ github, owner, repo, label, title, body });
+
+    expect(github.rest.issues.createLabel).toHaveBeenCalled();
+    expect(result).toEqual({ action: 'created', number: 9 });
+  });
+
+  it('(e) propagates a non-422 error from createLabel', async () => {
+    const github = mockGithub({
+      getLabel: vi.fn().mockRejectedValue({ status: 404 }),
+      createLabel: vi.fn().mockRejectedValue({ status: 500, message: 'boom' }),
+    });
+
+    await expect(upsertDriftIssue({ github, owner, repo, label, title, body })).rejects.toMatchObject({
+      status: 500,
+    });
+  });
+
+  it('(f) ignores pull requests when reusing an open issue', async () => {
+    const github = mockGithub({
+      getLabel: vi.fn().mockResolvedValue({}),
+      listForRepo: vi.fn().mockResolvedValue({
+        data: [
+          { number: 5, pull_request: {} },
+          { number: 7 },
+        ],
+      }),
+    });
+
+    const result = await upsertDriftIssue({ github, owner, repo, label, title, body });
+
+    expect(github.rest.issues.createComment).toHaveBeenCalledWith(
+      expect.objectContaining({ owner, repo, issue_number: 7, body }),
+    );
+    expect(result).toEqual({ action: 'commented', number: 7 });
+  });
+
+  it('(g) creates a new issue when every open, labeled item is a pull request', async () => {
+    const github = mockGithub({
+      getLabel: vi.fn().mockResolvedValue({}),
+      listForRepo: vi.fn().mockResolvedValue({ data: [{ number: 5, pull_request: {} }] }),
+      create: vi.fn().mockResolvedValue({ data: { number: 11 } }),
+    });
+
+    const result = await upsertDriftIssue({ github, owner, repo, label, title, body });
+
+    expect(github.rest.issues.createComment).not.toHaveBeenCalled();
+    expect(github.rest.issues.create).toHaveBeenCalledWith(
+      expect.objectContaining({ owner, repo, title, body, labels: [label] }),
+    );
+    expect(result).toEqual({ action: 'created', number: 11 });
+  });
 });

@@ -7,9 +7,13 @@ import { fileURLToPath } from 'node:url';
 export const SPEC_URL = 'https://intervals.icu/api/v1/docs';
 
 export async function fetchSpec(url = SPEC_URL) {
-  const res = await fetch(url, { headers: { accept: 'application/json' } });
+  const res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(30_000) });
   if (!res.ok) throw new Error(`Fetching ${url} failed: ${res.status} ${res.statusText}`);
-  return res.json();
+  const spec = await res.json();
+  if (!(typeof spec.openapi === 'string' && spec.paths && typeof spec.paths === 'object')) {
+    throw new Error(`Unexpected spec shape from ${url}`);
+  }
+  return spec;
 }
 
 async function main() {

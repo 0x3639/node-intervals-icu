@@ -11,16 +11,24 @@ export async function upsertDriftIssue({ github, owner, repo, label, title, body
     await github.rest.issues.getLabel({ owner, repo, name: label });
   } catch (err) {
     if (err?.status !== 404) throw err;
-    await github.rest.issues.createLabel({
-      owner,
-      repo,
-      name: label,
-      color: 'd73a4a',
-      description: 'Live Intervals.icu OpenAPI spec differs from spec/openapi.json',
-    });
+    try {
+      await github.rest.issues.createLabel({
+        owner,
+        repo,
+        name: label,
+        color: 'd73a4a',
+        description: 'Live Intervals.icu OpenAPI spec differs from spec/openapi.json',
+      });
+    } catch (createErr) {
+      // 422: the label already exists (a concurrent run created it between our
+      // getLabel and createLabel calls). Swallow it; the label is there either way.
+      if (createErr?.status !== 422) throw createErr;
+    }
   }
 
-  const { data: open } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: label });
+  const { data: openAndPRs } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: label });
+  // listForRepo also returns pull requests (they carry a `pull_request` property); skip them.
+  const open = openAndPRs.filter((item) => !item.pull_request);
   if (open.length) {
     await github.rest.issues.createComment({ owner, repo, issue_number: open[0].number, body });
     return { action: 'commented', number: open[0].number };
