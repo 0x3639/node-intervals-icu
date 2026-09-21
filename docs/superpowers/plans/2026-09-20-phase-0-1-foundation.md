@@ -29,7 +29,7 @@
 | `spec/openapi.json` | Vendored snapshot of `https://intervals.icu/api/v1/docs`. The contract everything diffs against. |
 | `scripts/lib/spec-ops.mjs` | Pure functions: normalize paths, list spec operations, extract SDK operations from source text, match the two sets. |
 | `scripts/fetch-spec.mjs` | Fetch live spec, pretty-print, write to `spec/openapi.json`. |
-| `scripts/coverage.mjs` | Print coverage report. Exit 1 on any SDK op not in spec. `--strict` also exits 1 on any spec op missing from SDK. |
+| `scripts/coverage.mjs` | Prints the report; fails on new phantom ops, lost coverage of previously covered spec ops, unparsed httpClient calls, or a stale baseline; `--strict` fails on any phantom or missing op; `--write-baseline` regenerates `spec/coverage-baseline.json`. |
 | `scripts/check-spec-drift.mjs` | Fetch live spec, compare operation and schema sets with vendored, print diff, exit 2 on drift. |
 | `scripts/audit-probe.mjs` | Hit each disputed route live and print `AUDIT.md` to stdout. |
 | `tests/scripts/spec-ops.test.ts` | Unit tests for `spec-ops.mjs`. |
@@ -45,6 +45,8 @@
 
 ### Task 1: Spec operation matcher (pure library)
 
+> **Post-implementation note.** The shipped library evolved during review (anchored parser, strict placeholders, baseline support); the Interfaces block above reflects the shipped contract, the code blocks below are the original plan text.
+
 **Files:**
 - Create: `scripts/lib/spec-ops.mjs`
 - Test: `tests/scripts/spec-ops.test.ts`
@@ -53,9 +55,11 @@
 - Produces:
   - `normalizeSdkPath(path: string): string` — replaces every `${...}` with `{x}`.
   - `specOperations(spec: object): Array<{ method: string; path: string; key: string; tags: string[]; summary: string }>` — `path` has `/api/v1` stripped; `key` is `` `${method} ${path}` ``.
-  - `sdkOperations(files: Array<{ name: string; text: string }>): Array<{ method: string; path: string; key: string; source: string }>` — `path` is normalized.
-  - `specPathRegex(specPath: string): RegExp` — path params become `[^/]+`; an inline `{ext}` (param not preceded by `/`) becomes `(\.[A-Za-z0-9]+|\{x\})?`.
+  - `stripComments(text)` — strips `//` and `/* */` comments while leaving string and template-literal contents untouched.
+  - `sdkOperations(files: Array<{ name: string; text: string }>): { ops: Array<{ method, path, key, source }>, unparsed: Array<{ source, kind, snippet }> }` — `path` is normalized; calls whose method or url cannot be statically extracted are reported in `unparsed` instead of guessed at or dropped.
+  - `specPathRegex(specPath: string): RegExp` — a whole-segment `{param}` matches only the normalized `{x}` placeholder; an inline `{ext}` (param not preceded by `/`) matches nothing, a literal `.ext`, or `{x}`.
   - `matchOperations(spec, sdk): { matched: Array<{ spec, sdk }>; phantom: sdkOp[]; missing: specOp[] }`.
+  - `applyBaseline(...)` — compares current phantom/covered results against a baseline snapshot, returning `{ newPhantom, resolvedPhantom, lostCoverage, newlyCovered }`.
 
 - [ ] **Step 1: Write the failing tests**
 

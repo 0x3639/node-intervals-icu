@@ -90,7 +90,7 @@ This project uses TypeScript and follows these conventions:
 
 ## 🧪 Testing
 
-While we don't have automated tests yet, please test your changes manually:
+Automated tests live in `tests/` (unit tests with mocked axios) and `tests/scripts/` (script libraries). Run `npm test`. Live API tests are separate; see `tests/README.md`.
 
 - Test against a real Intervals.icu API key (or mock appropriately)
 - Verify that existing functionality still works

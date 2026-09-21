@@ -16,7 +16,8 @@ package scope, diverged from `paladini/node-intervals-icu`.
 |---|---|
 | Spec operations | 149 |
 | SDK operations | 121 |
-| SDK operations matching spec | 104 |
+| SDK operations matched to a spec op | 105 |
+| Distinct spec operations covered | 104 |
 | SDK operations not in spec | 16 |
 | Spec operations missing from SDK | 45 (104 distinct spec ops covered; note that only `GET /activity/{id}/streams{ext}` is now hit by two SDK methods) |
 
