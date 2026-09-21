@@ -25,7 +25,6 @@ export { WeatherService } from './services/weather.service.js';
 export { RouteService } from './services/route.service.js';
 export { CustomItemService } from './services/custom-item.service.js';
 export { SharedEventService } from './services/shared-event.service.js';
-export { FitnessService } from './services/fitness.service.js';
 export { PerformanceService } from './services/performance.service.js';
 export { SearchService } from './services/search.service.js';
 

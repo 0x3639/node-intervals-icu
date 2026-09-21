@@ -86,4 +86,17 @@ describe('IntervalsClient - Athlete', () => {
     expect(athlete).toHaveProperty('icu_ftp');
     expect(athlete).toHaveProperty('icu_pm');
   });
+
+  describe('getSummary (replaces FitnessService)', () => {
+    it('hits /athlete-summary with start, end and tags', async () => {
+      const seen: any[] = [];
+      setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return []; });
+      const c = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      await c.athletes.getSummary({ start: '2026-01-01', end: '2026-02-01', tags: ['race'] });
+      expect(seen[0].method).toBe('GET');
+      expect(seen[0].url).toBe('/athlete/i1/athlete-summary');
+      expect(seen[0].params).toEqual({ start: '2026-01-01', end: '2026-02-01', tags: ['race'] });
+      expect((c as any).fitness).toBeUndefined();
+    });
+  });
 });

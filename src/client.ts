@@ -18,7 +18,6 @@ import { WeatherService } from './services/weather.service.js';
 import { RouteService } from './services/route.service.js';
 import { CustomItemService } from './services/custom-item.service.js';
 import { SharedEventService } from './services/shared-event.service.js';
-import { FitnessService } from './services/fitness.service.js';
 import { PerformanceService } from './services/performance.service.js';
 import { SearchService } from './services/search.service.js';
 import type { IHttpClient } from './core/http-client.interface.js';
@@ -77,8 +76,6 @@ export class IntervalsClient {
   public readonly customItems: CustomItemService;
   /** Shared events (races, group events) */
   public readonly sharedEvents: SharedEventService;
-  /** Fitness data (CTL, ATL, TSB) and activity summaries */
-  public readonly fitness: FitnessService;
   /** Athlete-level performance curves (power, pace, HR) */
   public readonly performance: PerformanceService;
   /** Search activities and athletes */
@@ -108,7 +105,6 @@ export class IntervalsClient {
     this.routes = new RouteService(this.httpClient, athleteId);
     this.customItems = new CustomItemService(this.httpClient, athleteId);
     this.sharedEvents = new SharedEventService(this.httpClient);
-    this.fitness = new FitnessService(this.httpClient, athleteId);
     this.performance = new PerformanceService(this.httpClient, athleteId);
     this.search = new SearchService(this.httpClient, athleteId);
   }
