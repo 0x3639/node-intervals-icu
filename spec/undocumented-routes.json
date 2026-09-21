@@ -1,0 +1,7 @@
+{
+  "routes": [
+    { "key": "POST /shared-event", "verified": "2026-09-21", "note": "400 on malformed body: route exists, not in spec. See AUDIT.md." },
+    { "key": "PUT /shared-event/{x}", "verified": "2026-09-21", "note": "400 on malformed body: route exists, not in spec. See AUDIT.md." },
+    { "key": "DELETE /shared-event/{x}", "verified": "2026-09-21", "note": "404 for sentinel id while PUT on the same path is 400: mapping exists. See AUDIT.md." }
+  ]
+}

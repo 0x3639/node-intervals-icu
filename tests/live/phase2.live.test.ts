@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LIVE, liveClient, athleteId } from './setup.js';
+import { LIVE, liveClient } from './setup.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const yearAgo = () => new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
@@ -15,14 +15,14 @@ async function latestActivityId() {
   return activities.find((a) => a.type)?.id;
 }
 
-/** First calendar WORKOUT event in the last year, or undefined when the account has none. */
+/** First calendar WORKOUT event with a workout_doc in the last year, or undefined when the account has none. */
 async function firstCalendarWorkoutEvent() {
   const events = await liveClient().events.listEvents({
     oldest: yearAgo(),
     newest: today(),
     category: ['WORKOUT'],
   });
-  return events.find((e) => e.id);
+  return events.find((e) => e.id && (e as any).workout_doc);
 }
 
 describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
@@ -56,5 +56,28 @@ describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
     if (!event) ctx.skip(); // reported as skipped, not passed
     const zwo = await liveClient().events.downloadWorkout(event!.id as number, '.zwo');
     expect(zwo.toString()).toContain('<workout_file');
+  });
+
+  it('listChats responds', async () => {
+    expect(Array.isArray(await liveClient().chats.listChats())).toBe(true);
+  });
+  it('getSummary responds', async () => {
+    expect(Array.isArray(await liveClient().athletes.getSummary({ start: yearAgo(), end: today() }))).toBe(true);
+  });
+  it('getPowerHRCurve responds', async () => {
+    expect(await liveClient().performance.getPowerHRCurve({ start: yearAgo(), end: today() })).toBeTypeOf('object');
+  });
+  it('getForecast responds', async () => {
+    expect(await liveClient().weather.getForecast()).toBeTypeOf('object');
+  });
+  it('getWeatherSummary responds for the latest activity', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    expect(await liveClient().activities.getWeatherSummary(id as string)).toBeTypeOf('object');
+  });
+  it('getSimilarity responds for the first route', async (ctx) => {
+    const [route] = await liveClient().routes.list();
+    if (!route?.route_id) ctx.skip();
+    expect(await liveClient().routes.getSimilarity(route.route_id as number, route.route_id as number)).toBeTypeOf('object');
   });
 });

@@ -7,6 +7,7 @@ import {
   specPathRegex,
   matchOperations,
   applyBaseline,
+  applyAllowlist,
 } from '../../scripts/lib/spec-ops.mjs';
 
 const miniSpec = {
@@ -382,6 +383,39 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
     expect(unparsed).toEqual([]);
   });
 
+  it('an upload() with an explicit top-level method: "PUT" is recorded as PUT, not POST', () => {
+    const files = [
+      {
+        name: 'a.ts',
+        text: "this.httpClient.upload<X>({ url: `/activity/${id}/streams.csv`, file, fileName, method: 'PUT' });",
+      },
+    ];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops.map((o) => o.key)).toEqual(['PUT /activity/{x}/streams.csv']);
+    expect(unparsed).toEqual([]);
+  });
+
+  it('an upload() without a method: property defaults to POST', () => {
+    const files = [
+      { name: 'a.ts', text: 'this.httpClient.upload<X>({ url: `/activity/${id}/streams.csv`, file, fileName });' },
+    ];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops.map((o) => o.key)).toEqual(['POST /activity/{x}/streams.csv']);
+    expect(unparsed).toEqual([]);
+  });
+
+  it('an upload() with a nested `method` inside another property does not count; the call defaults to POST', () => {
+    const files = [
+      {
+        name: 'a.ts',
+        text: "this.httpClient.upload<X>({ url: `/activity/${id}/streams.csv`, file, fileName, params: { method: 'PUT' } });",
+      },
+    ];
+    const { ops, unparsed } = sdkOperations(files);
+    expect(ops.map((o) => o.key)).toEqual(['POST /activity/{x}/streams.csv']);
+    expect(unparsed).toEqual([]);
+  });
+
   it('a download() whose url cannot be extracted (a bare identifier, not a literal) is unparsed', () => {
     const files = [{ name: 'a.ts', text: 'this.httpClient.download(someUrlVariable, { method: "GET" });' }];
     const { ops, unparsed } = sdkOperations(files);
@@ -477,5 +511,15 @@ describe('sdkOperations executable-calls-only, top-level-properties-only (Codex 
     const { ops, unparsed } = sdkOperations(files);
     expect(ops.map((o) => o.key)).toEqual(['PUT /x']);
     expect(unparsed).toEqual([]);
+  });
+});
+
+describe('applyAllowlist', () => {
+  it('removes allowed phantom ops and reports unused allowlist entries', () => {
+    const phantom = [{ key: 'POST /shared-event' }, { key: 'GET /chats' }] as any;
+    const r = applyAllowlist(phantom, ['POST /shared-event', 'DELETE /nope']);
+    expect(r.phantom.map((p: any) => p.key)).toEqual(['GET /chats']);
+    expect(r.allowed.map((p: any) => p.key)).toEqual(['POST /shared-event']);
+    expect(r.unused).toEqual(['DELETE /nope']);
   });
 });

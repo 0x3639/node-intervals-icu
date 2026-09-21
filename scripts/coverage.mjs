@@ -1,15 +1,40 @@
 // scripts/coverage.mjs
 // Usage: node scripts/coverage.mjs [--strict] [--write-baseline]
 // Diffs the SDK's HTTP calls against spec/openapi.json.
+// SDK operations listed in spec/undocumented-routes.json are real, verified routes that
+// are simply absent from the published spec (see AUDIT.md); they are removed from the
+// phantom list before any check runs, including --strict, since --strict is a stricter
+// check of the SAME comparison, not a bypass of routes we've already verified are real.
+// A stale allowlist entry (no longer phantom) fails the run in every mode.
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { specOperations, sdkOperations, matchOperations, applyBaseline } from './lib/spec-ops.mjs';
+import { specOperations, sdkOperations, matchOperations, applyBaseline, applyAllowlist } from './lib/spec-ops.mjs';
 
 const strict = process.argv.includes('--strict');
 const writeBaselineFlag = process.argv.includes('--write-baseline');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const baselinePath = path.join(root, 'spec/coverage-baseline.json');
+const allowlistPath = path.join(root, 'spec/undocumented-routes.json');
+
+async function loadAllowlist() {
+  let raw;
+  try {
+    raw = await readFile(allowlistPath, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    console.error(`Could not read ${allowlistPath}: ${err.message}`);
+    process.exit(1);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    console.error(`${allowlistPath} is not valid JSON: ${err.message}`);
+    process.exit(1);
+  }
+  return parsed.routes ?? [];
+}
 
 async function loadSdkFiles() {
   const dir = path.join(root, 'src/services');
@@ -65,7 +90,7 @@ try {
 const specOps = specOperations(spec);
 const sdkFiles = await loadSdkFiles();
 const { ops: sdkOps, unparsed } = sdkOperations(sdkFiles);
-const { matched, phantom, missing } = matchOperations(specOps, sdkOps);
+const { matched, phantom: rawPhantom, missing } = matchOperations(specOps, sdkOps);
 const specOpsCovered = new Set(matched.map((m) => m.spec.key)).size;
 
 if (unparsed.length > 0) {
@@ -76,12 +101,30 @@ if (unparsed.length > 0) {
   process.exit(1);
 }
 
+const allowlistRoutes = await loadAllowlist();
+const { phantom, allowed, unused } = applyAllowlist(rawPhantom, allowlistRoutes.map((r) => r.key));
+let allowlistFailed = false;
+
+console.log(`Undocumented (allowlisted): ${allowed.length}`);
+if (allowed.length) {
+  for (const a of [...allowed].sort((a, b) => a.key.localeCompare(b.key))) {
+    console.log(`  ${a.key}`);
+  }
+}
+if (unused.length) {
+  allowlistFailed = true;
+  console.error('\nStale allowlist entries (no longer phantom):');
+  for (const k of unused) {
+    console.error(`  ${k}: Allowlist entry no longer phantom; remove it from spec/undocumented-routes.json`);
+  }
+}
+
 if (writeBaselineFlag) {
   const phantomKeys = [...new Set(phantom.map((p) => p.key))].sort();
   const coveredKeys = [...new Set(matched.map((m) => m.spec.key))].sort();
   await writeFile(baselinePath, `${JSON.stringify({ phantom: phantomKeys, covered: coveredKeys }, null, 2)}\n`);
   console.log(`Wrote ${phantomKeys.length} phantom ops and ${coveredKeys.length} covered ops to ${baselinePath}`);
-  process.exit(0);
+  process.exit(allowlistFailed ? 1 : 0);
 }
 
 console.log(`Spec operations:      ${specOps.length}`);
@@ -105,7 +148,7 @@ if (missing.length) {
 }
 
 if (strict) {
-  const failed = phantom.length > 0 || missing.length > 0;
+  const failed = phantom.length > 0 || missing.length > 0 || allowlistFailed;
   if (failed) {
     console.error('\nCoverage check failed (strict).');
     process.exit(1);
@@ -151,7 +194,7 @@ if (newlyCovered.length) {
   }
 }
 
-if (newPhantom.length > 0 || lostCoverage.length > 0 || resolvedPhantom.length > 0 || newlyCovered.length > 0) {
+if (newPhantom.length > 0 || lostCoverage.length > 0 || resolvedPhantom.length > 0 || newlyCovered.length > 0 || allowlistFailed) {
   console.error(
     '\nCoverage check failed. Regressions (new phantom ops, lost coverage) must be fixed. ' +
       'Stale entries (resolved phantom, newly covered) mean the baseline is out of date: run ' +
