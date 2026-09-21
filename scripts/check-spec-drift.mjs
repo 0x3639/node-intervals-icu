@@ -9,11 +9,23 @@ import { diffSpecs, formatDriftReport } from './lib/spec-drift.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+const specPath = path.join(root, 'spec/openapi.json');
+let vendoredRaw;
+try {
+  vendoredRaw = await readFile(specPath, 'utf8');
+} catch (err) {
+  if (err.code === 'ENOENT') {
+    console.error('spec/openapi.json not found. Run: npm run spec:fetch');
+  } else {
+    console.error(`Could not read spec/openapi.json: ${err.message}`);
+  }
+  process.exit(1);
+}
 let vendored;
 try {
-  vendored = JSON.parse(await readFile(path.join(root, 'spec/openapi.json'), 'utf8'));
-} catch {
-  console.error('spec/openapi.json not found. Run: npm run spec:fetch');
+  vendored = JSON.parse(vendoredRaw);
+} catch (err) {
+  console.error(`spec/openapi.json is not valid JSON: ${err.message}`);
   process.exit(1);
 }
 

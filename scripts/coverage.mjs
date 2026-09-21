@@ -43,11 +43,23 @@ async function loadBaseline() {
   return parsed.phantom ?? [];
 }
 
+const specPath = path.join(root, 'spec/openapi.json');
+let specRaw;
+try {
+  specRaw = await readFile(specPath, 'utf8');
+} catch (err) {
+  if (err.code === 'ENOENT') {
+    console.error('spec/openapi.json not found. Run: npm run spec:fetch');
+  } else {
+    console.error(`Could not read spec/openapi.json: ${err.message}`);
+  }
+  process.exit(1);
+}
 let spec;
 try {
-  spec = JSON.parse(await readFile(path.join(root, 'spec/openapi.json'), 'utf8'));
-} catch {
-  console.error('spec/openapi.json not found. Run: npm run spec:fetch');
+  spec = JSON.parse(specRaw);
+} catch (err) {
+  console.error(`spec/openapi.json is not valid JSON: ${err.message}`);
   process.exit(1);
 }
 const specOps = specOperations(spec);
