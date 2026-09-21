@@ -16,10 +16,18 @@ async function latestActivityId() {
   return activities.find((a) => a.type)?.id;
 }
 
-/** A calendar event that carries every field convertWorkout() requires, plus an id for events.downloadWorkout(). */
+/**
+ * A calendar event that carries every field convertWorkout() requires, plus an id for
+ * events.downloadWorkout(). The guard checks runtime shapes, not just truthiness: API data
+ * is external, and the type says nothing about what the server actually sent.
+ */
 type ConvertibleEvent = Event & WorkoutConversionInput & { id: number };
 const isConvertible = (e: Event): e is ConvertibleEvent =>
-  typeof e.id === 'number' && !!e.name && !!e.description && !!e.type && !!e.workout_doc;
+  typeof e.id === 'number' &&
+  typeof e.name === 'string' &&
+  typeof e.description === 'string' &&
+  typeof e.type === 'string' &&
+  typeof e.workout_doc === 'object' && e.workout_doc !== null && !Array.isArray(e.workout_doc);
 
 /** First convertible calendar WORKOUT event in the last year, or undefined when the account has none. */
 async function firstCalendarWorkoutEvent(): Promise<ConvertibleEvent | undefined> {

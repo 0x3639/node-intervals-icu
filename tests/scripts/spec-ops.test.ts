@@ -455,6 +455,60 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
     });
   });
 
+  describe('dynamic top-level members (CodeRabbit on PR #4)', () => {
+    it('a download() options object with a top-level spread is unparsed even when a literal method precedes it', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { method: 'POST', ...opts });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a download() options object that is only a spread is unparsed, not defaulted to GET', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { ...opts });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a download() options object with a computed key is unparsed', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { [k]: 'POST' });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('an upload() config with a top-level spread is unparsed, not defaulted to POST', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.upload({ url: `/x${id}`, file, ...extra });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a request() config with a literal method followed by a spread is unparsed (the spread may override it)', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.request({ method: 'GET', url: `/x`, ...rest });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a nested spread or nested method inside another property does not affect the top-level default', () => {
+      const files = [
+        { name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { params: { ...q, method: 'PUT' } });" },
+        { name: 'b.ts', text: "this.httpClient.upload({ url: `/y${id}`, file, meta: { ...m } });" },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['GET /x{x}', 'POST /y{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
+    it('a trailing comma with no options argument still defaults to GET', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`,);' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key)).toEqual(['GET /x{x}']);
+      expect(unparsed).toEqual([]);
+    });
+  });
+
   it('a download() whose url cannot be extracted (a bare identifier, not a literal) is unparsed', () => {
     const files = [{ name: 'a.ts', text: 'this.httpClient.download(someUrlVariable, { method: "GET" });' }];
     const { ops, unparsed } = sdkOperations(files);

@@ -30,5 +30,9 @@ export const missingType: WorkoutConversionInput = { name: 'T', description: 'd'
 declare const event: Event;
 // @ts-expect-error optional Event fields do not satisfy the required payload
 export const unnarrowed: WorkoutConversionInput = { name: event.name, description: event.description, type: event.type, workout_doc: event.workout_doc };
-const isConvertible = (e: Event): e is Event & WorkoutConversionInput => !!e.name && !!e.description && !!e.type && !!e.workout_doc;
+const isConvertible = (e: Event): e is Event & WorkoutConversionInput =>
+  typeof e.name === 'string' &&
+  typeof e.description === 'string' &&
+  typeof e.type === 'string' &&
+  typeof e.workout_doc === 'object' && e.workout_doc !== null && !Array.isArray(e.workout_doc);
 export const narrowed: WorkoutConversionInput | undefined = isConvertible(event) ? event : undefined;

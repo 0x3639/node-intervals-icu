@@ -48,7 +48,11 @@ async function main() {
     // 3b. Convert a planned workout to a Zwift file. convertWorkout() needs name,
     // description, type and workout_doc, so narrow an Event before passing it.
     const isConvertible = (e: Event): e is Event & WorkoutConversionInput & { id: number } =>
-      typeof e.id === 'number' && !!e.name && !!e.description && !!e.type && !!e.workout_doc;
+      typeof e.id === 'number' &&
+      typeof e.name === 'string' &&
+      typeof e.description === 'string' &&
+      typeof e.type === 'string' &&
+      typeof e.workout_doc === 'object' && e.workout_doc !== null && !Array.isArray(e.workout_doc);
     const convertible = events.find(isConvertible);
     if (convertible) {
       const zwo = await client.workouts.convertWorkout(convertible, '.zwo');

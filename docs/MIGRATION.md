@@ -68,8 +68,13 @@ const similar = await client.routes.getSimilarity(routeId, otherRouteId);
 // field on a calendar Event is optional, so narrow one before converting it:
 import type { Event, WorkoutConversionInput } from '@0x3639/intervals-icu';
 
+// Check runtime shapes, not just truthiness: the API response is external data.
 const isConvertible = (e: Event): e is Event & WorkoutConversionInput & { id: number } =>
-  typeof e.id === 'number' && !!e.name && !!e.description && !!e.type && !!e.workout_doc;
+  typeof e.id === 'number' &&
+  typeof e.name === 'string' &&
+  typeof e.description === 'string' &&
+  typeof e.type === 'string' &&
+  typeof e.workout_doc === 'object' && e.workout_doc !== null && !Array.isArray(e.workout_doc);
 
 const events = await client.events.listEvents({ oldest: '2024-01-01', newest: '2024-12-31', category: ['WORKOUT'] });
 const event = events.find(isConvertible);

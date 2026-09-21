@@ -424,6 +424,19 @@ function topLevelObjectProperties(text) {
       if (depth === 1) expectKey = true;
       continue;
     }
+    if (expectKey && depth === 1 && (ch === '[' || text.startsWith('...', i))) {
+      // A computed key or a spread at the top level can define or override
+      // `method`/`url` in ways this parser cannot resolve; flag the object as
+      // dynamic so the caller reports the call as unparsed instead of guessing.
+      result.dynamic = true;
+      expectKey = false;
+      i += ch === '[' ? 0 : 3;
+      if (ch === '[') {
+        depth++;
+        i++;
+      }
+      continue;
+    }
     if (ch === '[' || ch === '(') {
       depth++;
       i++;
@@ -476,11 +489,13 @@ function topLevelObjectProperties(text) {
 
 /** A recognized top-level `url` property: a literal string/template value. */
 function literalUrl(props) {
+  if (props?.dynamic) return undefined;
   return props?.url && 'literal' in props.url ? props.url.literal : undefined;
 }
 
 /** A recognized top-level `method` property: a literal, known HTTP verb. */
 function literalMethod(props) {
+  if (props?.dynamic) return undefined;
   const lit = props?.method && 'literal' in props.method ? props.method.literal : undefined;
   return lit !== undefined && VERB_SET.has(lit) ? lit : undefined;
 }
@@ -488,12 +503,13 @@ function literalMethod(props) {
 /**
  * Resolve the verb of a download()/upload() options object, which may omit
  * `method` and take `fallback`. Returns `undefined` (unparsed) when the
- * options are not an object literal, or when a `method` property is present
- * but is not a literal, known verb -- an absent method is a default, an
- * unextractable one is not.
+ * options are not an object literal, when they contain a top-level spread or
+ * computed key (which could supply or override `method`), or when a `method`
+ * property is present but is not a literal, known verb -- an absent method is
+ * a default, an unextractable one is not.
  */
 function methodOrDefault(props, fallback) {
-  if (props === null) return undefined;
+  if (props === null || props.dynamic) return undefined;
   if (props.method === undefined) return fallback;
   return literalMethod(props);
 }
@@ -536,7 +552,8 @@ export function sdkOperations(files) {
         }
         // GET unless an object-literal options argument says otherwise; a
         // non-literal options argument or method value is unparsed, not guessed.
-        const method = optsArg !== undefined ? methodOrDefault(topLevelObjectProperties(optsArg), 'GET') : 'GET';
+        const hasOpts = optsArg !== undefined && optsArg.trim() !== ''; // `download(url,)` has no options
+        const method = hasOpts ? methodOrDefault(topLevelObjectProperties(optsArg), 'GET') : 'GET';
         if (method === undefined) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
