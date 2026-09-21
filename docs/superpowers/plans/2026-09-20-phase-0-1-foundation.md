@@ -922,6 +922,8 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ### Task 8: Audit probe script and AUDIT.md scaffold
 
+> **Post-implementation note.** The shipped probe differs from the code below: probe building and running live in `scripts/lib/audit-probes.mjs`, verdicts in `scripts/lib/audit-verdict.mjs`, and non-GET probes are skipped unless `INTERVALS_LIVE_WRITE=1`. Write mode is best-effort, not a guarantee. The code below is the original plan text.
+
 **Files:**
 - Create: `scripts/audit-probe.mjs`
 - Create: `AUDIT.md`
@@ -939,7 +941,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 // scripts/audit-probe.mjs
 // Usage: INTERVALS_API_KEY=... INTERVALS_ATHLETE_ID=i12345 node scripts/audit-probe.mjs > AUDIT.md
 // Probes each SDK route that disagrees with spec/openapi.json against the live API.
-// Read probes use real data. Write probes send a malformed body so nothing is created.
+// Read probes use real data. Write probes send a malformed body; this is best-effort, not a guarantee that no handler runs.
 const BASE = 'https://intervals.icu/api/v1';
 const KEY = process.env.INTERVALS_API_KEY;
 const ATHLETE = process.env.INTERVALS_ATHLETE_ID;
@@ -1022,7 +1024,7 @@ console.log(`# API audit
 
 Generated ${today} by \`scripts/audit-probe.mjs\` against the live API. Each row is an SDK operation that
 disagrees with \`spec/openapi.json\`. Write-verb probes send a malformed body, so a 400 or 415 means the
-route exists and rejected the input; nothing was created.
+route exists and rejected the input; this is best-effort, not a guarantee that no handler ran.
 
 Verdict legend: **works-as-written** keep and document as undocumented; **broken: fix to spec** change verb or
 path; **broken: verb** path exists, verb rejected; **broken: delete** route does not exist and spec has no
@@ -1066,7 +1068,7 @@ Until this file holds verdicts, Phase 2 (fixes) cannot start. See `docs/superpow
 - [ ] **Step 5: Run it against a real account if credentials exist**
 
 Run: `INTERVALS_API_KEY=... INTERVALS_ATHLETE_ID=... npm run audit:probe > AUDIT.md && cat AUDIT.md`
-Expected: a table with 16 rows, each with a status code in both form columns (or "skipped" where the account has no activities, routes, or workouts). If you have no key, leave the scaffold in place and say so in the PR.
+Expected: a table with 16 rows. GET probes show a status code in both form columns (or "skipped (no sample data)" where the account has no activities, routes, or workouts). Non-GET probes show `skipped (write probe; set INTERVALS_LIVE_WRITE=1)` unless write mode is on, in which case they too show status codes. If you have no key, leave the scaffold in place and say so in the PR.
 
 - [ ] **Step 6: Commit**
 
