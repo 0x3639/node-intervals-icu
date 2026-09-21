@@ -33,7 +33,10 @@ export async function discoverSampleId(fetchJson, path, query, { onError } = {})
     onError?.(err?.message ?? String(err));
     return undefined;
   }
-  return Array.isArray(result) && result.length > 0 ? result[0].id : undefined;
+  if (!Array.isArray(result) || result.length === 0) return undefined;
+  // Most list endpoints use `id`; routes use `route_id`.
+  const first = result[0];
+  return first?.id ?? first?.route_id ?? undefined;
 }
 
 /**
