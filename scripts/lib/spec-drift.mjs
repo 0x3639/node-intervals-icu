@@ -26,10 +26,20 @@ function rawOperationsByKey(spec) {
   return byKey;
 }
 
+/** A path-item object with every HTTP verb key removed: whatever is left is path-level (`parameters`, `servers`, `summary`, ...). */
+function pathItemWithoutVerbs(item) {
+  const out = {};
+  for (const [k, v] of Object.entries(item)) {
+    if (!VERBS.includes(k)) out[k] = v;
+  }
+  return out;
+}
+
 /**
  * Diff two OpenAPI documents. Compares operation keys, full raw operation
  * bodies (parameters, requestBody, responses, security, anything else) under
- * `stableStringify`, and schema bodies.
+ * `stableStringify`, schema bodies, path-level fields, non-schema components,
+ * and top-level document fields (`servers`, `security`, `info`, etc).
  */
 export function diffSpecs(vendored, live) {
   const vOps = rawOperationsByKey(vendored);
@@ -56,16 +66,62 @@ export function diffSpecs(vendored, live) {
     .filter((k) => stableStringify(vSchemas[k]) !== stableStringify(lSchemas[k]))
     .sort();
 
-  const drifted = Boolean(
+  const vPaths = vendored.paths ?? {};
+  const lPaths = live.paths ?? {};
+  const changedPathItems = Object.keys(vPaths)
+    .filter((p) => Object.hasOwn(lPaths, p))
+    .filter(
+      (p) => stableStringify(pathItemWithoutVerbs(vPaths[p])) !== stableStringify(pathItemWithoutVerbs(lPaths[p])),
+    )
+    .map((p) => p.replace(/^\/api\/v1/, ''))
+    .sort();
+
+  const vComponents = vendored.components ?? {};
+  const lComponents = live.components ?? {};
+  const componentKeys = new Set([...Object.keys(vComponents), ...Object.keys(lComponents)].filter((k) => k !== 'schemas'));
+  const changedComponents = [...componentKeys]
+    .filter((k) => stableStringify(vComponents[k]) !== stableStringify(lComponents[k]))
+    .sort();
+
+  const topLevelKeys = new Set(
+    [...Object.keys(vendored), ...Object.keys(live)].filter((k) => k !== 'paths' && k !== 'components'),
+  );
+  const changedTopLevel = [...topLevelKeys]
+    .filter((k) => stableStringify(vendored[k]) !== stableStringify(live[k]))
+    .sort();
+
+  const classifiedDrift = Boolean(
     addedOps.length ||
       removedOps.length ||
       changedOps.length ||
       addedSchemas.length ||
       removedSchemas.length ||
-      changedSchemas.length,
+      changedSchemas.length ||
+      changedPathItems.length ||
+      changedComponents.length ||
+      changedTopLevel.length,
   );
 
-  return { addedOps, removedOps, changedOps, addedSchemas, removedSchemas, changedSchemas, drifted };
+  // Safety net: if the documents differ byte-for-byte (modulo key order) but
+  // none of the classifiers above caught it, still report drift so nothing
+  // slips through unnoticed.
+  const documentsDiffer = stableStringify(vendored) !== stableStringify(live);
+  const drifted = classifiedDrift || documentsDiffer;
+  const otherChanges = documentsDiffer && !classifiedDrift;
+
+  return {
+    addedOps,
+    removedOps,
+    changedOps,
+    addedSchemas,
+    removedSchemas,
+    changedSchemas,
+    changedPathItems,
+    changedComponents,
+    changedTopLevel,
+    drifted,
+    otherChanges,
+  };
 }
 
 const section = (title, items) =>
@@ -81,6 +137,12 @@ export function formatDriftReport(diff) {
     section('Operations changed', diff.changedOps) +
     section('Schemas added', diff.addedSchemas) +
     section('Schemas removed', diff.removedSchemas) +
-    section('Schemas changed', diff.changedSchemas)
+    section('Schemas changed', diff.changedSchemas) +
+    section('Path items changed', diff.changedPathItems) +
+    section('Components changed', diff.changedComponents) +
+    section('Top-level changed', diff.changedTopLevel) +
+    (diff.otherChanges
+      ? '\n### Unclassified change\n\nThe documents differ but no specific classifier caught it. Diff manually.\n'
+      : '')
   );
 }

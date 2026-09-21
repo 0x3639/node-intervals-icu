@@ -3,8 +3,13 @@ import { stableStringify, diffSpecs, formatDriftReport } from '../../scripts/lib
 
 function baseSpec() {
   return {
+    openapi: '3.0.1',
+    info: { title: 'Intervals.icu', version: '1.0' },
+    servers: [{ url: 'https://intervals.icu/api/v1' }],
+    security: [{ ApiKeyAuth: [] }],
     paths: {
       '/api/v1/athlete/{id}/wellness{ext}': {
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         get: {
           tags: ['Wellness'],
           summary: 'List wellness',
@@ -25,6 +30,9 @@ function baseSpec() {
       schemas: {
         Wellness: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' } } },
         Chat: { type: 'object', properties: { id: { type: 'string' } } },
+      },
+      securitySchemes: {
+        ApiKeyAuth: { type: 'http', scheme: 'basic', description: 'API key as the basic auth username' },
       },
     },
   };
@@ -106,6 +114,84 @@ describe('diffSpecs', () => {
     expect(diff.drifted).toBe(true);
     expect(diff.removedSchemas).toEqual(['Chat']);
   });
+
+  it('(g) a path-level parameters change on an existing path is reported in changedPathItems, drifted, otherChanges false', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.paths['/api/v1/athlete/{id}/wellness{ext}'].parameters[0].required = false;
+    const diff = diffSpecs(vendored, live);
+    expect(diff.drifted).toBe(true);
+    expect(diff.changedPathItems).toEqual(['/athlete/{id}/wellness{ext}']);
+    expect(diff.otherChanges).toBe(false);
+  });
+
+  it('(h) a components.securitySchemes change is reported in changedComponents, otherChanges false', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.components.securitySchemes.ApiKeyAuth.scheme = 'bearer';
+    const diff = diffSpecs(vendored, live);
+    expect(diff.drifted).toBe(true);
+    expect(diff.changedComponents).toEqual(['securitySchemes']);
+    expect(diff.otherChanges).toBe(false);
+  });
+
+  it('(i) a root security change is reported in changedTopLevel, otherChanges false', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.security = [{ OAuth2: [] }];
+    const diff = diffSpecs(vendored, live);
+    expect(diff.drifted).toBe(true);
+    expect(diff.changedTopLevel).toEqual(['security']);
+    expect(diff.otherChanges).toBe(false);
+  });
+
+  it('(j) a servers[0].url change is reported in changedTopLevel, otherChanges false', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.servers[0].url = 'https://staging.intervals.icu/api/v1';
+    const diff = diffSpecs(vendored, live);
+    expect(diff.drifted).toBe(true);
+    expect(diff.changedTopLevel).toEqual(['servers']);
+    expect(diff.otherChanges).toBe(false);
+  });
+
+  it('(k) key reorder at every level, including inside securitySchemes, is not drifted', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+
+    // Reorder top-level keys.
+    const reorderedTop = {
+      components: live.components,
+      paths: live.paths,
+      security: live.security,
+      servers: live.servers,
+      info: live.info,
+      openapi: live.openapi,
+    };
+    Object.keys(live).forEach((k) => delete live[k]);
+    Object.assign(live, reorderedTop);
+
+    // Reorder keys inside a path item.
+    const pathItem = live.paths['/api/v1/athlete/{id}/wellness{ext}'];
+    const reorderedPathItem = { get: pathItem.get, parameters: pathItem.parameters };
+    live.paths['/api/v1/athlete/{id}/wellness{ext}'] = reorderedPathItem;
+
+    // Reorder keys inside components and inside securitySchemes.
+    const scheme = live.components.securitySchemes.ApiKeyAuth;
+    live.components.securitySchemes.ApiKeyAuth = {
+      description: scheme.description,
+      scheme: scheme.scheme,
+      type: scheme.type,
+    };
+    live.components = { securitySchemes: live.components.securitySchemes, schemas: live.components.schemas };
+
+    const diff = diffSpecs(vendored, live);
+    expect(diff.drifted).toBe(false);
+    expect(diff.changedPathItems).toEqual([]);
+    expect(diff.changedComponents).toEqual([]);
+    expect(diff.changedTopLevel).toEqual([]);
+    expect(diff.otherChanges).toBe(false);
+  });
 });
 
 describe('formatDriftReport', () => {
@@ -123,5 +209,53 @@ describe('formatDriftReport', () => {
     const report = formatDriftReport(diff);
     expect(report).toContain('Operations changed');
     expect(report).toContain('GET /athlete/{id}/wellness{ext}');
+  });
+
+  it('includes a Path items changed section when a path-level field changed', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.paths['/api/v1/athlete/{id}/wellness{ext}'].parameters[0].required = false;
+    const diff = diffSpecs(vendored, live);
+    const report = formatDriftReport(diff);
+    expect(report).toContain('Path items changed');
+    expect(report).toContain('/athlete/{id}/wellness{ext}');
+  });
+
+  it('includes a Components changed section when a non-schema component changed', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.components.securitySchemes.ApiKeyAuth.scheme = 'bearer';
+    const diff = diffSpecs(vendored, live);
+    const report = formatDriftReport(diff);
+    expect(report).toContain('Components changed');
+    expect(report).toContain('securitySchemes');
+  });
+
+  it('includes a Top-level changed section when servers changed', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.servers[0].url = 'https://staging.intervals.icu/api/v1';
+    const diff = diffSpecs(vendored, live);
+    const report = formatDriftReport(diff);
+    expect(report).toContain('Top-level changed');
+    expect(report).toContain('servers');
+  });
+
+  it('includes an Unclassified change note when otherChanges is true', () => {
+    const diff = {
+      addedOps: [],
+      removedOps: [],
+      changedOps: [],
+      addedSchemas: [],
+      removedSchemas: [],
+      changedSchemas: [],
+      changedPathItems: [],
+      changedComponents: [],
+      changedTopLevel: [],
+      drifted: true,
+      otherChanges: true,
+    };
+    const report = formatDriftReport(diff);
+    expect(report).toContain('Unclassified change');
   });
 });
