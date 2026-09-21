@@ -145,19 +145,65 @@ describe('matchOperations', () => {
 });
 
 describe('applyBaseline', () => {
-  it('splits phantom ops into new (regressions) and resolved (stale baseline entries)', () => {
+  it('splits phantom ops into new (regressions) and resolvedPhantom (stale baseline entries)', () => {
     const phantom = [{ key: 'GET /chats', source: 'chat.service.ts' }, { key: 'GET /search/athletes', source: 'search.service.ts' }];
-    const baselineKeys = ['GET /chats', 'DELETE /athlete/{id}/wellness/{date}'];
-    const { newPhantom, resolved } = applyBaseline(phantom, baselineKeys);
+    const baseline = { phantom: ['GET /chats', 'DELETE /athlete/{id}/wellness/{date}'], covered: [] };
+    const { newPhantom, resolvedPhantom } = applyBaseline({ phantom, coveredKeys: [] }, baseline);
     expect(newPhantom.map((p) => p.key)).toEqual(['GET /search/athletes']);
-    expect(resolved).toEqual(['DELETE /athlete/{id}/wellness/{date}']);
+    expect(resolvedPhantom).toEqual(['DELETE /athlete/{id}/wellness/{date}']);
   });
 
   it('treats every phantom op as new when the baseline is empty', () => {
     const phantom = [{ key: 'GET /chats' }, { key: 'GET /search/athletes' }];
-    const { newPhantom, resolved } = applyBaseline(phantom, []);
+    const { newPhantom, resolvedPhantom } = applyBaseline({ phantom, coveredKeys: [] }, { phantom: [], covered: [] });
     expect(newPhantom.map((p) => p.key).sort()).toEqual(['GET /chats', 'GET /search/athletes']);
-    expect(resolved).toEqual([]);
+    expect(resolvedPhantom).toEqual([]);
+  });
+
+  it('(a) reports lostCoverage when a baseline-covered key is no longer covered', () => {
+    const baseline = { phantom: [], covered: ['GET /a', 'GET /b'] };
+    const { lostCoverage } = applyBaseline({ phantom: [], coveredKeys: ['GET /a'] }, baseline);
+    expect(lostCoverage).toEqual(['GET /b']);
+  });
+
+  it('(b) reports newlyCovered when the current covered set has keys the baseline does not', () => {
+    const baseline = { phantom: [], covered: ['GET /a', 'GET /b'] };
+    const { newlyCovered } = applyBaseline({ phantom: [], coveredKeys: ['GET /a', 'GET /b', 'GET /c'] }, baseline);
+    expect(newlyCovered).toEqual(['GET /c']);
+  });
+
+  it('(c) treats a missing `covered` key in an old baseline as empty and reports every current key as newlyCovered', () => {
+    const baseline = { phantom: [] };
+    const { lostCoverage, newlyCovered } = applyBaseline({ phantom: [], coveredKeys: ['GET /a'] }, baseline);
+    expect(lostCoverage).toEqual([]);
+    expect(newlyCovered).toEqual(['GET /a']);
+  });
+
+  it('removing a matched SDK op from a mini fixture shows lostCoverage is non-empty', () => {
+    const twoOpSpec = {
+      paths: {
+        '/api/v1/foo': { get: { tags: [], summary: '' } },
+        '/api/v1/bar': { get: { tags: [], summary: '' } },
+      },
+    };
+    const spec = specOperations(twoOpSpec);
+    const sdkWithBoth = sdkOperations([
+      { name: 'a.ts', text: "request({ method: 'GET', url: `/foo` })" },
+      { name: 'b.ts', text: "request({ method: 'GET', url: `/bar` })" },
+    ]);
+    const before = matchOperations(spec, sdkWithBoth);
+    const baselineCovered = [...new Set(before.matched.map((m) => m.spec.key))].sort();
+
+    // Now remove the /bar call from the SDK (simulating a regression).
+    const sdkAfter = sdkOperations([{ name: 'a.ts', text: "request({ method: 'GET', url: `/foo` })" }]);
+    const after = matchOperations(spec, sdkAfter);
+    const currentCovered = [...new Set(after.matched.map((m) => m.spec.key))];
+
+    const { lostCoverage } = applyBaseline(
+      { phantom: after.phantom, coveredKeys: currentCovered },
+      { phantom: [], covered: baselineCovered },
+    );
+    expect(lostCoverage).toEqual(['GET /bar']);
   });
 });
 

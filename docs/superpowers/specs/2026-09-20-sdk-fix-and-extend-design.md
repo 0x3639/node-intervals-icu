@@ -102,11 +102,13 @@ the only concrete implementation. Changes:
   which references a method removed in v2.1 and no longer compiles.
 - CI: new `ci.yml` runs lint, typecheck, unit tests, build, and the coverage
   script on every PR and push to main. Coverage is baselined against
-  `spec/coverage-baseline.json` (the 16 currently-known phantom ops): it fails
-  the build only on a new phantom op not in that baseline, or a baseline entry
-  that is no longer phantom (stale, must be removed). `--strict` ignores the
-  baseline and fails on any phantom or missing op; CI switches to `--strict`
-  once Phase 3 reaches 149/149.
+  `spec/coverage-baseline.json` (the 16 currently-known phantom ops and the
+  104 currently-covered spec ops): it fails the build only on a new phantom
+  op not in that baseline, loss of a previously-covered spec op, or a stale
+  baseline entry (a phantom op that's no longer phantom, or a newly-covered
+  spec op not yet recorded). `--strict` ignores the baseline and fails on any
+  phantom or missing op; CI switches to `--strict` once Phase 3 reaches
+  149/149.
 - Weekly `spec-drift.yml` refetches the live spec and opens or updates an
   issue when it differs from the vendored one.
 

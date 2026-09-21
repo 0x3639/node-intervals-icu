@@ -109,15 +109,36 @@ export function matchOperations(specOps, sdkOps) {
 }
 
 /**
- * Split `phantom` ops (from `matchOperations`) against a known-phantom
- * baseline: `newPhantom` is phantom ops not in the baseline (regressions),
- * `resolved` is baseline keys no longer phantom (stale entries that must be
- * removed for the baseline to shrink monotonically).
+ * Compare the current match results against a baseline snapshot.
+ *
+ * `current` is `{ phantom, coveredKeys }`: `phantom` is the phantom-ops list
+ * from `matchOperations`, `coveredKeys` is the current distinct set of
+ * matched spec operation keys. `baseline` is `{ phantom, covered }` as read
+ * from `spec/coverage-baseline.json` (an old baseline may be missing
+ * `covered`, treated as `[]`).
+ *
+ * Returns:
+ * - `newPhantom`: phantom ops not in `baseline.phantom` (regressions).
+ * - `resolvedPhantom`: baseline phantom keys no longer phantom (stale
+ *   entries that must be removed for the baseline to shrink monotonically).
+ * - `lostCoverage`: `baseline.covered` keys not in the current covered set
+ *   (a coverage regression).
+ * - `newlyCovered`: current covered keys not in `baseline.covered` (stale
+ *   baseline entries; the baseline must grow to include them).
  */
-export function applyBaseline(phantom, baselineKeys) {
-  const baseline = new Set(baselineKeys);
+export function applyBaseline({ phantom, coveredKeys }, baseline) {
+  const baselinePhantom = baseline.phantom ?? [];
+  const baselineCovered = baseline.covered ?? [];
+
+  const baselinePhantomSet = new Set(baselinePhantom);
   const phantomKeys = new Set(phantom.map((p) => p.key));
-  const newPhantom = phantom.filter((p) => !baseline.has(p.key));
-  const resolved = baselineKeys.filter((k) => !phantomKeys.has(k));
-  return { newPhantom, resolved };
+  const newPhantom = phantom.filter((p) => !baselinePhantomSet.has(p.key));
+  const resolvedPhantom = baselinePhantom.filter((k) => !phantomKeys.has(k));
+
+  const coveredSet = new Set(coveredKeys);
+  const baselineCoveredSet = new Set(baselineCovered);
+  const lostCoverage = baselineCovered.filter((k) => !coveredSet.has(k));
+  const newlyCovered = [...coveredSet].filter((k) => !baselineCoveredSet.has(k));
+
+  return { newPhantom, resolvedPhantom, lostCoverage, newlyCovered };
 }

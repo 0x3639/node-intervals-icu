@@ -28,7 +28,7 @@ async function loadBaseline() {
   } catch (err) {
     if (err.code === 'ENOENT') {
       console.log(`Baseline: ${baselinePath} not found; treating as empty.`);
-      return [];
+      return { phantom: [], covered: [] };
     }
     console.error(`Could not read ${baselinePath}: ${err.message}`);
     process.exit(1);
@@ -40,7 +40,7 @@ async function loadBaseline() {
     console.error(`${baselinePath} is not valid JSON: ${err.message}`);
     process.exit(1);
   }
-  return parsed.phantom ?? [];
+  return { phantom: parsed.phantom ?? [], covered: parsed.covered ?? [] };
 }
 
 const specPath = path.join(root, 'spec/openapi.json');
@@ -81,8 +81,9 @@ if (httpCallCount !== sdkOps.length) {
 
 if (writeBaselineFlag) {
   const phantomKeys = [...new Set(phantom.map((p) => p.key))].sort();
-  await writeFile(baselinePath, `${JSON.stringify({ phantom: phantomKeys }, null, 2)}\n`);
-  console.log(`Wrote ${phantomKeys.length} phantom ops to ${baselinePath}`);
+  const coveredKeys = [...new Set(matched.map((m) => m.spec.key))].sort();
+  await writeFile(baselinePath, `${JSON.stringify({ phantom: phantomKeys, covered: coveredKeys }, null, 2)}\n`);
+  console.log(`Wrote ${phantomKeys.length} phantom ops and ${coveredKeys.length} covered ops to ${baselinePath}`);
   process.exit(0);
 }
 
@@ -116,12 +117,17 @@ if (strict) {
   process.exit(0);
 }
 
-const baselineKeys = await loadBaseline();
-const { newPhantom, resolved } = applyBaseline(phantom, baselineKeys);
+const baseline = await loadBaseline();
+const coveredKeys = [...new Set(matched.map((m) => m.spec.key))];
+const { newPhantom, resolvedPhantom, lostCoverage, newlyCovered } = applyBaseline(
+  { phantom, coveredKeys },
+  baseline,
+);
 
-console.log(`\nBaseline: ${baselineKeys.length} known phantom ops`);
+console.log(`\nBaseline: ${baseline.phantom.length} phantom, ${baseline.covered.length} covered`);
 console.log(`New phantom (regressions): ${newPhantom.length}`);
-console.log(`Stale baseline entries: ${resolved.length}`);
+console.log(`Lost coverage (regressions): ${lostCoverage.length}`);
+console.log(`Stale baseline entries: ${resolvedPhantom.length} resolved phantom, ${newlyCovered.length} newly covered`);
 
 if (newPhantom.length) {
   console.log('\nNew phantom ops (not in the baseline; fix, document, or add to spec/coverage-baseline.json):');
@@ -129,15 +135,31 @@ if (newPhantom.length) {
     console.log(`  ${p.key}    <- ${p.source}`);
   }
 }
-if (resolved.length) {
+if (lostCoverage.length) {
+  console.log('\nLost coverage (spec ops the baseline had covered that are no longer matched by the SDK):');
+  for (const k of [...lostCoverage].sort()) {
+    console.log(`  ${k}`);
+  }
+}
+if (resolvedPhantom.length) {
   console.log('\nStale baseline entries (no longer phantom; remove from spec/coverage-baseline.json):');
-  for (const k of [...resolved].sort()) {
+  for (const k of [...resolvedPhantom].sort()) {
+    console.log(`  ${k}`);
+  }
+}
+if (newlyCovered.length) {
+  console.log('\nStale baseline entries (newly covered; add to spec/coverage-baseline.json):');
+  for (const k of [...newlyCovered].sort()) {
     console.log(`  ${k}`);
   }
 }
 
-if (newPhantom.length > 0 || resolved.length > 0) {
-  console.error('\nCoverage check failed.');
+if (newPhantom.length > 0 || lostCoverage.length > 0 || resolvedPhantom.length > 0 || newlyCovered.length > 0) {
+  console.error(
+    '\nCoverage check failed. Regressions (new phantom ops, lost coverage) must be fixed. ' +
+      'Stale entries (resolved phantom, newly covered) mean the baseline is out of date: run ' +
+      '`npm run coverage:api -- --write-baseline` to regenerate it.',
+  );
   process.exit(1);
 }
 console.log('\nCoverage check passed.');
