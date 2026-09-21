@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildProbes, runProbes } from '../../scripts/lib/audit-probes.mjs';
+import { buildProbes, runProbes, discoverSampleId } from '../../scripts/lib/audit-probes.mjs';
 
 const ids = {
   athleteId: 'i12345',
@@ -103,6 +103,70 @@ describe('runProbes', () => {
     const otherRows = rows.filter((r) => !r.startsWith('| chats list path '));
     for (const r of otherRows) {
       expect(r).not.toContain('error:');
+    }
+  });
+});
+
+describe('discoverSampleId (Codex round-4 item 3)', () => {
+  it('(a) a rejecting fetchJson resolves to undefined and calls onError', async () => {
+    const fetchJson = vi.fn(async () => {
+      throw new Error('timeout');
+    });
+    const onError = vi.fn();
+    const id = await discoverSampleId(fetchJson, '/athlete/i1/activities', {}, { onError });
+    expect(id).toBeUndefined();
+    expect(onError).toHaveBeenCalledWith('timeout');
+  });
+
+  it('(b) a fetchJson that resolves to a non-array resolves to undefined without calling onError', async () => {
+    const fetchJson = vi.fn(async () => ({ error: 'not a list' }));
+    const onError = vi.fn();
+    const id = await discoverSampleId(fetchJson, '/athlete/i1/activities', {}, { onError });
+    expect(id).toBeUndefined();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it('(b, invalid JSON) a fetchJson that throws a SyntaxError (as res.json() would on invalid JSON) resolves to undefined and calls onError', async () => {
+    const fetchJson = vi.fn(async () => {
+      throw new SyntaxError('Unexpected token < in JSON');
+    });
+    const onError = vi.fn();
+    const id = await discoverSampleId(fetchJson, '/athlete/i1/activities', {}, { onError });
+    expect(id).toBeUndefined();
+    expect(onError).toHaveBeenCalledWith('Unexpected token < in JSON');
+  });
+
+  it('(c) a fetchJson that resolves to [] resolves to undefined', async () => {
+    const fetchJson = vi.fn(async () => []);
+    const id = await discoverSampleId(fetchJson, '/athlete/i1/activities', {});
+    expect(id).toBeUndefined();
+  });
+
+  it('(d) a fetchJson that resolves to [{ id: "a1" }] resolves to "a1"', async () => {
+    const fetchJson = vi.fn(async () => [{ id: 'a1' }]);
+    const id = await discoverSampleId(fetchJson, '/athlete/i1/activities', {});
+    expect(id).toBe('a1');
+  });
+
+  it('(e) one discovery failing does not prevent runProbes from producing rows for probes that do not need that id', async () => {
+    const fetchJson = vi.fn(async () => {
+      throw new Error('activities endpoint down');
+    });
+    const onError = vi.fn();
+    const activityId = await discoverSampleId(fetchJson, '/athlete/i12345/activities', {}, { onError });
+    expect(activityId).toBeUndefined();
+    expect(onError).toHaveBeenCalledWith('activities endpoint down');
+
+    const probes = buildProbes({ ...ids, activityId });
+    const call = vi.fn(async () => ({ status: 200, snippet: 'ok' }));
+    const rows = await runProbes(probes, { call, write: false });
+
+    const nonActivityProbes = probes.filter((p) => !('needs' in p) || p.needs);
+    expect(nonActivityProbes.length).toBeGreaterThan(0);
+    for (const p of nonActivityProbes) {
+      const row = rows.find((r) => r.startsWith(`| ${p.name} `));
+      expect(row).toBeDefined();
+      expect(row).not.toContain('skipped (no sample data)');
     }
   });
 });

@@ -16,6 +16,27 @@ function form(method, path, opts, { malformed = false, athleteId } = {}) {
 }
 
 /**
+ * Discover a sample id to probe with, by calling `fetchJson(path, query)`
+ * (injected so the caller controls timeout/auth/parsing) and taking the
+ * first element's `id` from an array response. Never throws: a rejection
+ * (network failure, `AbortSignal.timeout` abort, `res.json()` failing on
+ * invalid JSON, or any other error) is caught and reported through the
+ * optional `onError(message)` callback, and the function resolves to
+ * `undefined` just as it does for an empty or non-array response -- one
+ * failed discovery must never abort the rest of the audit.
+ */
+export async function discoverSampleId(fetchJson, path, query, { onError } = {}) {
+  let result;
+  try {
+    result = await fetchJson(path, query);
+  } catch (err) {
+    onError?.(err?.message ?? String(err));
+    return undefined;
+  }
+  return Array.isArray(result) && result.length > 0 ? result[0].id : undefined;
+}
+
+/**
  * Build the audit probe table. Each probe pairs an SDK call form with the
  * spec's likely equivalent (or `null` when none exists). `write` is true
  * when either form's method is not GET; `runProbes` uses it to skip

@@ -8,7 +8,7 @@
 // shared-event id 0) for bodyless DELETEs. This is best-effort safety, not a
 // guarantee that no handler runs — it is not a substitute for read-only
 // credentials or a disposable test account.
-import { buildProbes, runProbes } from './lib/audit-probes.mjs';
+import { buildProbes, runProbes, discoverSampleId } from './lib/audit-probes.mjs';
 
 const BASE = 'https://intervals.icu/api/v1';
 const KEY = process.env.INTERVALS_API_KEY;
@@ -30,21 +30,26 @@ async function call(method, path, { query, body, contentType } = {}) {
   return { status: res.status, snippet: text.replace(/\s+/g, ' ').slice(0, 80) };
 }
 
-async function firstId(path, query) {
+async function fetchJson(path, query) {
   const r = await fetch(`${BASE}${path}?${new URLSearchParams(query)}`, {
     headers: { authorization: AUTH },
     signal: AbortSignal.timeout(30_000),
   });
-  if (!r.ok) return undefined;
-  const arr = await r.json();
-  return Array.isArray(arr) && arr.length ? arr[0].id : undefined;
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+async function discover(path, query) {
+  return discoverSampleId(fetchJson, path, query, {
+    onError: (message) => console.error(`warning: could not discover ${path}: ${message}`),
+  });
 }
 
 const today = new Date().toISOString().slice(0, 10);
 const yearAgo = new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
-const activityId = await firstId(`/athlete/${ATHLETE}/activities`, { oldest: yearAgo, newest: today });
-const routeId = await firstId(`/athlete/${ATHLETE}/routes`, {});
-const workoutId = await firstId(`/athlete/${ATHLETE}/workouts`, {});
+const activityId = await discover(`/athlete/${ATHLETE}/activities`, { oldest: yearAgo, newest: today });
+const routeId = await discover(`/athlete/${ATHLETE}/routes`, {});
+const workoutId = await discover(`/athlete/${ATHLETE}/workouts`, {});
 
 const probes = buildProbes({ athleteId: ATHLETE, activityId, routeId, workoutId, today, yearAgo });
 const rows = await runProbes(probes, { call, write: WRITE });
