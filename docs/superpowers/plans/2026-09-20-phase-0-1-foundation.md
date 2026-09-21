@@ -16,7 +16,7 @@
 - No new dependencies in this plan. `openapi-typescript` arrives in Phase 3, not here.
 - Package name becomes `@0x3639/intervals-icu`, version `3.0.0-alpha.0`.
 - Live tests must never run in CI and must be skipped, not failed, when `INTERVALS_API_KEY` or `INTERVALS_ATHLETE_ID` is unset.
-- The audit probe must never create or mutate data. Write-verb probes send a malformed body so the server rejects them before any handler runs.
+- The audit probe sends only GET requests by default. Non-GET probes run only with `INTERVALS_LIVE_WRITE=1`; they use a malformed body or a sentinel id to minimize the chance of side effects, but this is best-effort, not a guarantee.
 - Every commit message ends with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
 - Work happens on branch `chore/spec-and-plan` (already exists, based on `main`). Run `npm ci` once before starting; `node_modules` is absent.
 
@@ -931,7 +931,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: nothing from earlier tasks (raw `fetch`, so the SDK's own bugs cannot mask results).
 - Produces: `AUDIT.md` on stdout. Phase 2's plan reads the verdict column.
 
-**How verdicts are derived.** Spring MVC (the intervals.icu backend) answers 404 for an unknown path, 405 for a known path with an unsupported verb, and 400 or 415 for a known route given a malformed body. So a write-verb probe with a deliberately malformed body distinguishes "route exists" from "route does not exist" without ever reaching a handler. Read probes use real arguments.
+**How verdicts are derived.** Spring MVC (the intervals.icu backend) answers 404 for an unknown path, 405 for a known path with an unsupported verb, and 400 or 415 for a known route given a malformed body. So a write-verb probe with a deliberately malformed body helps distinguish "route exists" from "route does not exist." But `"not-json"` is valid JSON — it's just the wrong shape — so a 400 shows the route exists and rejected the request body, not that no handler ran; this is best-effort, not a guarantee that a handler never executes. Non-GET probes only run at all with `INTERVALS_LIVE_WRITE=1`. Read probes use real arguments.
 
 - [ ] **Step 1: Write the probe script**
 
@@ -1058,7 +1058,7 @@ Pending. Run the probe with your own credentials and commit the output:
 INTERVALS_API_KEY=... INTERVALS_ATHLETE_ID=i12345 npm run audit:probe > AUDIT.md
 ```
 
-The probe only reads data. Its write-verb probes send a malformed body so the server rejects them before any handler runs.
+The probe sends only GET requests by default. Its write-verb probes run only with `INTERVALS_LIVE_WRITE=1` and send a malformed body or a sentinel id to minimize the chance of side effects, but this is best-effort, not a guarantee.
 
 Until this file holds verdicts, Phase 2 (fixes) cannot start. See `docs/superpowers/specs/2026-09-20-sdk-fix-and-extend-design.md`.
 ```

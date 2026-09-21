@@ -5,8 +5,8 @@
 // POST/PUT/DELETE is skipped unless INTERVALS_LIVE_WRITE=1 is set. Even in write
 // mode, those probes send a malformed body where the route takes a body, or use a
 // sentinel id that cannot correspond to real data (wellness date 1900-01-01,
-// shared-event id 0) for bodyless DELETEs. This is best-effort safety, not proof
-// that a handler cannot mutate data — it is not a substitute for read-only
+// shared-event id 0) for bodyless DELETEs. This is best-effort safety, not a
+// guarantee that no handler runs — it is not a substitute for read-only
 // credentials or a disposable test account.
 import { buildProbes, runProbes } from './lib/audit-probes.mjs';
 
@@ -56,7 +56,7 @@ disagrees with \`spec/openapi.json\`. Default mode sends only GET requests: a pr
 uses POST/PUT/DELETE is skipped unless \`INTERVALS_LIVE_WRITE=1\` is set. Even in write mode, those probes
 send a malformed body where the route takes a body (a 400 or 415 means the route exists and rejected the
 input); bodyless DELETEs use a sentinel id that cannot correspond to real data (wellness date 1900-01-01,
-shared-event id 0). This is best-effort safety, not proof that a handler cannot mutate data.
+shared-event id 0). This is best-effort safety, not a guarantee that no handler runs.
 
 Verdict legend: **works-as-written** keep and document as undocumented; **broken: fix to spec** change verb or
 path; **broken: verb** path exists, verb rejected; **broken: delete** route does not exist and spec has no
