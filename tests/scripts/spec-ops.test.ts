@@ -567,6 +567,19 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
       expect(unparsed).toHaveLength(1);
     });
 
+    it('a value with an `as` / `satisfies` type assertion containing a generic comma is not mistaken for a new member', () => {
+      const files = [
+        { name: 'a.ts', text: "this.httpClient.request({ method: 'GET', url: `/a`, params: options as Record<string, unknown> });" },
+        { name: 'b.ts', text: "this.httpClient.request({ method: 'GET', url: `/b`, params: { q, ...options } as Record<string, unknown>, });" },
+        { name: 'c.ts', text: "this.httpClient.download(`/c${id}`, { params: opts satisfies Partial<Map<string, number>> });" },
+        { name: 'd.ts', text: "this.httpClient.upload({ url: `/d${id}`, file: buf as unknown as Blob, fileName });" },
+        { name: 'e.ts', text: "this.httpClient.request({ method: 'GET', url: `/e`, params: canvas, bias: gas });" },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['GET /a', 'GET /b', 'GET /c{x}', 'GET /e', 'POST /d{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
     it('a trailing comma with no options argument still defaults to GET', () => {
       const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`,);' }];
       const { ops, unparsed } = sdkOperations(files);

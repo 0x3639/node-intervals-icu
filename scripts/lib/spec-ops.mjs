@@ -400,6 +400,33 @@ function splitTopLevelArgs(argsText) {
  * `{ invalid: true }` when it is present but shorthand (`url,` / `url }`)
  * or a non-literal expression (`method: someVar`).
  */
+/** `as` or `satisfies` at the current position as a whole word; the caller checks the preceding boundary. */
+const TYPE_ASSERTION_RE = /^(?:as|satisfies)(?=\s)/;
+
+/**
+ * Length of the type expression starting at `i` (just after `as`/`satisfies`):
+ * everything up to the next `,` or `}` at bracket depth 0, treating `<...>`,
+ * `(...)`, `[...]` and `{...}` as nested. Chained `as X as Y` is covered
+ * because the scan only stops at `,` / `}`.
+ */
+function skipTypeAnnotation(text, i) {
+  const start = i;
+  let angle = 0;
+  let bracket = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === '<') angle++;
+    else if (ch === '>') angle = Math.max(0, angle - 1);
+    else if (ch === '(' || ch === '[' || ch === '{') bracket++;
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      if (bracket === 0) break;
+      bracket--;
+    } else if (ch === ',' && angle === 0 && bracket === 0) break;
+    i++;
+  }
+  return i - start;
+}
+
 function topLevelObjectProperties(text) {
   const result = {};
   const n = text.length;
@@ -497,6 +524,12 @@ function topLevelObjectProperties(text) {
     }
     if (/\s/.test(ch)) {
       i++;
+      continue;
+    }
+    if (depth === 1 && !expectKey && /[\s)\]]/.test(text[i - 1] ?? ' ') && TYPE_ASSERTION_RE.test(text.slice(i))) {
+      // `value as Some<Type, Args>` / `value satisfies T`: skip the type so a
+      // comma inside its generic arguments is not read as a member separator.
+      i += skipTypeAnnotation(text, i + TYPE_ASSERTION_RE.exec(text.slice(i))[0].length);
       continue;
     }
     if (expectKey && depth === 1 && /[A-Za-z_$]/.test(ch)) {
