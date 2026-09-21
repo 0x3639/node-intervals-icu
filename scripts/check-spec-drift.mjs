@@ -1,6 +1,9 @@
 // scripts/check-spec-drift.mjs
 // Usage: node scripts/check-spec-drift.mjs
 // Compares the live spec against spec/openapi.json. Exit 2 on drift.
+// Test hook: set INTERVALS_SPEC_FILE to a JSON file path to read the "live"
+// spec from disk instead of fetching it over the network (used by
+// tests/scripts/cli-exit-codes.test.ts; not for normal use).
 import { readFile, writeFile, appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,7 +34,9 @@ try {
 
 let live;
 try {
-  live = await fetchSpec();
+  live = process.env.INTERVALS_SPEC_FILE
+    ? JSON.parse(await readFile(process.env.INTERVALS_SPEC_FILE, 'utf8'))
+    : await fetchSpec();
 } catch (err) {
   console.error(`Could not fetch the live spec: ${err.message}`);
   process.exit(1);
