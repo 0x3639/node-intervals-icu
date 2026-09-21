@@ -337,4 +337,76 @@ describe('IntervalsClient - Core Functionality', () => {
       }
     });
   });
+
+  describe('download and upload verbs', () => {
+    let requestMock: any;
+    beforeEach(() => {
+      requestMock = vi.fn(async (config: any) => ({ data: Buffer.from('PK'), headers: {} }));
+      const mockInstance = {
+        request: requestMock,
+        get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn(),
+        interceptors: { request: { use: vi.fn(), eject: vi.fn() }, response: { use: vi.fn(), eject: vi.fn() } },
+      };
+      mockedAxios.create = vi.fn(() => mockInstance);
+    });
+
+    it('download defaults to GET with no params when called with only a url', async () => {
+      const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      await client.activities.downloadFile('a1');
+      const call = requestMock.mock.calls[0][0];
+      expect(call.method).toBe('GET');
+      expect(call.url).toBe('/activity/a1/file');
+      expect(call.params).toBeUndefined();
+      expect(call.responseType).toBe('arraybuffer');
+    });
+
+    it('download keeps a query param literally named data or method in the query, never the body', async () => {
+      const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const http: any = (client as any).httpClient;
+      await http.download('/x', { params: { data: 'raw', method: 'q' } });
+      const call = requestMock.mock.calls[0][0];
+      expect(call.method).toBe('GET');
+      expect(call.params).toEqual({ data: 'raw', method: 'q' });
+      expect(call.data).toBeUndefined();
+    });
+
+    it('download accepts URLSearchParams for repeated keys', async () => {
+      const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const http: any = (client as any).httpClient;
+      const params = new URLSearchParams([['ids', 'a1'], ['ids', 'a2']]);
+      await http.download('/x', { method: 'POST', params });
+      const call = requestMock.mock.calls[0][0];
+      expect(call.params).toBe(params);
+    });
+
+    it('download can POST with query params and no body', async () => {
+      const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const http: any = (client as any).httpClient;
+      await http.download('/athlete/i1/download-fit-files', { method: 'POST', params: { ids: 'a1,a2' } });
+      const call = requestMock.mock.calls[0][0];
+      expect(call.method).toBe('POST');
+      expect(call.params).toEqual({ ids: 'a1,a2' });
+      expect(call.data).toBeUndefined();
+      expect(call.responseType).toBe('arraybuffer');
+    });
+
+    it('download can POST a JSON body', async () => {
+      const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const http: any = (client as any).httpClient;
+      await http.download('/download-workout.zwo', { method: 'POST', data: { name: 'w' } });
+      const call = requestMock.mock.calls[0][0];
+      expect(call.method).toBe('POST');
+      expect(call.data).toEqual({ name: 'w' });
+    });
+
+    it('upload can PUT multipart', async () => {
+      const client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const http: any = (client as any).httpClient;
+      await http.upload({ url: '/activity/a1/streams.csv', file: Buffer.from('t,w\n1,2'), fileName: 's.csv', method: 'PUT' });
+      const call = requestMock.mock.calls[0][0];
+      expect(call.method).toBe('PUT');
+      expect(call.url).toBe('/activity/a1/streams.csv');
+      expect(call.data).toBeInstanceOf(FormData);
+    });
+  });
 });

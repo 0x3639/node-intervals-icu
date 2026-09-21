@@ -63,7 +63,7 @@ export class ActivityService {
   async downloadFitFiles(activityIds: string[], options?: { power?: boolean; hr?: boolean }, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     const params: Record<string, unknown> = { ids: activityIds.join(','), ...options };
-    return this.httpClient.download(`/athlete/${id}/download-fit-files`, params);
+    return this.httpClient.download(`/athlete/${id}/download-fit-files`, { params });
   }
 
   // ── Single activity (NOT athlete-scoped: /activity/{id}) ──

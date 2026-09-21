@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios';
-import type { IHttpClient, HttpRequestConfig, UploadConfig } from './http-client.interface.js';
+import type { IHttpClient, HttpRequestConfig, UploadConfig, DownloadOptions } from './http-client.interface.js';
 import type { IntervalsConfig } from '../types/index.js';
 import { ErrorHandler, IntervalsAPIError } from './error-handler.js';
 import { RateLimitTracker } from './rate-limit-tracker.js';
@@ -112,16 +112,15 @@ export class AxiosHttpClient implements IHttpClient {
   async upload<T>(config: UploadConfig): Promise<T> {
     return this.withRetry(async () => {
       const form = new FormData();
-      const blob = config.file instanceof Blob
-        ? config.file
-        : new Blob([config.file]);
+      const blob = config.file instanceof Blob ? config.file : new Blob([config.file]);
       form.append(config.fieldName || 'file', blob, config.fileName);
 
-      const response = await this.client.post<T>(config.url, form, {
+      const response = await this.client.request<T>({
+        method: config.method ?? 'POST',
+        url: config.url,
+        data: form,
         params: config.params,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
       });
@@ -129,11 +128,15 @@ export class AxiosHttpClient implements IHttpClient {
     });
   }
 
-  async download(url: string, params?: Record<string, unknown>): Promise<Buffer> {
+  async download(url: string, options: DownloadOptions = {}): Promise<Buffer> {
     return this.withRetry(async () => {
-      const response = await this.client.get(url, {
-        params,
+      const response = await this.client.request({
+        method: options.method ?? 'GET',
+        url,
+        params: options.params,
+        data: options.data,
         responseType: 'arraybuffer',
+        // axios serializes URLSearchParams natively; a plain object uses its default encoder.
       });
       return Buffer.from(response.data);
     });

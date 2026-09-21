@@ -57,7 +57,7 @@ export class WorkoutService {
    * Uses the global endpoint (no athlete prefix).
    */
   async downloadWorkout(workoutId: number, format: '.zwo' | '.mrc' | '.erg' | '.fit'): Promise<Buffer> {
-    return this.httpClient.download(`/download-workout${format}`, { id: workoutId });
+    return this.httpClient.download(`/download-workout${format}`, { params: { id: workoutId } });
   }
 
   /**
@@ -65,6 +65,6 @@ export class WorkoutService {
    */
   async downloadWorkoutForAthlete(workoutId: number, format: '.zwo' | '.mrc' | '.erg' | '.fit', athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.download(`/athlete/${id}/download-workout${format}`, { id: workoutId });
+    return this.httpClient.download(`/athlete/${id}/download-workout${format}`, { params: { id: workoutId } });
   }
 }
