@@ -34,12 +34,26 @@ async function loadAllowlist() {
     console.error(`${allowlistPath} is not valid JSON: ${err.message}`);
     process.exit(1);
   }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    console.error(`${allowlistPath} is malformed: root must be an object.`);
+    process.exit(1);
+  }
   const routes = parsed.routes ?? [];
   if (!Array.isArray(routes)) {
     console.error(`${allowlistPath} is malformed: "routes" must be an array.`);
     process.exit(1);
   }
-  return routes.filter((r) => typeof r?.key === 'string');
+  const invalid = routes
+    .map((r, index) => ({ r, index }))
+    .filter(({ r }) => typeof r?.key !== 'string');
+  if (invalid.length > 0) {
+    console.error(`${allowlistPath} is malformed: every route entry must have a string "key".`);
+    for (const { r, index } of invalid) {
+      console.error(`  [${index}]: ${JSON.stringify(r)}`);
+    }
+    process.exit(1);
+  }
+  return routes;
 }
 
 async function loadSdkFiles() {

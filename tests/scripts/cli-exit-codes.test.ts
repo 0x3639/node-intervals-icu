@@ -163,6 +163,35 @@ describe('coverage.mjs exit codes', () => {
     expect(result.status).toBe(1);
     expect(existsSync(baselineFile)).toBe(false);
   });
+
+  it('(x) exits 1 naming the allowlist file when spec/undocumented-routes.json parses to null', () => {
+    const dir = makeRepo({
+      openapi: miniSpec,
+      baseline: { phantom: [], covered: ['GET /chats'] },
+      serviceFile: matchingServiceFile,
+      allowlist: 'null',
+    });
+
+    const result = runNode(dir, 'coverage.mjs');
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('spec/undocumented-routes.json');
+  });
+
+  it('(xi) exits 1 naming the offending entry when an allowlist route is missing a string key', () => {
+    const dir = makeRepo({
+      openapi: miniSpec,
+      baseline: { phantom: [], covered: ['GET /chats'] },
+      serviceFile: matchingServiceFile,
+      allowlist: JSON.stringify({ routes: [{ note: 'no key' }] }),
+    });
+
+    const result = runNode(dir, 'coverage.mjs');
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('0');
+    expect(result.stderr).toContain('no key');
+  });
 });
 
 describe('check-spec-drift.mjs exit codes', () => {
