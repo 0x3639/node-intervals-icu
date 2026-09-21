@@ -26,8 +26,14 @@ export async function upsertDriftIssue({ github, owner, repo, label, title, body
     }
   }
 
-  const { data: openAndPRs } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: label });
-  // listForRepo also returns pull requests (they carry a `pull_request` property); skip them.
+  // listForRepo is paginated (100 items per page) and also returns pull requests
+  // (they carry a `pull_request` property); page through all of it and skip them.
+  const openAndPRs = [];
+  for (let page = 1; ; page++) {
+    const { data } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', labels: label, per_page: 100, page });
+    openAndPRs.push(...data);
+    if (data.length < 100) break;
+  }
   const open = openAndPRs.filter((item) => !item.pull_request);
   if (open.length) {
     await github.rest.issues.createComment({ owner, repo, issue_number: open[0].number, body });

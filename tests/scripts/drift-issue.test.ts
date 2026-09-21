@@ -113,6 +113,26 @@ describe('upsertDriftIssue', () => {
     expect(result).toEqual({ action: 'commented', number: 7 });
   });
 
+  it('(h) paginates the open-issue lookup: a first page full of PRs, second page has the issue -> commented on it', async () => {
+    const page1 = Array.from({ length: 100 }, (_, i) => ({ number: i + 1, pull_request: {} }));
+    const page2 = [{ number: 200 }];
+    const listForRepo = vi.fn(async ({ page }) => ({ data: page === 1 ? page1 : page === 2 ? page2 : [] }));
+    const github = mockGithub({
+      getLabel: vi.fn().mockResolvedValue({}),
+      listForRepo,
+    });
+
+    const result = await upsertDriftIssue({ github, owner, repo, label, title, body });
+
+    expect(listForRepo).toHaveBeenCalledTimes(2);
+    expect(listForRepo).toHaveBeenNthCalledWith(1, expect.objectContaining({ owner, repo, per_page: 100, page: 1 }));
+    expect(listForRepo).toHaveBeenNthCalledWith(2, expect.objectContaining({ owner, repo, per_page: 100, page: 2 }));
+    expect(github.rest.issues.createComment).toHaveBeenCalledWith(
+      expect.objectContaining({ owner, repo, issue_number: 200, body }),
+    );
+    expect(result).toEqual({ action: 'commented', number: 200 });
+  });
+
   it('(g) creates a new issue when every open, labeled item is a pull request', async () => {
     const github = mockGithub({
       getLabel: vi.fn().mockResolvedValue({}),

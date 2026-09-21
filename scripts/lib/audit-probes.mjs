@@ -96,10 +96,25 @@ export function buildProbes({ athleteId, activityId, routeId, workoutId, today, 
 }
 
 /**
+ * Call `call(method, path, opts)` and catch a rejection so one probe's
+ * network failure cannot abort the rest of the run. Returns `{ ok: true,
+ * res }` on success or `{ ok: false, message }` on failure.
+ */
+async function safeCall(call, method, path, opts) {
+  try {
+    return { ok: true, res: await call(method, path, opts) };
+  } catch (err) {
+    return { ok: false, message: err?.message ?? String(err) };
+  }
+}
+
+/**
  * Run the probe table against an injected `call(method, path, opts)`.
  * `write` gates mutating probes: when false, a probe with `write: true` is
  * never called and its row says so. Probes whose `needs` is falsy are also
- * skipped without a call. Returns the Markdown table rows.
+ * skipped without a call. A `call` that rejects for one probe's SDK or spec
+ * form does not abort the run: that form's column shows `error: <message>`
+ * and the row's verdict is `ambiguous`. Returns the Markdown table rows.
  */
 export async function runProbes(probes, { call, write }) {
   const rows = [];
@@ -112,8 +127,22 @@ export async function runProbes(probes, { call, write }) {
       rows.push(`| ${p.name} | skipped (write probe; set INTERVALS_LIVE_WRITE=1) | | |`);
       continue;
     }
-    const sdkRes = await call(p.sdk.method, p.sdk.path, p.sdk.opts ?? {});
-    const specRes = p.spec ? await call(p.spec.method, p.spec.path, p.spec.opts ?? {}) : null;
+    const sdkOutcome = await safeCall(call, p.sdk.method, p.sdk.path, p.sdk.opts ?? {});
+    const specOutcome = p.spec ? await safeCall(call, p.spec.method, p.spec.path, p.spec.opts ?? {}) : null;
+
+    if (!sdkOutcome.ok || (specOutcome && !specOutcome.ok)) {
+      const sdkForm = sdkOutcome.ok ? `${p.sdk.display} → ${sdkOutcome.res.status}` : `error: ${sdkOutcome.message}`;
+      const specForm = !p.spec
+        ? 'none'
+        : specOutcome.ok
+          ? `${p.spec.display} → ${specOutcome.res.status}`
+          : `error: ${specOutcome.message}`;
+      rows.push(`| ${p.name} | ${sdkForm} | ${specForm} | ambiguous |`);
+      continue;
+    }
+
+    const sdkRes = sdkOutcome.res;
+    const specRes = specOutcome ? specOutcome.res : null;
     const sdkForm = `${p.sdk.display} → ${sdkRes.status}`;
     const specForm = specRes ? `${p.spec.display} → ${specRes.status}` : 'none';
     rows.push(

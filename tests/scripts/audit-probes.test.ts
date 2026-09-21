@@ -84,4 +84,25 @@ describe('runProbes', () => {
     const activityProbeCallCount = call.mock.calls.filter(([, path]) => String(path).includes('a1')).length;
     expect(activityProbeCallCount).toBe(0);
   });
+
+  it('(d) a call that rejects for one probe shows error: in that row and does not abort the run; other rows are unaffected', async () => {
+    const probes = buildProbes(ids);
+    const call = vi.fn(async (method, path) => {
+      if (path === '/chats') throw new Error('network boom');
+      return { status: 200, snippet: 'ok' };
+    });
+
+    const rows = await runProbes(probes, { call, write: false });
+
+    const failedRow = rows.find((r) => r.startsWith('| chats list path '));
+    expect(failedRow).toContain('error: network boom');
+    expect(failedRow).toContain('ambiguous');
+
+    // Every other row must still be produced, and none of them shows an error.
+    expect(rows).toHaveLength(probes.length);
+    const otherRows = rows.filter((r) => !r.startsWith('| chats list path '));
+    for (const r of otherRows) {
+      expect(r).not.toContain('error:');
+    }
+  });
 });
