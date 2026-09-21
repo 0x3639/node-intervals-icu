@@ -15,6 +15,7 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - `client.wellness.deleteWellness()`: the API has no DELETE mapping for wellness records.
 - `client.activities.getWeather()`: duplicate of `getWeatherSummary()`.
 - `client.workouts.downloadWorkout()` / `downloadWorkoutForAthlete()`: replaced by `convertWorkout()` / `convertWorkoutForAthlete()`, which POST a workout body as the API requires.
+- `FitnessService` class export.
 
 ### Changed
 - **Package renamed** to `@0x3639/intervals-icu`. Install and import paths change.
@@ -23,6 +24,7 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - `client.weather.getWeather()` renamed to `getForecast()` and calls `/weather-forecast`.
 - `client.routes.getSimilarities(routeId)` replaced by `getSimilarity(routeId, otherRouteId)` returning one `RouteSimilarity`.
 - `getPowerHRCurve` does not yet accept `filters`; object-valued query arrays have no verified encoding.
+- `ChatService` constructor now requires `defaultAthleteId` (only relevant if you construct services directly).
 - `client.activities.downloadFitFiles()` sends POST; `updateStreamsCSV()` sends PUT.
 - `IHttpClient.download(url, options)` replaces `download(url, params)`: query params go in `options.params` (object or `URLSearchParams`), `options.method` may be `POST`, `options.data` is a JSON body. `upload()` accepts `method`. Breaking only for custom `IHttpClient` implementations.
 

@@ -40,4 +40,11 @@ describe('path fixes (AUDIT.md)', () => {
     expect((client.search as any).searchAthletes).toBeUndefined();
     expect((client.wellness as any).deleteWellness).toBeUndefined();
   });
+
+  it('renamed/removed routes are gone: getPowerVsHR, getWeather, getSimilarities, downloadWorkoutForAthlete', () => {
+    expect((client.performance as any).getPowerVsHR).toBeUndefined();
+    expect((client.weather as any).getWeather).toBeUndefined();
+    expect((client.routes as any).getSimilarities).toBeUndefined();
+    expect((client.workouts as any).downloadWorkoutForAthlete).toBeUndefined();
+  });
 });

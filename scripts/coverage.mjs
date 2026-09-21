@@ -34,7 +34,12 @@ async function loadAllowlist() {
     console.error(`${allowlistPath} is not valid JSON: ${err.message}`);
     process.exit(1);
   }
-  return parsed.routes ?? [];
+  const routes = parsed.routes ?? [];
+  if (!Array.isArray(routes)) {
+    console.error(`${allowlistPath} is malformed: "routes" must be an array.`);
+    process.exit(1);
+  }
+  return routes.filter((r) => typeof r?.key === 'string');
 }
 
 async function loadSdkFiles() {
@@ -121,11 +126,15 @@ if (unused.length) {
 }
 
 if (writeBaselineFlag) {
+  if (allowlistFailed) {
+    console.error('\nNot writing baseline: fix the stale allowlist entries above first.');
+    process.exit(1);
+  }
   const phantomKeys = [...new Set(phantom.map((p) => p.key))].sort();
   const coveredKeys = [...new Set(matched.map((m) => m.spec.key))].sort();
   await writeFile(baselinePath, `${JSON.stringify({ phantom: phantomKeys, covered: coveredKeys }, null, 2)}\n`);
   console.log(`Wrote ${phantomKeys.length} phantom ops and ${coveredKeys.length} covered ops to ${baselinePath}`);
-  process.exit(allowlistFailed ? 1 : 0);
+  process.exit(0);
 }
 
 console.log(`Spec operations:      ${specOps.length}`);

@@ -417,6 +417,9 @@ describe('IntervalsClient - Core Functionality', () => {
       expect(call.method).toBe('PUT');
       expect(call.url).toBe('/activity/a1/streams.csv');
       expect(call.data).toBeInstanceOf(FormData);
+      expect(call.headers['Content-Type']).toBe('multipart/form-data');
+      expect(call.maxContentLength).toBe(Infinity);
+      expect(call.maxBodyLength).toBe(Infinity);
     });
   });
 });

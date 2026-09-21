@@ -87,6 +87,9 @@ describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
     if (!id) ctx.skip();
     expect(await liveClient().activities.getWeatherSummary(id as string)).toBeTypeOf('object');
   });
+  // This account has exactly one route, so we compare it against itself. That proves the
+  // route (GET /routes/{id}/similarity/{otherId}) is reachable and responds — it does not
+  // prove the similarity value is semantically meaningful for two distinct routes.
   it('getSimilarity responds for the first route', async (ctx) => {
     const [route] = await liveClient().routes.list();
     if (!route?.route_id) ctx.skip();

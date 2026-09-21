@@ -78,7 +78,7 @@ Unchanged in shape. Services depend on `IHttpClient`; `AxiosHttpClient` is
 the only concrete implementation. Changes:
 
 - `IHttpClient.download` gains an options object: `{ method?: 'GET' | 'POST'; params?; data? }`.
-  The current `(url, params)` signature stays as an overload for one release.
+  The positional params form was removed; `download(url, options?)` only.
 - New `AnalyticsService` at `src/services/analytics.service.ts`, exposed as
   `client.analytics`. Activity-level analytics that already live in
   `ActivityService` (curves, best-efforts, hr-load-model) stay put; the new

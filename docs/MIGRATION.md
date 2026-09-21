@@ -10,7 +10,7 @@ This guide covers all breaking changes when upgrading from v2.x to v3.x. Every c
 | `client.fitness.getSummaries()` | `client.athletes.getSummary()` |
 | `client.search.searchAthletes()` | none — the route never existed |
 | `client.wellness.deleteWellness()` | none — the API has no DELETE mapping for wellness records |
-| `client.activities.getWeather()` | `client.activities.getWeatherSummary()` (it was a duplicate) |
+| `client.activities.getWeather()` | removed; the nearest working endpoint is `getWeatherSummary()`, which returns a different shape (`ActivityWeatherSummary`) |
 | `client.workouts.downloadWorkout()` | `client.workouts.convertWorkout()`, or `client.events.downloadWorkout(eventId, format)` for a calendar event |
 | `client.workouts.downloadWorkoutForAthlete()` | `client.workouts.convertWorkoutForAthlete()`, or `client.events.downloadWorkout(eventId, format)` |
 
