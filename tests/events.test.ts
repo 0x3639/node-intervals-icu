@@ -176,4 +176,16 @@ describe('IntervalsClient - Events', () => {
   it('should delete an event', async () => {
     await expect(client.events.deleteEvent(1)).resolves.toBeUndefined();
   });
+
+  describe('downloadWorkout by event id', () => {
+    it('GETs /events/{id}/download{ext}', async () => {
+      const seen: any[] = [];
+      setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return Buffer.from('x'); });
+      const c = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      await c.events.downloadWorkout(42, '.mrc');
+      expect(seen[0].method).toBe('GET');
+      expect(seen[0].url).toBe('/athlete/i1/events/42/download.mrc');
+      expect(seen[0].responseType).toBe('arraybuffer');
+    });
+  });
 });

@@ -6,15 +6,15 @@
 [![license](https://img.shields.io/npm/l/%400x3639%2Fintervals-icu)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
-> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage, working toward full coverage of the Intervals.icu OpenAPI spec (see [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
+> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — 114 of 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
-**100+ typed methods** across 16 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~21 KB minified.
+**100+ typed methods** across 15 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~21 KB minified.
 
 ## Features
 
-- **16 services, 100+ methods** — athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, fitness, performance curves, search
+- **15 services, 100+ methods** — athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, performance curves, search
 - **Full TypeScript types** — ~100 exported interfaces with JSDoc on every public method
 - **Dual authentication** — API key (personal use) or OAuth bearer token (third-party apps)
 - **File upload & download** — multipart activity uploads (.fit/.tcx/.gpx/.zip), binary exports
@@ -80,15 +80,15 @@ const settings = await client.sportSettings.list();
 // Chats
 await client.chats.sendMessage({ to_athlete_id: 'i456', content: 'Great workout!', type: 'TEXT' });
 
-// Fitness & Performance
-const fitness = await client.fitness.getFitness({ oldest: '2024-01-01', newest: '2024-12-31' });
+// Athlete summary & Performance
+const summary = await client.athletes.getSummary({ start: '2024-01-01', end: '2024-12-31' });
 const curves = await client.performance.getPowerCurves({ oldest: '2024-01-01', newest: '2024-12-31' });
 
 // Search
 const results = await client.search.searchActivities('tempo run');
 
 // Weather
-const weather = await client.weather.getWeather();
+const weather = await client.weather.getForecast();
 
 // Upload an activity file
 import { readFileSync } from 'fs';
@@ -114,22 +114,21 @@ interface IntervalsConfig {
 
 | Service | Accessor | Key Methods |
 |---------|----------|-------------|
-| **Athletes** | `client.athletes` | `getAthlete`, `updateAthlete`, `getTrainingPlan`, `updateTrainingPlan`, `getProfile` |
-| **Activities** | `client.activities` | `listActivities`, `getActivity`, `updateActivity`, `deleteActivity`, `uploadActivity`, `getStreams`, `getIntervals`, `getWeather`, `getPowerCurve`, `getMessages` |
-| **Events** | `client.events` | `listEvents`, `getEvent`, `createEvent`, `updateEvent`, `deleteEvent`, `createEventsBulk`, `markAsDone`, `duplicateEvents` |
-| **Wellness** | `client.wellness` | `listWellness`, `getWellnessByDate`, `createWellness`, `updateWellness`, `deleteWellness`, `updateWellnessBulk` |
-| **Workouts** | `client.workouts` | `listWorkouts`, `getWorkout`, `createWorkout`, `updateWorkout`, `deleteWorkout`, `createWorkoutsBulk`, `duplicateWorkouts` |
+| **Athletes** | `client.athletes` | `getAthlete`, `updateAthlete`, `getTrainingPlan`, `updateTrainingPlan`, `getProfile`, `getSummary` |
+| **Activities** | `client.activities` | `listActivities`, `getActivity`, `updateActivity`, `deleteActivity`, `uploadActivity`, `getStreams`, `getIntervals`, `getWeatherSummary`, `getPowerCurve`, `listMessages` |
+| **Events** | `client.events` | `listEvents`, `getEvent`, `createEvent`, `updateEvent`, `deleteEvent`, `createEventsBulk`, `markEventAsDone`, `duplicateEvents`, `downloadWorkout` |
+| **Wellness** | `client.wellness` | `listWellness`, `getWellnessByDate`, `createWellness`, `updateWellness`, `updateWellnessBulk` |
+| **Workouts** | `client.workouts` | `listWorkouts`, `getWorkout`, `createWorkout`, `updateWorkout`, `deleteWorkout`, `createWorkoutsBulk`, `duplicateWorkouts`, `convertWorkout` |
 | **Sport Settings** | `client.sportSettings` | `list`, `get`, `create`, `update`, `delete`, `applyToActivities` |
 | **Folders** | `client.folders` | `list`, `create`, `update`, `delete`, `getSharedWith`, `importWorkout`, `applyPlanChanges` |
 | **Gear** | `client.gear` | `create`, `update`, `delete`, `replace`, `createReminder`, `deleteReminder` |
 | **Chats** | `client.chats` | `listChats`, `listMessages`, `sendMessage`, `markSeen` |
-| **Weather** | `client.weather` | `getWeather`, `getWeatherConfig`, `updateWeatherConfig` |
-| **Routes** | `client.routes` | `list`, `get`, `update`, `getSimilarRoutes` |
+| **Weather** | `client.weather` | `getForecast`, `getWeatherConfig`, `updateWeatherConfig` |
+| **Routes** | `client.routes` | `list`, `get`, `update`, `getSimilarity` |
 | **Custom Items** | `client.customItems` | `list`, `get`, `create`, `update`, `delete`, `reorder`, `uploadImage` |
 | **Shared Events** | `client.sharedEvents` | `get`, `create`, `update`, `delete` |
-| **Fitness** | `client.fitness` | `getFitness`, `getSummaries` |
-| **Performance** | `client.performance` | `getPowerCurves`, `getPaceCurves`, `getHRCurves`, `getPowerVsHR`, `getActivityPowerCurves` |
-| **Search** | `client.search` | `searchActivities`, `searchAthletes` |
+| **Performance** | `client.performance` | `getPowerCurves`, `getPaceCurves`, `getHRCurves`, `getPowerHRCurve`, `getActivityPowerCurves` |
+| **Search** | `client.search` | `searchActivities` |
 
 ## Error Handling
 
@@ -193,11 +192,11 @@ The TypeScript/Node.js ecosystem has a few Intervals.icu API clients worth knowi
 
 | Library | npm | Approach | Coverage | Error handling |
 |---------|-----|----------|----------|---------------|
-| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 16 services, 100+ endpoints | throws `IntervalsAPIError` |
+| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 15 services, 100+ endpoints | throws `IntervalsAPIError` |
 | **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` — never throws |
 
 **When to use `@0x3639/intervals-icu` (this library):**
-- You need the broadest API coverage (16 service groups including routes, gear, weather, custom items, fitness, performance, and search)
+- You need the broadest API coverage (15 service groups including routes, gear, weather, custom items, performance, and search)
 - You prefer familiar `try/catch` error handling
 - You're comfortable tracking an actively-developed fork (see [AUDIT.md](./AUDIT.md) for known gaps and CHANGELOG for breaking changes)
 

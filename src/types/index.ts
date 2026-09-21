@@ -119,6 +119,8 @@ export type {
   Workout,
   WorkoutEx,
   WorkoutInput,
+  WorkoutConversionInput,
+  WorkoutFormat,
   DuplicateWorkoutsDTO,
 } from './workout.js';
 

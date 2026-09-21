@@ -132,4 +132,31 @@ describe('IntervalsClient - Activities', () => {
       expect(typeof activity.perceived_exertion).toBe('number');
     }
   });
+
+  describe('verb fixes (AUDIT.md)', () => {
+    let seen: any[] = [];
+    beforeEach(() => {
+      seen = [];
+      setupAxiosMock(mockedAxios, async (config: any) => {
+        seen.push(config);
+        if (config.responseType === 'arraybuffer') return Buffer.from('PK');
+        return { updated: 1 };
+      });
+      client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+    });
+
+    it('downloadFitFiles POSTs with comma-joined ids in the query', async () => {
+      await client.activities.downloadFitFiles(['a1', 'a2'], { power: false });
+      expect(seen[0].method).toBe('POST');
+      expect(seen[0].url).toBe('/athlete/i1/download-fit-files');
+      expect(seen[0].params).toEqual({ ids: 'a1,a2', power: false });
+      expect(seen[0].data).toBeUndefined();
+    });
+
+    it('updateStreamsCSV PUTs multipart', async () => {
+      await client.activities.updateStreamsCSV('a1', Buffer.from('t,w\n1,2'), 'streams.csv');
+      expect(seen[0].method).toBe('PUT');
+      expect(seen[0].url).toBe('/activity/a1/streams.csv');
+    });
+  });
 });

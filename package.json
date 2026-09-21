@@ -1,6 +1,6 @@
 {
   "name": "@0x3639/intervals-icu",
-  "version": "3.0.0-alpha.0",
+  "version": "3.0.0-alpha.1",
   "description": "Comprehensive TypeScript client library for the Intervals.icu API — 100+ endpoints, full type safety, OAuth & API key auth",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -19,7 +19,8 @@
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --clean --minify",
     "lint": "eslint src scripts --ext .ts,.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && npm run typecheck:examples",
+    "typecheck:examples": "tsc -p tsconfig.examples.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:live": "vitest run --config vitest.live.config.ts",

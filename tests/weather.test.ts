@@ -23,7 +23,7 @@ describe('IntervalsClient - Weather', () => {
 
   beforeEach(() => {
     setupAxiosMock(mockedAxios, async (config: any) => {
-      if (config.url.endsWith('/weather') && config.method === 'GET') {
+      if (config.url.endsWith('/weather-forecast') && config.method === 'GET') {
         return mockWeather;
       }
       if (config.url.endsWith('/weather-config') && config.method === 'GET') {
@@ -42,7 +42,7 @@ describe('IntervalsClient - Weather', () => {
   });
 
   it('should get weather forecast', async () => {
-    const weather = await client.weather.getWeather();
+    const weather = await client.weather.getForecast();
     expect(weather).toBeDefined();
     expect(weather.forecasts).toBeDefined();
     expect(weather.forecasts!.length).toBe(1);

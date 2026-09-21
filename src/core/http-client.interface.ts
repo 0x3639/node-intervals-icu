@@ -26,6 +26,18 @@ export interface UploadConfig {
   fileName: string;
   params?: Record<string, unknown>;
   fieldName?: string;
+  /** HTTP verb for the multipart request. Defaults to POST. */
+  method?: 'POST' | 'PUT';
+}
+
+/** Options for binary downloads. */
+export interface DownloadOptions {
+  /** HTTP verb. Defaults to GET. */
+  method?: 'GET' | 'POST';
+  /** Query parameters. Use URLSearchParams when a key must repeat (e.g. `ids=a&ids=b`). */
+  params?: Record<string, unknown> | URLSearchParams;
+  /** JSON body, only meaningful with POST. */
+  data?: unknown;
 }
 
 /**
@@ -44,7 +56,8 @@ export interface IHttpClient {
   upload<T>(config: UploadConfig): Promise<T>;
 
   /**
-   * Download a file as a Buffer
+   * Download a file as a Buffer. Query parameters always go in `options.params`;
+   * there is no positional params overload.
    */
-  download(url: string, params?: Record<string, unknown>): Promise<Buffer>;
+  download(url: string, options?: DownloadOptions): Promise<Buffer>;
 }

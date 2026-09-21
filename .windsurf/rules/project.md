@@ -4,7 +4,7 @@ description: Core project rules for the intervals-icu npm library (TypeScript cl
 
 # node-intervals-icu — TypeScript Client Library for Intervals.icu
 
-Open-source npm package (`intervals-icu`) providing a comprehensive, fully-typed TypeScript client for the [Intervals.icu](https://intervals.icu) API. Currently at **v2.0** with 16 services, 100+ methods, and ~100 exported types.
+Open-source npm package (`@0x3639/intervals-icu`) providing a comprehensive, fully-typed TypeScript client for the [Intervals.icu](https://intervals.icu) API. Currently at **v3.0.0-alpha.1** with 15 services, 100+ methods, and ~100 exported types.
 
 ## Stack
 - **Language**: TypeScript 5.3+ (strict mode)
@@ -20,14 +20,14 @@ Follows SOLID principles — especially Dependency Inversion (services depend on
 
 ```
 src/
-├── client.ts              # IntervalsClient — composes all 16 services
+├── client.ts              # IntervalsClient — composes all 15 services
 ├── index.ts               # Public barrel export (all services, types, errors)
 ├── core/
 │   ├── http-client.interface.ts  # IHttpClient, HttpRequestConfig, UploadConfig
 │   ├── axios-http-client.ts      # Concrete axios implementation + retry logic
 │   ├── error-handler.ts          # IntervalsAPIError + ErrorHandler
 │   └── rate-limit-tracker.ts     # Rate-limit header tracking
-├── services/              # 16 service classes (one per API resource)
+├── services/              # 15 service classes (one per API resource)
 │   ├── activity.service.ts
 │   ├── athlete.service.ts
 │   ├── event.service.ts
@@ -41,7 +41,6 @@ src/
 │   ├── route.service.ts
 │   ├── custom-item.service.ts
 │   ├── shared-event.service.ts
-│   ├── fitness.service.ts
 │   ├── performance.service.ts
 │   └── search.service.ts
 └── types/                 # Modular type definitions with barrel index.ts

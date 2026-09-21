@@ -524,13 +524,14 @@ export function sdkOperations(files) {
         const method = optsArg !== undefined ? literalMethod(topLevelObjectProperties(optsArg)) : undefined;
         push(method ?? 'GET', url, name);
       } else {
-        // upload: always POST.
-        const url = literalUrl(topLevelObjectProperties(argsText));
+        // upload: POST unless an explicit top-level `method: 'PUT'` says otherwise.
+        const uploadProps = topLevelObjectProperties(argsText);
+        const url = literalUrl(uploadProps);
         if (url === undefined) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
         }
-        push('POST', url, name);
+        push(literalMethod(uploadProps) ?? 'POST', url, name);
       }
     }
   }
@@ -640,4 +641,14 @@ export function applyBaseline({ phantom, coveredKeys }, baseline) {
   const newlyCovered = [...coveredSet].filter((k) => !baselineCoveredSet.has(k));
 
   return { newPhantom, resolvedPhantom, lostCoverage, newlyCovered };
+}
+
+/** Split phantom ops into those covered by the undocumented-routes allowlist and the rest. */
+export function applyAllowlist(phantom, allowlistKeys) {
+  const allow = new Set(allowlistKeys);
+  const allowed = phantom.filter((p) => allow.has(p.key));
+  const remaining = phantom.filter((p) => !allow.has(p.key));
+  const present = new Set(phantom.map((p) => p.key));
+  const unused = allowlistKeys.filter((k) => !present.has(k));
+  return { phantom: remaining, allowed, unused };
 }

@@ -1,7 +1,7 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   Athlete, AthleteUpdateDTO, AthleteTrainingPlan, AthleteTrainingPlanUpdate,
-  AthleteProfile,
+  AthleteProfile, SummaryWithCats,
 } from '../types/index.js';
 
 /**
@@ -46,5 +46,14 @@ export class AthleteService {
   async getProfile(athleteId?: string): Promise<AthleteProfile> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<AthleteProfile>({ method: 'GET', url: `/athlete/${id}/profile` });
+  }
+
+  /**
+   * Summary information (training load, fitness, categories) for the athlete
+   * and followed athletes over a date range.
+   */
+  async getSummary(options?: { start?: string; end?: string; tags?: string[] }, athleteId?: string): Promise<SummaryWithCats[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<SummaryWithCats[]>({ method: 'GET', url: `/athlete/${id}/athlete-summary`, params: options as Record<string, unknown> });
   }
 }

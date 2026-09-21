@@ -25,12 +25,11 @@ export { WeatherService } from './services/weather.service.js';
 export { RouteService } from './services/route.service.js';
 export { CustomItemService } from './services/custom-item.service.js';
 export { SharedEventService } from './services/shared-event.service.js';
-export { FitnessService } from './services/fitness.service.js';
 export { PerformanceService } from './services/performance.service.js';
 export { SearchService } from './services/search.service.js';
 
 // Core (for advanced usage)
-export type { IHttpClient, HttpRequestConfig, UploadConfig } from './core/http-client.interface.js';
+export type { IHttpClient, HttpRequestConfig, UploadConfig, DownloadOptions } from './core/http-client.interface.js';
 
 // All types
 export type {
@@ -68,7 +67,7 @@ export type {
   Wellness, WellnessInput,
 
   // Workout
-  Workout, WorkoutEx, WorkoutInput, DuplicateWorkoutsDTO,
+  Workout, WorkoutEx, WorkoutInput, WorkoutFormat, DuplicateWorkoutsDTO,
 
   // Sport Settings
   SportSettings,

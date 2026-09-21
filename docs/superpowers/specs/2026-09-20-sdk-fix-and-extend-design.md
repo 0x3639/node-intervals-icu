@@ -78,14 +78,14 @@ Unchanged in shape. Services depend on `IHttpClient`; `AxiosHttpClient` is
 the only concrete implementation. Changes:
 
 - `IHttpClient.download` gains an options object: `{ method?: 'GET' | 'POST'; params?; data? }`.
-  The current `(url, params)` signature stays as an overload for one release.
+  The positional params form was removed; `download(url, options?)` only.
 - New `AnalyticsService` at `src/services/analytics.service.ts`, exposed as
   `client.analytics`. Activity-level analytics that already live in
   `ActivityService` (curves, best-efforts, hr-load-model) stay put; the new
   service holds only the 13 new operations to avoid a breaking move.
-- `FitnessService` is removed unless Phase 1 shows its two routes work live.
-- `spec/openapi.json` is the vendored contract. `scripts/coverage.ts` diffs
-  the SDK against it. `scripts/check-spec-drift.ts` refetches the live spec and
+- `FitnessService` is removed; `athletes.getSummary` replaces it.
+- `spec/openapi.json` is the vendored contract. `scripts/coverage.mjs` diffs
+  the SDK against it. `scripts/check-spec-drift.mjs` refetches the live spec and
   reports a diff.
 - `src/types/generated.ts` is produced by `openapi-typescript` from the
   vendored spec and committed. Hand-written types in `src/types/*.ts` stay
@@ -119,7 +119,7 @@ the only concrete implementation. Changes:
 |---|---|---|
 | 0 | vendored spec, coverage script, CI, drift job, package rename | 3.0.0-alpha.0 |
 | 1 | live test harness, `AUDIT.md` with 16 verdicts (needs user's API key) | unchanged |
-| 2 | verb fixes, path fixes, deletions, regression tests | 3.0.0-alpha.1 |
+| 2 | verb fixes, path fixes, deletions, regression tests | done (3.0.0-alpha.1) — 114 of 149 spec operations covered, 0 phantom SDK ops, 3 allowlisted |
 | 3 | five PRs adding 45 ops, coverage gate tightened to 149/149 | 3.0.0-beta.x |
 | 4 | changelog, migration guide, docs, `.windsurf/rules` refresh, tag | 3.0.0 |
 

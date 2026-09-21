@@ -27,7 +27,7 @@ describe('IntervalsClient - Chats', () => {
 
   beforeEach(() => {
     setupAxiosMock(mockedAxios, async (config: any) => {
-      if (config.url === '/chats' && config.method === 'GET') {
+      if (config.url === '/athlete/test-athlete-id/chats' && config.method === 'GET') {
         return [mockChat];
       }
       if (config.url.match(/\/chats\/\d+\/messages$/) && config.method === 'GET') {

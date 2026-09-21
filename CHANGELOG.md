@@ -7,16 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/MIGRATION.md` once 3.0.0 ships.
+Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/MIGRATION.md` for the full migration guide.
+
+### Removed
+- `client.fitness` (`getFitness`, `getSummaries`): the routes never existed. Use `client.athletes.getSummary()`.
+- `client.search.searchAthletes()`: no such route.
+- `client.wellness.deleteWellness()`: the API has no DELETE mapping for wellness records.
+- `client.activities.getWeather()`: duplicate of `getWeatherSummary()`.
+- `client.workouts.downloadWorkout()` / `downloadWorkoutForAthlete()`: replaced by `convertWorkout()` / `convertWorkoutForAthlete()`, which POST a workout body as the API requires.
+- `FitnessService` class export.
 
 ### Changed
-- **Package renamed** to `@0x3639/intervals-icu`. Install and import paths change; the API surface is unchanged in this alpha.
+- **Package renamed** to `@0x3639/intervals-icu`. Install and import paths change.
+- `client.chats.listChats()` now calls `GET /athlete/{id}/chats` (was `/chats`, 404).
+- `client.performance.getPowerVsHR()` renamed to `getPowerHRCurve({ start, end })` and calls `/power-hr-curve`.
+- `client.weather.getWeather()` renamed to `getForecast()` and calls `/weather-forecast`.
+- `client.routes.getSimilarities(routeId)` replaced by `getSimilarity(routeId, otherRouteId)` returning one `RouteSimilarity`.
+- `getPowerHRCurve` does not yet accept `filters`; object-valued query arrays have no verified encoding.
+- `ChatService` constructor now requires `defaultAthleteId` (only relevant if you construct services directly).
+- `client.activities.downloadFitFiles()` sends POST; `updateStreamsCSV()` sends PUT.
+- `IHttpClient.download(url, options)` replaces `download(url, params)`: query params go in `options.params` (object or `URLSearchParams`), `options.method` may be `POST`, `options.data` is a JSON body. `upload()` accepts `method`. Breaking only for custom `IHttpClient` implementations.
 
 ### Added
+- `client.athletes.getSummary()`, `client.events.downloadWorkout(eventId, format)`, `client.workouts.convertWorkout()` / `convertWorkoutForAthlete()`.
+- `WorkoutConversionInput`: the body type for `convertWorkout()` / `convertWorkoutForAthlete()`; `name`, `description`, `type` and `workout_doc` are required because the live API returns HTTP 500 without them.
 - `spec/openapi.json`: vendored snapshot of the Intervals.icu OpenAPI document
 - `npm run coverage:api`: diffs SDK routes against the vendored spec; enforced in CI
 - `npm run spec:drift`: weekly GitHub Action opens an issue when the live spec changes
 - CI workflow running lint, typecheck, tests and build on Node 18, 20, 22
+- `spec/undocumented-routes.json`: verified live routes absent from the spec (shared-event create/update/delete)
+- `AUDIT.md`: live verdicts for the 16 disputed routes
 
 ## [2.2.1] - 2025-03-04
 

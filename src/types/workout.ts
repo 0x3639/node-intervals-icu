@@ -15,8 +15,12 @@ export interface Workout {
   type?: ActivityType | string;
   name?: string;
   description?: string;
-  /** Structured workout document */
-  workout_doc?: any;
+  /**
+   * Structured workout definition as produced by Intervals.icu (the `workout_doc` field
+   * on calendar workout events). Required by convertWorkout(); its schema is not modelled
+   * yet.
+   */
+  workout_doc?: unknown;
   /** Raw file contents (zwo, mrc, erg, fit) */
   file_contents?: string;
   /** Base64-encoded file contents */
@@ -33,11 +37,29 @@ export interface Workout {
   [key: string]: unknown;
 }
 
+/**
+ * Body for `workouts.convertWorkout()` / `convertWorkoutForAthlete()`.
+ *
+ * The live API returns HTTP 500 unless `name`, `description`, `type` and `workout_doc`
+ * are all present (verified 2026-09-21, see AUDIT.md), so they are required here.
+ * Any other `Workout` field may be included.
+ */
+export interface WorkoutConversionInput extends Partial<Workout> {
+  name: string;
+  description: string;
+  type: ActivityType | string;
+  /** Structured workout definition, e.g. a calendar workout event's `workout_doc`. */
+  workout_doc: unknown;
+}
+
 /** Extended workout data for create/update (includes file content fields) */
 export type WorkoutEx = Workout;
 
 /** Input for creating/updating a workout */
 export type WorkoutInput = Omit<Workout, 'id' | 'athlete_id'>;
+
+/** File format for workout conversion/download */
+export type WorkoutFormat = '.zwo' | '.mrc' | '.erg' | '.fit';
 
 /** DTO for duplicating workouts */
 export interface DuplicateWorkoutsDTO {

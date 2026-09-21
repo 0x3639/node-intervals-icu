@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, cpSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, cpSync, rmSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,9 +24,10 @@ interface RepoOptions {
   baseline?: object | null;
   serviceFile?: string | null;
   clientFile?: string;
+  allowlist?: string | null; // raw file contents; null/undefined = omit the file
 }
 
-function makeRepo({ openapi, baseline, serviceFile, clientFile }: RepoOptions): string {
+function makeRepo({ openapi, baseline, serviceFile, clientFile, allowlist }: RepoOptions): string {
   const dir = mkdtempSync(path.join(tmpdir(), 'intervals-icu-cli-'));
   tmpDirs.push(dir);
 
@@ -38,6 +39,9 @@ function makeRepo({ openapi, baseline, serviceFile, clientFile }: RepoOptions): 
   }
   if (baseline !== null && baseline !== undefined) {
     writeFileSync(path.join(dir, 'spec/coverage-baseline.json'), JSON.stringify(baseline));
+  }
+  if (allowlist !== null && allowlist !== undefined) {
+    writeFileSync(path.join(dir, 'spec/undocumented-routes.json'), allowlist);
   }
 
   mkdirSync(path.join(dir, 'src/services'), { recursive: true });
@@ -129,6 +133,64 @@ describe('coverage.mjs exit codes', () => {
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('Lost coverage');
+  });
+
+  it('(viii) exits 1 naming the allowlist file when spec/undocumented-routes.json is malformed', () => {
+    const dir = makeRepo({
+      openapi: miniSpec,
+      baseline: { phantom: [], covered: ['GET /chats'] },
+      serviceFile: matchingServiceFile,
+      allowlist: JSON.stringify({ routes: 'x' }),
+    });
+
+    const result = runNode(dir, 'coverage.mjs');
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('spec/undocumented-routes.json');
+  });
+
+  it('(ix) --write-baseline exits 1 without writing the baseline when the allowlist has a stale entry', () => {
+    const dir = makeRepo({
+      openapi: miniSpec,
+      baseline: null,
+      serviceFile: matchingServiceFile,
+      allowlist: JSON.stringify({ routes: [{ key: 'GET /no-longer-phantom' }] }),
+    });
+    const baselineFile = path.join(dir, 'spec/coverage-baseline.json');
+
+    const result = runNode(dir, 'coverage.mjs', ['--write-baseline']);
+
+    expect(result.status).toBe(1);
+    expect(existsSync(baselineFile)).toBe(false);
+  });
+
+  it('(x) exits 1 naming the allowlist file when spec/undocumented-routes.json parses to null', () => {
+    const dir = makeRepo({
+      openapi: miniSpec,
+      baseline: { phantom: [], covered: ['GET /chats'] },
+      serviceFile: matchingServiceFile,
+      allowlist: 'null',
+    });
+
+    const result = runNode(dir, 'coverage.mjs');
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('spec/undocumented-routes.json');
+  });
+
+  it('(xi) exits 1 naming the offending entry when an allowlist route is missing a string key', () => {
+    const dir = makeRepo({
+      openapi: miniSpec,
+      baseline: { phantom: [], covered: ['GET /chats'] },
+      serviceFile: matchingServiceFile,
+      allowlist: JSON.stringify({ routes: [{ note: 'no key' }] }),
+    });
+
+    const result = runNode(dir, 'coverage.mjs');
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('0');
+    expect(result.stderr).toContain('no key');
   });
 });
 

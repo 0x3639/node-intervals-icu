@@ -120,4 +120,41 @@ describe('IntervalsClient - Workouts', () => {
     expect(workout).toHaveProperty('duration_secs');
     expect(workout).toHaveProperty('description');
   });
+
+  describe('convertWorkout (POST with body)', () => {
+    const fullBody = {
+      name: 'Tempo',
+      description: '- 20m 85%',
+      type: 'Ride',
+      workout_doc: { steps: [{ duration: 1200, power: { value: 85, units: '%ftp' } }] },
+    };
+
+    it('POSTs the full conversion payload to /download-workout{ext}', async () => {
+      const seen: any[] = [];
+      setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return Buffer.from('<workout_file/>'); });
+      const c = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const out = await c.workouts.convertWorkout(fullBody, '.zwo');
+      expect(seen[0].method).toBe('POST');
+      expect(seen[0].url).toBe('/download-workout.zwo');
+      expect(seen[0].data).toEqual(fullBody);
+      expect(seen[0].data.workout_doc).toEqual(fullBody.workout_doc);
+      expect(seen[0].responseType).toBe('arraybuffer');
+      expect(out.toString()).toBe('<workout_file/>');
+      expect((c.workouts as any).downloadWorkout).toBeUndefined();
+    });
+
+    it('convertWorkoutForAthlete POSTs the full conversion payload to /athlete/{id}/download-workout{ext}', async () => {
+      const seen: any[] = [];
+      setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return Buffer.from('<workout_file/>'); });
+      const c = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const out = await c.workouts.convertWorkoutForAthlete(fullBody, '.zwo');
+      expect(seen[0].method).toBe('POST');
+      expect(seen[0].url).toBe('/athlete/i1/download-workout.zwo');
+      expect(seen[0].data).toEqual(fullBody);
+      expect(seen[0].responseType).toBe('arraybuffer');
+      expect(out.toString()).toBe('<workout_file/>');
+      await c.workouts.convertWorkoutForAthlete(fullBody, '.fit', 'other');
+      expect(seen[1].url).toBe('/athlete/other/download-workout.fit');
+    });
+  });
 });

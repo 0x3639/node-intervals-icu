@@ -2,7 +2,7 @@ import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   Activity, ActivityInput, ListActivitiesOptions, UploadActivityOptions,
   UploadResponse, ActivityId, IntervalsDTO, Interval, ActivityStream,
-  UpdateStreamsResult, MapData, ActivityWeather, ActivityWeatherSummary,
+  UpdateStreamsResult, MapData, ActivityWeatherSummary,
   BestEfforts, PowerVsHRPlot, HRLoadModel, IcuSegment,
   Message, NewActivityMsg, NewMsg,
 } from '../types/index.js';
@@ -59,11 +59,15 @@ export class ActivityService {
     return this.httpClient.request<Activity[]>({ method: 'POST', url: `/athlete/${id}/activities/manual/bulk`, data });
   }
 
-  /** Download zip of Intervals.icu generated activity fit files */
+  /**
+   * Download a zip of Intervals.icu-generated FIT files for the given activities.
+   * The API exposes this as POST with query parameters (see AUDIT.md). `ids` is a
+   * comma-joined value, confirmed live against the real API (see AUDIT.md).
+   */
   async downloadFitFiles(activityIds: string[], options?: { power?: boolean; hr?: boolean }, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     const params: Record<string, unknown> = { ids: activityIds.join(','), ...options };
-    return this.httpClient.download(`/athlete/${id}/download-fit-files`, params);
+    return this.httpClient.download(`/athlete/${id}/download-fit-files`, { method: 'POST', params });
   }
 
   // ── Single activity (NOT athlete-scoped: /activity/{id}) ──
@@ -101,9 +105,9 @@ export class ActivityService {
     return this.httpClient.download(`/activity/${activityId}/streams.csv`);
   }
 
-  /** Upload activity streams CSV */
+  /** Replace activity streams from a CSV file (PUT multipart/form-data) */
   async updateStreamsCSV(activityId: string, file: Buffer | Blob | Uint8Array, fileName: string): Promise<UpdateStreamsResult> {
-    return this.httpClient.upload<UpdateStreamsResult>({ url: `/activity/${activityId}/streams.csv`, file, fileName });
+    return this.httpClient.upload<UpdateStreamsResult>({ url: `/activity/${activityId}/streams.csv`, file, fileName, method: 'PUT' });
   }
 
   // ── Intervals ──
@@ -150,11 +154,6 @@ export class ActivityService {
   /** Get map data (bounds, latlngs, route, weather) */
   async getMap(activityId: string): Promise<MapData> {
     return this.httpClient.request<MapData>({ method: 'GET', url: `/activity/${activityId}/map` });
-  }
-
-  /** Get activity weather */
-  async getWeather(activityId: string): Promise<ActivityWeather> {
-    return this.httpClient.request<ActivityWeather>({ method: 'GET', url: `/activity/${activityId}/weather` });
   }
 
   /** Get activity weather summary */
