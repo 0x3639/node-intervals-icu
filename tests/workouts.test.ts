@@ -120,4 +120,21 @@ describe('IntervalsClient - Workouts', () => {
     expect(workout).toHaveProperty('duration_secs');
     expect(workout).toHaveProperty('description');
   });
+
+  describe('convertWorkout (POST with body)', () => {
+    it('POSTs the workout to /download-workout{ext}', async () => {
+      const seen: any[] = [];
+      setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return Buffer.from('<workout_file/>'); });
+      const c = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+      const out = await c.workouts.convertWorkout({ name: 'Tempo', description: '- 20m 85%', type: 'Ride' }, '.zwo');
+      expect(seen[0].method).toBe('POST');
+      expect(seen[0].url).toBe('/download-workout.zwo');
+      expect(seen[0].data).toEqual({ name: 'Tempo', description: '- 20m 85%', type: 'Ride' });
+      expect(seen[0].responseType).toBe('arraybuffer');
+      expect(out.toString()).toBe('<workout_file/>');
+      await c.workouts.convertWorkoutForAthlete({ name: 'T' }, '.fit');
+      expect(seen[1].url).toBe('/athlete/i1/download-workout.fit');
+      expect((c.workouts as any).downloadWorkout).toBeUndefined();
+    });
+  });
 });

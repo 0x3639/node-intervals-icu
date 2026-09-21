@@ -39,6 +39,9 @@ export type WorkoutEx = Workout;
 /** Input for creating/updating a workout */
 export type WorkoutInput = Omit<Workout, 'id' | 'athlete_id'>;
 
+/** File format for workout conversion/download */
+export type WorkoutFormat = '.zwo' | '.mrc' | '.erg' | '.fit';
+
 /** DTO for duplicating workouts */
 export interface DuplicateWorkoutsDTO {
   numCopies?: number;

@@ -1,5 +1,5 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
-import type { Workout, WorkoutInput, DuplicateWorkoutsDTO, PaginationOptions } from '../types/index.js';
+import type { Workout, WorkoutInput, WorkoutFormat, DuplicateWorkoutsDTO, PaginationOptions } from '../types/index.js';
 
 /**
  * Service for library workout operations (workout templates in folders/plans)
@@ -53,18 +53,22 @@ export class WorkoutService {
   }
 
   /**
-   * Download a workout converted to a specific format (.zwo, .mrc, .erg, .fit).
-   * Uses the global endpoint (no athlete prefix).
+   * Convert a workout definition to .zwo (Zwift), .mrc, .erg or .fit.
+   * The workout is sent in the body; it does not need to exist in the library.
+   * Uses the global endpoint (no athlete-specific settings such as FTP).
+   *
+   * A minimal body of just `{ name, description, type }` returns HTTP 500 on the live API
+   * (verified against the real service). The minimum body confirmed to convert successfully
+   * also includes `workout_doc` (e.g. taken from an existing calendar workout event's
+   * `workout_doc` field): `{ name, description, type, workout_doc }`.
    */
-  async downloadWorkout(workoutId: number, format: '.zwo' | '.mrc' | '.erg' | '.fit'): Promise<Buffer> {
-    return this.httpClient.download(`/download-workout${format}`, { params: { id: workoutId } });
+  async convertWorkout(workout: Partial<Workout>, format: WorkoutFormat): Promise<Buffer> {
+    return this.httpClient.download(`/download-workout${format}`, { method: 'POST', data: workout });
   }
 
-  /**
-   * Download a workout converted to a specific format, resolving athlete-specific settings.
-   */
-  async downloadWorkoutForAthlete(workoutId: number, format: '.zwo' | '.mrc' | '.erg' | '.fit', athleteId?: string): Promise<Buffer> {
+  /** Same as convertWorkout but resolves the athlete's own settings (FTP, zones). */
+  async convertWorkoutForAthlete(workout: Partial<Workout>, format: WorkoutFormat, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.download(`/athlete/${id}/download-workout${format}`, { params: { id: workoutId } });
+    return this.httpClient.download(`/athlete/${id}/download-workout${format}`, { method: 'POST', data: workout });
   }
 }

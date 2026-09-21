@@ -1,7 +1,7 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   Event, EventInput, ListEventsOptions, DeleteEventsRangeOptions, DeleteEventOptions,
-  DoomedEvent, DeleteEventsResponse, DuplicateEventsDTO, ApplyPlanDTO,
+  DoomedEvent, DeleteEventsResponse, DuplicateEventsDTO, ApplyPlanDTO, WorkoutFormat,
 } from '../types/index.js';
 
 /**
@@ -87,5 +87,11 @@ export class EventService {
   async duplicateEvents(data: DuplicateEventsDTO, athleteId?: string): Promise<Event[]> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<Event[]>({ method: 'POST', url: `/athlete/${id}/duplicate-events`, data });
+  }
+
+  /** Download a planned workout from the calendar in zwo, mrc, erg or fit format */
+  async downloadWorkout(eventId: number, format: WorkoutFormat, athleteId?: string): Promise<Buffer> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.download(`/athlete/${id}/events/${eventId}/download${format}`);
   }
 }
