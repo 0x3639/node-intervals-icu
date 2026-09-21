@@ -108,6 +108,12 @@ describe('runProbes', () => {
 });
 
 describe('discoverSampleId (Codex round-4 item 3)', () => {
+  it('falls back to route_id when the list items have no id (routes endpoint)', async () => {
+    const fetchJson = async () => [{ athlete_id: 'i1', route_id: 1526710, name: null }];
+    const id = await discoverSampleId(fetchJson, '/athlete/i1/routes', {});
+    expect(id).toBe(1526710);
+  });
+
   it('(a) a rejecting fetchJson resolves to undefined and calls onError', async () => {
     const fetchJson = vi.fn(async () => {
       throw new Error('timeout');
