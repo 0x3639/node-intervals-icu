@@ -155,6 +155,54 @@ describe('diffSpecs', () => {
     expect(diff.otherChanges).toBe(false);
   });
 
+  it("(l) Codex's exact case: an existing op changed AND a new verb-less path added -> changedOps has the op, addedPaths has the new path, drifted, otherChanges false", () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    // An existing op changes...
+    live.paths['/api/v1/athlete/{id}/wellness{ext}'].get.parameters[0].required = true;
+    // ...and a brand-new path is added whose item has only `parameters`, no verbs.
+    live.paths['/api/v1/athlete/{id}/gear'] = {
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+    };
+    const diff = diffSpecs(vendored, live);
+    expect(diff.changedOps).toEqual(['GET /athlete/{id}/wellness{ext}']);
+    expect(diff.addedPaths).toEqual(['/athlete/{id}/gear']);
+    expect(diff.drifted).toBe(true);
+    expect(diff.otherChanges).toBe(false);
+  });
+
+  it('(m) removal of a verb-less path is reported in removedPaths', () => {
+    const vendored = baseSpec();
+    vendored.paths['/api/v1/athlete/{id}/gear'] = {
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+    };
+    const live = clone(baseSpec());
+    const diff = diffSpecs(vendored, live);
+    expect(diff.removedPaths).toEqual(['/athlete/{id}/gear']);
+    expect(diff.drifted).toBe(true);
+    expect(diff.otherChanges).toBe(false);
+  });
+
+  it('(n) a top-level key added (e.g. externalDocs) is reported in changedTopLevel', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.externalDocs = { url: 'https://intervals.icu/api-docs.html' };
+    const diff = diffSpecs(vendored, live);
+    expect(diff.changedTopLevel).toEqual(['externalDocs']);
+    expect(diff.drifted).toBe(true);
+    expect(diff.otherChanges).toBe(false);
+  });
+
+  it('(o) a components subkey added (e.g. components.parameters) is reported in changedComponents', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.components.parameters = { PageParam: { name: 'page', in: 'query', schema: { type: 'integer' } } };
+    const diff = diffSpecs(vendored, live);
+    expect(diff.changedComponents).toEqual(['parameters']);
+    expect(diff.drifted).toBe(true);
+    expect(diff.otherChanges).toBe(false);
+  });
+
   it('(k) key reorder at every level, including inside securitySchemes, is not drifted', () => {
     const vendored = baseSpec();
     const live = clone(vendored);
@@ -241,6 +289,30 @@ describe('formatDriftReport', () => {
     expect(report).toContain('servers');
   });
 
+  it('includes a Paths added section when a verb-less path is added', () => {
+    const vendored = baseSpec();
+    const live = clone(vendored);
+    live.paths['/api/v1/athlete/{id}/gear'] = {
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+    };
+    const diff = diffSpecs(vendored, live);
+    const report = formatDriftReport(diff);
+    expect(report).toContain('Paths added');
+    expect(report).toContain('/athlete/{id}/gear');
+  });
+
+  it('includes a Paths removed section when a verb-less path is removed', () => {
+    const vendored = baseSpec();
+    vendored.paths['/api/v1/athlete/{id}/gear'] = {
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+    };
+    const live = clone(baseSpec());
+    const diff = diffSpecs(vendored, live);
+    const report = formatDriftReport(diff);
+    expect(report).toContain('Paths removed');
+    expect(report).toContain('/athlete/{id}/gear');
+  });
+
   it('includes an Unclassified change note when otherChanges is true', () => {
     const diff = {
       addedOps: [],
@@ -252,6 +324,8 @@ describe('formatDriftReport', () => {
       changedPathItems: [],
       changedComponents: [],
       changedTopLevel: [],
+      addedPaths: [],
+      removedPaths: [],
       drifted: true,
       otherChanges: true,
     };

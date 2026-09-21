@@ -68,6 +68,12 @@ export function diffSpecs(vendored, live) {
 
   const vPaths = vendored.paths ?? {};
   const lPaths = live.paths ?? {};
+
+  const vPathKeys = new Set(Object.keys(vPaths).map((p) => p.replace(/^\/api\/v1/, '')));
+  const lPathKeys = new Set(Object.keys(lPaths).map((p) => p.replace(/^\/api\/v1/, '')));
+  const addedPaths = [...lPathKeys].filter((k) => !vPathKeys.has(k)).sort();
+  const removedPaths = [...vPathKeys].filter((k) => !lPathKeys.has(k)).sort();
+
   const changedPathItems = Object.keys(vPaths)
     .filter((p) => Object.hasOwn(lPaths, p))
     .filter(
@@ -90,6 +96,16 @@ export function diffSpecs(vendored, live) {
     .filter((k) => stableStringify(vendored[k]) !== stableStringify(live[k]))
     .sort();
 
+  // These lists partition the document: top-level keys other than paths/components
+  // (changedTopLevel, which also catches additions/removals since stableStringify of
+  // an absent key differs from a present one); paths (addedPaths/removedPaths for
+  // whole path items present on only one side, changedPathItems for the non-verb
+  // part of a path item present on both sides, and addedOps/removedOps/changedOps
+  // for the verb-level operations); components (the schemas lists, plus
+  // changedComponents for every other components subkey, which also catches
+  // additions/removals of a subkey the same way changedTopLevel does). If every one
+  // of these lists is empty but the documents still differ, nothing above explains
+  // why, so `otherChanges` is a genuine safety net.
   const classifiedDrift = Boolean(
     addedOps.length ||
       removedOps.length ||
@@ -97,6 +113,8 @@ export function diffSpecs(vendored, live) {
       addedSchemas.length ||
       removedSchemas.length ||
       changedSchemas.length ||
+      addedPaths.length ||
+      removedPaths.length ||
       changedPathItems.length ||
       changedComponents.length ||
       changedTopLevel.length,
@@ -116,6 +134,8 @@ export function diffSpecs(vendored, live) {
     addedSchemas,
     removedSchemas,
     changedSchemas,
+    addedPaths,
+    removedPaths,
     changedPathItems,
     changedComponents,
     changedTopLevel,
@@ -138,6 +158,8 @@ export function formatDriftReport(diff) {
     section('Schemas added', diff.addedSchemas) +
     section('Schemas removed', diff.removedSchemas) +
     section('Schemas changed', diff.changedSchemas) +
+    section('Paths added', diff.addedPaths) +
+    section('Paths removed', diff.removedPaths) +
     section('Path items changed', diff.changedPathItems) +
     section('Components changed', diff.changedComponents) +
     section('Top-level changed', diff.changedTopLevel) +
