@@ -119,6 +119,7 @@ export type {
   Workout,
   WorkoutEx,
   WorkoutInput,
+  WorkoutDoc,
   WorkoutConversionInput,
   WorkoutFormat,
   DuplicateWorkoutsDTO,

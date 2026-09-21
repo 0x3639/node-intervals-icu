@@ -400,6 +400,42 @@ function splitTopLevelArgs(argsText) {
  * `{ invalid: true }` when it is present but shorthand (`url,` / `url }`)
  * or a non-literal expression (`method: someVar`).
  */
+/** `as` or `satisfies` at the current position as a whole word; the caller checks the preceding boundary. */
+const TYPE_ASSERTION_RE = /^(?:as|satisfies)(?=\s)/;
+
+/**
+ * Length of the type expression starting at `i` (just after `as`/`satisfies`):
+ * everything up to the next `,` or `}` at bracket depth 0, treating `<...>`,
+ * `(...)`, `[...]` and `{...}` as nested and skipping string / template
+ * literal types (`'a,b'`, `\`x,${T}\``) whole. Chained `as X as Y` is covered
+ * because the scan only stops at `,` / `}`.
+ */
+function skipTypeAnnotation(text, i) {
+  const start = i;
+  let angle = 0;
+  let bracket = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    if (ch === "'" || ch === '"') {
+      i += readString(text, i)[0];
+      continue;
+    }
+    if (ch === '`') {
+      i += readTemplate(text, i, false)[0];
+      continue;
+    }
+    if (ch === '<') angle++;
+    else if (ch === '>') angle = Math.max(0, angle - 1);
+    else if (ch === '(' || ch === '[' || ch === '{') bracket++;
+    else if (ch === ')' || ch === ']' || ch === '}') {
+      if (bracket === 0) break;
+      bracket--;
+    } else if (ch === ',' && angle === 0 && bracket === 0) break;
+    i++;
+  }
+  return i - start;
+}
+
 function topLevelObjectProperties(text) {
   const result = {};
   const n = text.length;
@@ -408,10 +444,53 @@ function topLevelObjectProperties(text) {
   if (text[i] !== '{') return null;
   let depth = 0;
   let expectKey = false;
+  // Handle a top-level member whose key text is `id`, starting at the index
+  // just after the key. Only two member forms are understood: `key: value`
+  // and the shorthand `key,` / `key }`. Anything else after a key -- a `(`
+  // (method shorthand), another identifier (`get method()`), a `\` (an
+  // escaped identifier such as `meth\u006fd`), `=` -- is a form this parser
+  // cannot resolve, so the object is flagged dynamic and the call is reported
+  // as unparsed rather than defaulted.
+  const consumeKeyValue = (id, afterKey) => {
+    let j = afterKey;
+    while (j < n && /\s/.test(text[j])) j++;
+    if (text[j] !== ':' && text[j] !== ',' && text[j] !== '}') {
+      result.dynamic = true;
+      return j;
+    }
+    if (text[j] === ':') {
+      j++;
+      while (j < n && /\s/.test(text[j])) j++;
+      if (id === 'method' || id === 'url') {
+        if (text[j] === "'" || text[j] === '"') {
+          result[id] = { literal: readString(text, j)[1].slice(1, -1) };
+        } else if (text[j] === '`') {
+          result[id] = { literal: readTemplate(text, j, false)[1].slice(1, -1) };
+        } else {
+          result[id] = { invalid: true };
+        }
+      }
+      return j;
+    }
+    // Shorthand property (`id,` or `id }`): not a `key: value` pair.
+    if (id === 'method' || id === 'url') result[id] = { invalid: true };
+    return j;
+  };
+
   while (i < n) {
     const ch = text[i];
     if (ch === "'" || ch === '"') {
-      i += readString(text, i)[0];
+      const [len, raw] = readString(text, i);
+      if (expectKey && depth === 1) {
+        // A quoted key (`"method": ...`) names the same property as a bare one,
+        // unless it contains an escape sequence, which is not decoded here.
+        expectKey = false;
+        if (raw.includes('\\')) result.dynamic = true;
+        else i = consumeKeyValue(raw.slice(1, -1), i + len);
+        if (result.dynamic) i += len;
+        continue;
+      }
+      i += len;
       continue;
     }
     if (ch === '`') {
@@ -422,6 +501,19 @@ function topLevelObjectProperties(text) {
       depth++;
       i++;
       if (depth === 1) expectKey = true;
+      continue;
+    }
+    if (expectKey && depth === 1 && (ch === '[' || text.startsWith('...', i))) {
+      // A computed key or a spread at the top level can define or override
+      // `method`/`url` in ways this parser cannot resolve; flag the object as
+      // dynamic so the caller reports the call as unparsed instead of guessing.
+      result.dynamic = true;
+      expectKey = false;
+      i += ch === '[' ? 0 : 3;
+      if (ch === '[') {
+        depth++;
+        i++;
+      }
       continue;
     }
     if (ch === '[' || ch === '(') {
@@ -443,31 +535,24 @@ function topLevelObjectProperties(text) {
       i++;
       continue;
     }
+    if (depth === 1 && !expectKey && /[\s)\]]/.test(text[i - 1] ?? ' ') && TYPE_ASSERTION_RE.test(text.slice(i))) {
+      // `value as Some<Type, Args>` / `value satisfies T`: skip the type so a
+      // comma inside its generic arguments is not read as a member separator.
+      const keyword = TYPE_ASSERTION_RE.exec(text.slice(i))[0].length;
+      i += keyword + skipTypeAnnotation(text, i + keyword);
+      continue;
+    }
     if (expectKey && depth === 1 && /[A-Za-z_$]/.test(ch)) {
       const id = /^[A-Za-z_$][A-Za-z0-9_$]*/.exec(text.slice(i))[0];
-      i += id.length;
       expectKey = false;
-      let j = i;
-      while (j < n && /\s/.test(text[j])) j++;
-      if (text[j] === ':') {
-        j++;
-        while (j < n && /\s/.test(text[j])) j++;
-        if (id === 'method' || id === 'url') {
-          if (text[j] === "'" || text[j] === '"') {
-            result[id] = { literal: readString(text, j)[1].slice(1, -1) };
-          } else if (text[j] === '`') {
-            result[id] = { literal: readTemplate(text, j, false)[1].slice(1, -1) };
-          } else {
-            result[id] = { invalid: true };
-          }
-        }
-        i = j;
-        continue;
-      }
-      // Shorthand property (`id,` or `id }`): not a `key: value` pair.
-      if (id === 'method' || id === 'url') result[id] = { invalid: true };
-      i = j;
+      i = consumeKeyValue(id, i + id.length);
       continue;
+    }
+    if (expectKey && depth === 1) {
+      // Any other token in key position (a numeric key, `*gen()`, a private
+      // name, a stray backslash) is a member form this parser does not model.
+      result.dynamic = true;
+      expectKey = false;
     }
     i++;
   }
@@ -476,13 +561,29 @@ function topLevelObjectProperties(text) {
 
 /** A recognized top-level `url` property: a literal string/template value. */
 function literalUrl(props) {
+  if (props?.dynamic) return undefined;
   return props?.url && 'literal' in props.url ? props.url.literal : undefined;
 }
 
 /** A recognized top-level `method` property: a literal, known HTTP verb. */
 function literalMethod(props) {
+  if (props?.dynamic) return undefined;
   const lit = props?.method && 'literal' in props.method ? props.method.literal : undefined;
   return lit !== undefined && VERB_SET.has(lit) ? lit : undefined;
+}
+
+/**
+ * Resolve the verb of a download()/upload() options object, which may omit
+ * `method` and take `fallback`. Returns `undefined` (unparsed) when the
+ * options are not an object literal, when they contain a top-level spread or
+ * computed key (which could supply or override `method`), or when a `method`
+ * property is present but is not a literal, known verb -- an absent method is
+ * a default, an unextractable one is not.
+ */
+function methodOrDefault(props, fallback) {
+  if (props === null || props.dynamic) return undefined;
+  if (props.method === undefined) return fallback;
+  return literalMethod(props);
 }
 
 /**
@@ -521,17 +622,26 @@ export function sdkOperations(files) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
         }
-        const method = optsArg !== undefined ? literalMethod(topLevelObjectProperties(optsArg)) : undefined;
-        push(method ?? 'GET', url, name);
-      } else {
-        // upload: POST unless an explicit top-level `method: 'PUT'` says otherwise.
-        const uploadProps = topLevelObjectProperties(argsText);
-        const url = literalUrl(uploadProps);
-        if (url === undefined) {
+        // GET unless an object-literal options argument says otherwise; a
+        // non-literal options argument or method value is unparsed, not guessed.
+        const hasOpts = optsArg !== undefined && optsArg.trim() !== ''; // `download(url,)` has no options
+        const method = hasOpts ? methodOrDefault(topLevelObjectProperties(optsArg), 'GET') : 'GET';
+        if (method === undefined) {
           unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
           continue;
         }
-        push(literalMethod(uploadProps) ?? 'POST', url, name);
+        push(method, url, name);
+      } else {
+        // upload: POST unless an explicit top-level `method: 'PUT'` says otherwise;
+        // a non-literal method value is unparsed, not guessed.
+        const uploadProps = topLevelObjectProperties(argsText);
+        const url = literalUrl(uploadProps);
+        const method = methodOrDefault(uploadProps, 'POST');
+        if (url === undefined || method === undefined) {
+          unparsed.push({ source: name, kind, snippet: snippetOf(fullText) });
+          continue;
+        }
+        push(method, url, name);
       }
     }
   }

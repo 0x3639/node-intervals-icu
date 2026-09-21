@@ -63,17 +63,28 @@ const weather = await client.weather.getForecast();
 const similar = await client.routes.getSimilarity(routeId, otherRouteId);
 
 // convertWorkout POSTs a workout body instead of downloading an existing library
-// workout by id. The body must include `workout_doc` — a body without it returns
-// HTTP 500 from the live API. A convenient source of `workout_doc` is an existing
-// calendar workout event:
-const [event] = await client.events.listEvents({ oldest: '2024-01-01', newest: '2024-12-31', category: ['WORKOUT'] });
-const zwo = await client.workouts.convertWorkout(
-  { name: event.name, description: event.description, type: event.type, workout_doc: event.workout_doc },
-  '.zwo',
-);
+// workout by id. The body type, WorkoutConversionInput, requires `name`, `description`,
+// `type` and `workout_doc`: live probes showed a body with all four converts and a body
+// without `workout_doc` returns HTTP 500 (see AUDIT.md; fields were not probed one at a
+// time). Every field on a calendar Event is optional, so narrow one before converting it:
+import type { Event, WorkoutConversionInput } from '@0x3639/intervals-icu';
 
-// Or download an existing calendar event's workout file directly by id:
-const zwo2 = await client.events.downloadWorkout(event.id, '.zwo');
+// Check runtime shapes, not just truthiness: the API response is external data.
+const isConvertible = (e: Event): e is Event & WorkoutConversionInput & { id: number } =>
+  typeof e.id === 'number' &&
+  typeof e.name === 'string' &&
+  typeof e.description === 'string' &&
+  typeof e.type === 'string' &&
+  typeof e.workout_doc === 'object' && e.workout_doc !== null && !Array.isArray(e.workout_doc);
+
+const events = await client.events.listEvents({ oldest: '2024-01-01', newest: '2024-12-31', category: ['WORKOUT'] });
+const event = events.find(isConvertible);
+if (event) {
+  const zwo = await client.workouts.convertWorkout(event, '.zwo');
+
+  // Or download an existing calendar event's workout file directly by id:
+  const zwo2 = await client.events.downloadWorkout(event.id, '.zwo');
+}
 ```
 
 ---

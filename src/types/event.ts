@@ -2,6 +2,7 @@
  * Event / Calendar types from the Intervals.icu API
  */
 import type { ActivityType, EventCategory } from './enums.js';
+import type { WorkoutDoc } from './workout.js';
 
 /**
  * Calendar event (planned workout, note, race, etc.)
@@ -24,8 +25,8 @@ export interface Event {
   created_by_id?: string;
   uid?: string;
   external_id?: string;
-  /** Structured workout document */
-  workout_doc?: any;
+  /** Structured workout document; a usable source for workouts.convertWorkout() */
+  workout_doc?: WorkoutDoc;
   /** Raw file contents (zwo, mrc, erg, fit) */
   file_contents?: string;
   /** Base64-encoded file contents */

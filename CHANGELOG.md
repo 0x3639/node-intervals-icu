@@ -30,7 +30,8 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 
 ### Added
 - `client.athletes.getSummary()`, `client.events.downloadWorkout(eventId, format)`, `client.workouts.convertWorkout()` / `convertWorkoutForAthlete()`.
-- `WorkoutConversionInput`: the body type for `convertWorkout()` / `convertWorkoutForAthlete()`; `name`, `description`, `type` and `workout_doc` are required because the live API returns HTTP 500 without them.
+- `WorkoutConversionInput` and `WorkoutDoc` (exported from the package entrypoint): the body type for `convertWorkout()` / `convertWorkoutForAthlete()`; `name`, `description`, `type` and a non-null object `workout_doc` are required as a conservative contract: live probes showed a body with all four converts and a body without `workout_doc` returns HTTP 500 (fields were not probed individually; see AUDIT.md). `Event.workout_doc` is now typed `WorkoutDoc` instead of `any`.
+- `npm run typecheck:tests` (part of `typecheck`): compile-time contract tests under `tests/types/` and the live suite are typechecked in CI.
 - `spec/openapi.json`: vendored snapshot of the Intervals.icu OpenAPI document
 - `npm run coverage:api`: diffs SDK routes against the vendored spec; enforced in CI
 - `npm run spec:drift`: weekly GitHub Action opens an issue when the live spec changes

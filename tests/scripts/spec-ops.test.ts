@@ -72,7 +72,7 @@ describe('sdkOperations', () => {
     },
     {
       name: 'activity.service.ts',
-      text: 'return this.httpClient.download(`/athlete/${id}/download-fit-files`, params);',
+      text: "return this.httpClient.download(`/athlete/${id}/download-fit-files`, { method: 'POST', params });",
     },
     {
       name: 'workout.service.ts',
@@ -93,9 +93,9 @@ describe('sdkOperations', () => {
     expect(unparsed).toEqual([]);
     const keys = ops.map((o) => o.key).sort();
     expect(keys).toEqual([
-      'GET /athlete/{x}/download-fit-files',
       'GET /athlete/{x}/wellness',
       'GET /pace_distances',
+      'POST /athlete/{x}/download-fit-files',
       'POST /athlete/{x}/folders/{x}/import-workout',
       'POST /download-workout{x}',
     ]);
@@ -414,6 +414,200 @@ describe('sdkOperations anchored parser (Codex round-3 item 2)', () => {
     const { ops, unparsed } = sdkOperations(files);
     expect(ops.map((o) => o.key)).toEqual(['POST /activity/{x}/streams.csv']);
     expect(unparsed).toEqual([]);
+  });
+
+  describe('fail-closed on non-literal methods (Codex post-merge round-2 item 4)', () => {
+    it('a download() whose options argument is a variable, not an object literal, is unparsed (not guessed as GET)', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, opts);' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+      expect(unparsed[0].kind).toBe('download');
+    });
+
+    it('a download() whose method value is a variable is unparsed (not guessed as GET)', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { method: verb, data });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a download() whose method literal is not a known verb is unparsed', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { method: 'post' });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('an upload() whose method value is a variable is unparsed (not guessed as POST)', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.upload({ url: `/x${id}`, method, file });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+      expect(unparsed[0].kind).toBe('upload');
+    });
+
+    it('an upload() with method: someVar is unparsed', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.upload({ url: `/x${id}`, method: m, file });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+  });
+
+  describe('dynamic top-level members (CodeRabbit on PR #4)', () => {
+    it('a download() options object with a top-level spread is unparsed even when a literal method precedes it', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { method: 'POST', ...opts });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a download() options object that is only a spread is unparsed, not defaulted to GET', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { ...opts });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a download() options object with a computed key is unparsed', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { [k]: 'POST' });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('an upload() config with a top-level spread is unparsed, not defaulted to POST', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.upload({ url: `/x${id}`, file, ...extra });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a request() config with a literal method followed by a spread is unparsed (the spread may override it)', () => {
+      const files = [{ name: 'a.ts', text: "this.httpClient.request({ method: 'GET', url: `/x`, ...rest });" }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a nested spread or nested method inside another property does not affect the top-level default', () => {
+      const files = [
+        { name: 'a.ts', text: "this.httpClient.download(`/x${id}`, { params: { ...q, method: 'PUT' } });" },
+        { name: 'b.ts', text: "this.httpClient.upload({ url: `/y${id}`, file, meta: { ...m } });" },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['GET /x{x}', 'POST /y{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
+    it('a quoted "method" key is read like an identifier key (Codex round 3)', () => {
+      const files = [
+        { name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "method": "POST" });' },
+        { name: 'b.ts', text: "this.httpClient.request({ 'method': 'PUT', 'url': `/y` });" },
+        { name: 'c.ts', text: "this.httpClient.upload({ 'url': `/z${id}`, 'method': 'PUT', file });" },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['POST /x{x}', 'PUT /y', 'PUT /z{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
+    it('a quoted "method" key with a non-literal value is unparsed, not defaulted', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "method": verb });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a quoted key that is not method/url is skipped and the default still applies', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "Content-Type": "text/csv" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key)).toEqual(['GET /x{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
+    it('(Codex round 4) an escaped quoted key is unparsed, not read as unrelated', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { "meth\\u006fd": "POST" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('(Codex round 4) an escaped identifier key is unparsed', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { meth\\u006fd: "POST" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('(Codex round 4) an accessor property is unparsed for download and upload', () => {
+      const files = [
+        { name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { get method() { return "POST"; } });' },
+        { name: 'b.ts', text: 'this.httpClient.upload({ url: `/y${id}`, file, get method() { return "PUT"; } });' },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(2);
+    });
+
+    it('(Codex round 4) a method-shorthand member and an escaped upload method key are unparsed', () => {
+      const files = [
+        { name: 'a.ts', text: 'this.httpClient.upload({ url: `/y${id}`, file, method() { return "PUT"; } });' },
+        { name: 'b.ts', text: 'this.httpClient.upload({ url: `/z${id}`, file, "meth\\u006fd": "PUT" });' },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(2);
+    });
+
+    it('(Codex round 4) a numeric or otherwise unrecognized key form is unparsed', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`, { 0: "x" });' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops).toEqual([]);
+      expect(unparsed).toHaveLength(1);
+    });
+
+    it('a value with an `as` / `satisfies` type assertion containing a generic comma is not mistaken for a new member', () => {
+      const files = [
+        { name: 'a.ts', text: "this.httpClient.request({ method: 'GET', url: `/a`, params: options as Record<string, unknown> });" },
+        { name: 'b.ts', text: "this.httpClient.request({ method: 'GET', url: `/b`, params: { q, ...options } as Record<string, unknown>, });" },
+        { name: 'c.ts', text: "this.httpClient.download(`/c${id}`, { params: opts satisfies Partial<Map<string, number>> });" },
+        { name: 'd.ts', text: "this.httpClient.upload({ url: `/d${id}`, file: buf as unknown as Blob, fileName });" },
+        { name: 'e.ts', text: "this.httpClient.request({ method: 'GET', url: `/e`, params: canvas, bias: gas });" },
+        { name: 'f.ts', text: "this.httpClient.request({ method: 'GET', url: `/f`, params: { sep: s as 'a,b' | \"c,d\", tpl: t as `x,${string}` } });" },
+        { name: 'g.ts', text: "this.httpClient.download(`/g${id}`, { params: q as 'p,q', method: 'POST' });" },
+        { name: 'h.ts', text: "this.httpClient.download(`/h${id}`, { params: q as `p,${T}`, method: 'POST' });" },
+        { name: 'i.ts', text: "this.httpClient.upload({ url: `/i${id}`, file: f as unknown as Blob, method: 'PUT' });" },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['GET /a', 'GET /b', 'GET /c{x}', 'GET /e', 'GET /f', 'POST /d{x}', 'POST /g{x}', 'POST /h{x}', 'PUT /i{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
+    it('(Codex round 5) an indexed-access type before an explicit method is skipped whole, for as and satisfies', () => {
+      const files = [
+        {
+          name: 'a.ts',
+          text: 'this.httpClient.download(`/x${id}`, {\n  data: value as SomeVeryLongType[SomeVeryLongIndex],\n  method: \'POST\',\n});',
+        },
+        {
+          name: 'b.ts',
+          text: 'this.httpClient.download(`/y${id}`, {\n  data: value satisfies SomeVeryLongType[SomeVeryLongIndex],\n  method: \'POST\',\n});',
+        },
+        { name: 'c.ts', text: "this.httpClient.upload({ url: `/z${id}`, file: f as Buffers[number], method: 'PUT' });" },
+        { name: 'd.ts', text: 'this.httpClient.request({ method: \'DELETE\', url: `/w`, params: p as Opts["k"] });' },
+      ];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key).sort()).toEqual(['DELETE /w', 'POST /x{x}', 'POST /y{x}', 'PUT /z{x}']);
+      expect(unparsed).toEqual([]);
+    });
+
+    it('a trailing comma with no options argument still defaults to GET', () => {
+      const files = [{ name: 'a.ts', text: 'this.httpClient.download(`/x${id}`,);' }];
+      const { ops, unparsed } = sdkOperations(files);
+      expect(ops.map((o) => o.key)).toEqual(['GET /x{x}']);
+      expect(unparsed).toEqual([]);
+    });
   });
 
   it('a download() whose url cannot be extracted (a bare identifier, not a literal) is unparsed', () => {

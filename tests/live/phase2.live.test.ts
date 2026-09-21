@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LIVE, liveClient } from './setup.js';
+import type { Event, WorkoutConversionInput } from '../../src/types/index.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const yearAgo = () => new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
@@ -15,14 +16,27 @@ async function latestActivityId() {
   return activities.find((a) => a.type)?.id;
 }
 
-/** First calendar WORKOUT event with a workout_doc in the last year, or undefined when the account has none. */
-async function firstCalendarWorkoutEvent() {
+/**
+ * A calendar event that carries every field convertWorkout() requires, plus an id for
+ * events.downloadWorkout(). The guard checks runtime shapes, not just truthiness: API data
+ * is external, and the type says nothing about what the server actually sent.
+ */
+type ConvertibleEvent = Event & WorkoutConversionInput & { id: number };
+const isConvertible = (e: Event): e is ConvertibleEvent =>
+  typeof e.id === 'number' &&
+  typeof e.name === 'string' &&
+  typeof e.description === 'string' &&
+  typeof e.type === 'string' &&
+  typeof e.workout_doc === 'object' && e.workout_doc !== null && !Array.isArray(e.workout_doc);
+
+/** First convertible calendar WORKOUT event in the last year, or undefined when the account has none. */
+async function firstCalendarWorkoutEvent(): Promise<ConvertibleEvent | undefined> {
   const events = await liveClient().events.listEvents({
     oldest: yearAgo(),
     newest: today(),
     category: ['WORKOUT'],
   });
-  return events.find((e) => e.id && (e as any).workout_doc);
+  return events.find(isConvertible);
 }
 
 describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
@@ -40,12 +54,7 @@ describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
     const event = await firstCalendarWorkoutEvent();
     if (!event) ctx.skip(); // reported as skipped, not passed
     const zwo = await liveClient().workouts.convertWorkout(
-      {
-        name: event!.name,
-        description: event!.description,
-        type: event!.type,
-        workout_doc: (event as any).workout_doc,
-      },
+      { name: event!.name, description: event!.description, type: event!.type, workout_doc: event!.workout_doc },
       '.zwo',
     );
     expect(zwo.toString()).toContain('<workout_file');
@@ -55,12 +64,7 @@ describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
     const event = await firstCalendarWorkoutEvent();
     if (!event) ctx.skip(); // reported as skipped, not passed
     const zwo = await liveClient().workouts.convertWorkoutForAthlete(
-      {
-        name: event!.name,
-        description: event!.description,
-        type: event!.type,
-        workout_doc: (event as any).workout_doc,
-      },
+      { name: event!.name, description: event!.description, type: event!.type, workout_doc: event!.workout_doc },
       '.zwo',
     );
     expect(zwo.toString()).toContain('<workout_file');
@@ -69,7 +73,7 @@ describe.skipIf(!LIVE)('live: phase 2 verb fixes', () => {
   it('events.downloadWorkout returns a Zwift file for a calendar workout event', async (ctx) => {
     const event = await firstCalendarWorkoutEvent();
     if (!event) ctx.skip(); // reported as skipped, not passed
-    const zwo = await liveClient().events.downloadWorkout(event!.id as number, '.zwo');
+    const zwo = await liveClient().events.downloadWorkout(event!.id, '.zwo');
     expect(zwo.toString()).toContain('<workout_file');
   });
 

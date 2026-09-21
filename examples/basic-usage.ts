@@ -7,6 +7,7 @@
  */
 
 import { IntervalsClient, IntervalsAPIError } from '../src/index.js';
+import type { Event, WorkoutConversionInput } from '../src/index.js';
 
 async function main() {
   const apiKey = process.env.INTERVALS_API_KEY;
@@ -43,6 +44,20 @@ async function main() {
     events.slice(0, 5).forEach((e) => {
       console.log(`  - ${e.start_date_local}: ${e.name || 'Unnamed'} [${e.category}] ${e.type || ''}`);
     });
+
+    // 3b. Convert a planned workout to a Zwift file. convertWorkout() needs name,
+    // description, type and workout_doc, so narrow an Event before passing it.
+    const isConvertible = (e: Event): e is Event & WorkoutConversionInput & { id: number } =>
+      typeof e.id === 'number' &&
+      typeof e.name === 'string' &&
+      typeof e.description === 'string' &&
+      typeof e.type === 'string' &&
+      typeof e.workout_doc === 'object' && e.workout_doc !== null && !Array.isArray(e.workout_doc);
+    const convertible = events.find(isConvertible);
+    if (convertible) {
+      const zwo = await client.workouts.convertWorkout(convertible, '.zwo');
+      console.log(`Converted "${convertible.name}" to ${zwo.length} bytes of .zwo`);
+    }
 
     // 4. Activities
     console.log('\n=== Recent Activities ===');
