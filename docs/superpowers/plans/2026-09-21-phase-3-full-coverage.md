@@ -98,7 +98,7 @@ describe('<Service> — Phase 3 additions', () => {
 **Live-test helpers.** `tests/live/phase3.live.test.ts` (created in Task 7) defines `today()`, `yearAgo()` and `latestActivityId()` exactly as `tests/live/phase2.live.test.ts` does. Run the live suite with:
 
 ```bash
-set -a; . ./.env; set +a; npm run test:live
+set -a && . ./.env && set +a && npm run test:live
 ```
 
 `.env` (gitignored) holds `INTERVALS_API_KEY` and `INTERVALS_ATHLETE_ID`; add `INTERVALS_LIVE_WRITE=1` to run the write-gated block.
