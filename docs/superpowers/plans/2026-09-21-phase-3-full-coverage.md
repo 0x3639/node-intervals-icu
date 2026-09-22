@@ -413,7 +413,7 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<Activity[]>({
       method: 'GET',
-      url: `/athlete/${id}/activities/${ids.join(',')}`,
+      url: `/athlete/${id}/activities/${ids.map(encodeURIComponent).join(',')}`,
       params: options as Record<string, unknown>,
     });
   }
@@ -424,7 +424,7 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
     return this.httpClient.request<Activity[]>({
       method: 'GET',
       url: `/athlete/${id}/activities-around`,
-      params: { activity_id: activityId, ...options } as Record<string, unknown>,
+      params: { ...options, activity_id: activityId } as Record<string, unknown>, // id last: options cannot override it
     });
   }
 
@@ -462,12 +462,15 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
 
   /** The activity as a GPX file, optionally with power and heart-rate extensions */
   async downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer> {
-    return this.httpClient.download(`/activity/${activityId}/gpx-file`, { params: options as Record<string, unknown> });
+    return this.httpClient.download(`/activity/${encodeURIComponent(activityId)}/gpx-file`, { params: options as Record<string, unknown> });
   }
 
-  /** Remove the tombstone left by a deleted activity so the same file can be re-uploaded */
+  /**
+   * Remove the tombstone left by a deleted activity so the same file can be re-uploaded.
+   * The id is URL-encoded: this route is destructive, and an unencoded delimiter (e.g. a trailing "#") would turn it into DELETE /activity/{id}.
+   */
   async deleteTombstone(activityId: string): Promise<void> {
-    await this.httpClient.request<void>({ method: 'DELETE', url: `/activity/${activityId}/tombstone` });
+    await this.httpClient.request<void>({ method: 'DELETE', url: `/activity/${encodeURIComponent(activityId)}/tombstone` });
   }
 ```
 
@@ -571,7 +574,7 @@ In `src/services/athlete.service.ts` add `AthleteConnections, AthleteWithTags,` 
   /** UI settings for a device class: a map of setting groups, each an open object (spec: object of objects). */
   async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, Record<string, unknown>>> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<Record<string, Record<string, unknown>>>({ method: 'GET', url: `/athlete/${id}/settings/${deviceClass}` });
+    return this.httpClient.request<Record<string, Record<string, unknown>>>({ method: 'GET', url: `/athlete/${id}/settings/${encodeURIComponent(deviceClass)}` });
   }
 
   /**
@@ -941,7 +944,7 @@ Expected: FAIL.
   /** Recalculate distance / time / activity totals for one item of gear */
   async calc(gearId: string, athleteId?: string): Promise<GearStats> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<GearStats>({ method: 'GET', url: `/athlete/${id}/gear/${gearId}/calc` });
+    return this.httpClient.request<GearStats>({ method: 'GET', url: `/athlete/${id}/gear/${encodeURIComponent(gearId)}/calc` });
   }
 ```
 
@@ -953,13 +956,13 @@ Expected: FAIL.
   /** Activities whose type falls under these sport settings */
   async listMatchingActivities(settingsId: number | string, athleteId?: string): Promise<ActivitySearchResult[]> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<ActivitySearchResult[]>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/matching-activities` });
+    return this.httpClient.request<ActivitySearchResult[]>({ method: 'GET', url: `/athlete/${id}/sport-settings/${encodeURIComponent(String(settingsId))}/matching-activities` });
   }
 
   /** Pace-curve distances and best-effort defaults for the sport */
   async getPaceDistances(settingsId: number | string, athleteId?: string): Promise<PaceDistancesDTO> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PaceDistancesDTO>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/pace_distances` });
+    return this.httpClient.request<PaceDistancesDTO>({ method: 'GET', url: `/athlete/${id}/sport-settings/${encodeURIComponent(String(settingsId))}/pace_distances` });
   }
 ```
 
@@ -1840,7 +1843,8 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
 - Codex round 1 on PR A (2026-09-22): `updateMessage` takes `UpdateMessageDTO` (content/answer only) with a compile-time contract; `Chat.blocked` typed; the block live test restores the original state; `getSettings` returns a map of objects.
-- CodeRabbit on PR A (2026-09-22): the edit/delete write test recovers the sent message by unique content and always deletes in `finally` when the ids are known; path-segment URL-encoding was deferred as a repo-wide change (no existing method encodes).
+- Codex round 2 on PR A (2026-09-22): all seven Phase 3 sites that interpolate a caller string into a path `encodeURIComponent` it (`deleteTombstone('victim#')` would otherwise truncate to the activity-delete route); delimiter regression tests added. Pre-existing methods remain a separate cleanup.
+- CodeRabbit on PR A (2026-09-22): the edit/delete write test recovers the sent message by unique content and always deletes in `finally` when the ids are known.
 - Final review of PR A (2026-09-22): `Message.chat_id` removed from the public type (not in the vendored spec; the live write test reads it via a local cast). Query-parameter conformance checks for the option types were added to Task 9 rather than PR A.
 - Task 5 review (2026-09-22): the workouts.zip `ext` query value is dot-less per the spec description; `downloadWorkoutsZip` strips the leading dot from `WorkoutFormat`. Task 7's live test confirms.
 - Task 1 review (2026-09-22) corrected two plan defects: `ActivitiesAroundOptions.route_id` (wire name, was `routeId`) and `IntervalSearchOptions.type` as the spec's `'AUTO' | 'POWER' | 'HR' | 'PACE'` enum (was `ActivityType | string`). Task 2 spreads options into params accordingly.
