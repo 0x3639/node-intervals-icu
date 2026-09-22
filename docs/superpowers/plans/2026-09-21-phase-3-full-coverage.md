@@ -495,7 +495,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `AthleteConnections`, `AthleteWithTags` from Task 1.
-- Produces: `listAthletes(options?: { extIdPrefix?: string }): Promise<AthleteWithTags[]>`; `getConnections(athleteId?): Promise<AthleteConnections>`; `getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?): Promise<Record<string, unknown>>`; `disconnectApp(): Promise<void>`.
+- Produces: `listAthletes(options?: { extIdPrefix?: string }): Promise<AthleteWithTags[]>`; `getConnections(athleteId?): Promise<AthleteConnections>`; `getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?): Promise<Record<string, Record<string, unknown>>>`; `disconnectApp(): Promise<void>`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -568,10 +568,10 @@ In `src/services/athlete.service.ts` add `AthleteConnections, AthleteWithTags,` 
     return this.httpClient.request<AthleteConnections>({ method: 'GET', url: `/athlete/${id}/connections` });
   }
 
-  /** UI settings for a device class. The spec types the response as an open object map. */
-  async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, unknown>> {
+  /** UI settings for a device class: a map of setting groups, each an open object (spec: object of objects). */
+  async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, Record<string, unknown>>> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<Record<string, unknown>>({ method: 'GET', url: `/athlete/${id}/settings/${deviceClass}` });
+    return this.httpClient.request<Record<string, Record<string, unknown>>>({ method: 'GET', url: `/athlete/${id}/settings/${deviceClass}` });
   }
 
   /**
@@ -606,7 +606,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 - Test: `tests/chat.test.ts` (append)
 
 **Interfaces:**
-- Produces: `getChat(chatId: number): Promise<Chat>`; `listGroups(athleteId?): Promise<Chat[]>`; `blockChat(chatId: number, on: boolean): Promise<Chat>`; `updateMessage(chatId: number, messageId: number, message: Partial<Message>): Promise<Record<string, unknown>>`; `deleteMessage(chatId: number, messageId: number): Promise<Record<string, unknown>>`.
+- Produces: `getChat(chatId: number): Promise<Chat>`; `listGroups(athleteId?): Promise<Chat[]>`; `blockChat(chatId: number, on: boolean): Promise<Chat>`; `updateMessage(chatId: number, messageId: number, message: UpdateMessageDTO): Promise<Record<string, unknown>>` (`UpdateMessageDTO = { content?: string; answer?: string }`, the only fields the API updates); `deleteMessage(chatId: number, messageId: number): Promise<Record<string, unknown>>`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -684,8 +684,8 @@ Append inside the `ChatService` class in `src/services/chat.service.ts`:
     return this.httpClient.request<Chat>({ method: 'PUT', url: `/chats/${chatId}/block`, params: { on } });
   }
 
-  /** Edit a message. The API returns an untyped object. */
-  async updateMessage(chatId: number, messageId: number, message: Partial<Message>): Promise<Record<string, unknown>> {
+  /** Edit a message's content or answer (the only fields the API updates). Returns an untyped object. */
+  async updateMessage(chatId: number, messageId: number, message: UpdateMessageDTO): Promise<Record<string, unknown>> {
     return this.httpClient.request<Record<string, unknown>>({ method: 'PUT', url: `/chats/${chatId}/messages/${messageId}`, data: message });
   }
 
@@ -695,7 +695,7 @@ Append inside the `ChatService` class in `src/services/chat.service.ts`:
   }
 ```
 
-(`Chat` and `Message` are already imported.)
+(`Chat` and `Message` are already imported; add `UpdateMessageDTO` to that import. Define it in `src/types/chat.ts` as `export interface UpdateMessageDTO { content?: string; answer?: string; }` with a doc comment quoting the spec, export it from both barrels, and add `tests/types/update-message.types.ts` with accepted `{content}`, `{answer}` cases and `@ts-expect-error` cases for `athlete_id`, `seen`, `id`. Also add `blocked?: string;` (ISO-8601, set while the other athlete is blocked) to `interface Chat`.)
 
 - [ ] **Step 4: Verify**
 
@@ -1099,17 +1099,20 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
 
   // Every write below restores state in a `finally` so a failed assertion or a thrown
   // request cannot leave the account blocked or with a stray message.
-  it('blockChat toggles a private chat on and back off', async (ctx) => {
-    const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && x.id);
+  it('blockChat toggles a private chat and restores its original state', async (ctx) => {
+    const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && typeof x.id === 'number');
     if (!chat) ctx.skip();
     const chatId = chat!.id as number;
+    // Restore whatever the chat was before, so an already-blocked chat stays blocked.
+    const wasBlocked = Boolean(chat!.blocked);
+    let restored: Chat | undefined;
     try {
-      const blocked = await c().chats.blockChat(chatId, true);
-      expect(blocked.id).toBe(chatId);
+      const toggled = await c().chats.blockChat(chatId, !wasBlocked);
+      expect(toggled.id).toBe(chatId);
     } finally {
-      const unblocked = await c().chats.blockChat(chatId, false);
-      expect(unblocked.id).toBe(chatId);
+      restored = await c().chats.blockChat(chatId, wasBlocked);
     }
+    expect(restored.id).toBe(chatId);
   });
 
   it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {
@@ -1836,6 +1839,7 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Spec coverage: every row of the spec's PR A and PR B tables maps to a task (see the route-to-task map). Spec sections Types, Testing, Coverage gate and CI, Documentation per PR, and Versions are implemented by Tasks 1/9, 7/11, 11, 8/12, 8/12 respectively.
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
+- Codex round 1 on PR A (2026-09-22): `updateMessage` takes `UpdateMessageDTO` (content/answer only) with a compile-time contract; `Chat.blocked` typed; the block live test restores the original state; `getSettings` returns a map of objects.
 - CodeRabbit on PR A (2026-09-22): the edit/delete write test recovers the sent message by unique content and always deletes in `finally` when the ids are known; path-segment URL-encoding was deferred as a repo-wide change (no existing method encodes).
 - Final review of PR A (2026-09-22): `Message.chat_id` removed from the public type (not in the vendored spec; the live write test reads it via a local cast). Query-parameter conformance checks for the option types were added to Task 9 rather than PR A.
 - Task 5 review (2026-09-22): the workouts.zip `ext` query value is dot-less per the spec description; `downloadWorkoutsZip` strips the leading dot from `WorkoutFormat`. Task 7's live test confirms.

@@ -52,7 +52,7 @@ Method names follow each service's existing style. Optional trailing
 |---|---|---|
 | `listAthletes(options?: { extIdPrefix?: string })` | `GET /athletes` (`ext_id_prefix`) | `AthleteWithTags[]` |
 | `getConnections()` | `GET /athlete/{id}/connections` | `AthleteConnections` |
-| `getSettings(deviceClass: 'phone' \| 'tablet' \| 'desktop' \| string)` | `GET /athlete/{id}/settings/{deviceClass}` | `Record<string, unknown>` |
+| `getSettings(deviceClass: 'phone' \| 'tablet' \| 'desktop' \| string)` | `GET /athlete/{id}/settings/{deviceClass}` | `Record<string, Record<string, unknown>>` |
 | `disconnectApp()` | `DELETE /disconnect-app` | `void` |
 
 ### `client.chats` (5)
@@ -62,7 +62,7 @@ Method names follow each service's existing style. Optional trailing
 | `getChat(chatId)` | `GET /chats/{id}` | `Chat` |
 | `listGroups()` | `GET /athlete/{id}/groups` | `Chat[]` |
 | `blockChat(chatId, on: boolean)` | `PUT /chats/{id}/block?on=` | `Chat` |
-| `updateMessage(chatId, msgId, message: Partial<Message>)` | `PUT /chats/{id}/messages/{msgId}` | `Record<string, unknown>` |
+| `updateMessage(chatId, msgId, message: UpdateMessageDTO)` | `PUT /chats/{id}/messages/{msgId}` | `Record<string, unknown>` |
 | `deleteMessage(chatId, msgId)` | `DELETE /chats/{id}/messages/{msgId}` | `Record<string, unknown>` |
 
 ### `client.events` (3)
@@ -149,6 +149,8 @@ New, hand-written, in the existing files:
 - `src/types/athlete.ts`: `AthleteConnections` (`id: string` plus the 20
   spec-listed `*_connected: boolean` flags, written out), `AthleteWithTags =
   Athlete & { icu_tags?: string[]; icu_notes?: string }`.
+- `src/types/chat.ts`: `UpdateMessageDTO` (`content?`, `answer?`: the only fields the
+  API updates) and `Chat.blocked?: string` (spec date-time).
 - `src/types/event.ts`: `WorkoutsZipOptions`.
 - `src/types/performance.ts`: `ActivityPowerCurvesOptions`,
   `ActivityPaceCurvesOptions`.
