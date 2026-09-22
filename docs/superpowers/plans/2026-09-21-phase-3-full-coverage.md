@@ -158,8 +158,8 @@ describe('Phase 3 hand-written types match the vendored spec', () => {
     const src = readFileSync(new URL('../../src/types/athlete.ts', import.meta.url), 'utf8');
     const alias = /export type AthleteWithTags = Athlete & \{([^}]*)\}/.exec(src);
     expect(alias, 'AthleteWithTags alias not found').toBeTruthy();
-    expect(alias![1]).toContain('icu_tags');
-    expect(alias![1]).toContain('icu_notes');
+    const aliasProps = [...alias![1].matchAll(/([A-Za-z_][A-Za-z0-9_]*)\??:/g)].map((x) => x[1]).sort();
+    expect(aliasProps).toEqual(extra);
   });
 });
 ```
@@ -319,6 +319,7 @@ describe('ActivityService — Phase 3 additions', () => {
 
   it('searchActivitiesFull sends q and limit', async () => {
     await client.activities.searchActivitiesFull('tempo', { limit: 3 });
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activities/search-full');
     expect(seen[0].params).toEqual({ q: 'tempo', limit: 3 });
   });
@@ -326,6 +327,7 @@ describe('ActivityService — Phase 3 additions', () => {
   it('searchIntervals passes the criteria through as query params', async () => {
     const criteria = { minSecs: 60, maxSecs: 300, minIntensity: 90, maxIntensity: 120, type: 'Ride', minReps: 3 };
     await client.activities.searchIntervals(criteria);
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activities/interval-search');
     expect(seen[0].params).toEqual(criteria);
   });
@@ -338,6 +340,7 @@ describe('ActivityService — Phase 3 additions', () => {
 
   it('downloadActivitiesCSV downloads /activities.csv as a buffer', async () => {
     const out = await client.activities.downloadActivitiesCSV();
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activities.csv');
     expect(seen[0].responseType).toBe('arraybuffer');
     expect(Buffer.isBuffer(out)).toBe(true);
@@ -345,6 +348,7 @@ describe('ActivityService — Phase 3 additions', () => {
 
   it('downloadGPX downloads /activity/{id}/gpx-file with power and hr flags', async () => {
     await client.activities.downloadGPX('a1', { power: true, hr: false });
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/activity/a1/gpx-file');
     expect(seen[0].params).toEqual({ power: true, hr: false });
     expect(seen[0].responseType).toBe('arraybuffer');
@@ -358,6 +362,7 @@ describe('ActivityService — Phase 3 additions', () => {
 
   it('athlete-scoped methods accept an explicit athleteId', async () => {
     await client.activities.listActivityTags('other');
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/other/activity-tags');
   });
 });
@@ -486,16 +491,19 @@ describe('AthleteService — Phase 3 additions', () => {
 
   it('listAthletes without options sends no params', async () => {
     await client.athletes.listAthletes();
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].params).toBeUndefined();
   });
 
   it('getConnections hits /athlete/{id}/connections', async () => {
     await client.athletes.getConnections();
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/connections');
   });
 
   it('getSettings puts the device class in the path', async () => {
     await client.athletes.getSettings('desktop');
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/settings/desktop');
   });
 
@@ -593,6 +601,7 @@ describe('ChatService — Phase 3 additions', () => {
 
   it('listGroups hits /athlete/{id}/groups', async () => {
     await client.chats.listGroups();
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/groups');
   });
 
@@ -710,11 +719,13 @@ describe('EventService — Phase 3 additions', () => {
 
   it('listFitnessModelEvents hits /athlete/{id}/fitness-model-events', async () => {
     await client.events.listFitnessModelEvents();
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/fitness-model-events');
   });
 
   it('downloadWorkoutsZip downloads /workouts.zip with ext and date range as params', async () => {
     const out = await client.events.downloadWorkoutsZip({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/workouts.zip');
     expect(seen[0].params).toEqual({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
     expect(seen[0].responseType).toBe('arraybuffer');
@@ -829,6 +840,7 @@ describe('GearService — Phase 3 additions', () => {
 
   it('downloadCSV downloads /athlete/{id}/gear.csv', async () => {
     const out = await client.gear.downloadCSV();
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/gear.csv');
     expect(seen[0].responseType).toBe('arraybuffer');
     expect(out.toString()).toBe('id,name');
@@ -862,6 +874,7 @@ describe('SportSettingsService — Phase 3 additions', () => {
 
   it('getPaceDistances hits .../sport-settings/{id}/pace_distances', async () => {
     await client.sportSettings.getPaceDistances(5);
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/sport-settings/5/pace_distances');
   });
 });
@@ -936,6 +949,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 **Files:**
 - Create: `tests/live/phase3.live.test.ts`
+- Modify: `src/types/chat.ts` (add `chat_id` to `Message`)
 - Modify: `spec/coverage-baseline.json` (regenerated)
 
 **Interfaces:**
@@ -1049,24 +1063,35 @@ describe.skipIf(!LIVE)('live: phase 3 — existing services', () => {
 describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
   const c = () => liveClient();
 
+  // Every write below restores state in a `finally` so a failed assertion or a thrown
+  // request cannot leave the account blocked or with a stray message.
   it('blockChat toggles a private chat on and back off', async (ctx) => {
     const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && x.id);
     if (!chat) ctx.skip();
-    const blocked = await c().chats.blockChat(chat!.id as number, true);
-    expect(blocked.id).toBe(chat!.id);
-    const unblocked = await c().chats.blockChat(chat!.id as number, false);
-    expect(unblocked.id).toBe(chat!.id);
+    const chatId = chat!.id as number;
+    try {
+      const blocked = await c().chats.blockChat(chatId, true);
+      expect(blocked.id).toBe(chatId);
+    } finally {
+      const unblocked = await c().chats.blockChat(chatId, false);
+      expect(unblocked.id).toBe(chatId);
+    }
   });
 
-  it('updateMessage and deleteMessage act on a message this test sent to the caller', async (ctx) => {
+  it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {
     const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content: 'phase 3 live test', type: 'TEXT' });
     const chatId = sent.message?.chat_id ?? sent.new_chat?.id;
     const msgId = sent.message?.id ?? sent.id;
-    if (!chatId || !msgId) ctx.skip();
-    await c().chats.updateMessage(chatId as number, msgId as number, { content: 'phase 3 live test (edited)' });
-    const after = await c().chats.listMessages(chatId as number, { limit: 20 });
-    expect(after.find((m) => m.id === msgId)?.content).toBe('phase 3 live test (edited)');
-    await c().chats.deleteMessage(chatId as number, msgId as number);
+    // Fail, do not skip: a message now exists and the ids are needed to delete it.
+    expect(chatId, `send response lacks a chat id: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+    expect(msgId, `send response lacks a message id: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+    try {
+      await c().chats.updateMessage(chatId as number, msgId as number, { content: 'phase 3 live test (edited)' });
+      const after = await c().chats.listMessages(chatId as number, { limit: 20 });
+      expect(after.find((m) => m.id === msgId)?.content).toBe('phase 3 live test (edited)');
+    } finally {
+      await c().chats.deleteMessage(chatId as number, msgId as number);
+    }
   });
 
   // deleteTombstone needs a known tombstoned activity id; there is no API to list them.
@@ -1083,7 +1108,7 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
 
 - [ ] **Step 2: Typecheck the live file and rewrite the baseline**
 
-Run: `npm run typecheck && node scripts/coverage.mjs --write-baseline && npm run coverage:api; echo exit=$?`
+Run: `npm run typecheck && node scripts/coverage.mjs --write-baseline && npm run coverage:api`
 Expected: typecheck clean (the tests tsconfig covers `tests/live`); coverage prints `Spec ops covered: 139`, `Missing: 10`, `New phantom (regressions): 0`, `Stale baseline entries: 0 resolved phantom, 0 newly covered`, exit 0.
 
 - [ ] **Step 3: Run the live suite (user-run if no key in this environment)**
@@ -1124,8 +1149,8 @@ Under `## [Unreleased]` → `### Added`, insert at the top of the list:
 
 Update these rows (line numbers approximate; match on the bold name):
 
-- **Athletes**: append `, listAthletes, getConnections, getSettings`.
-- **Activities**: append `, getActivities, searchActivitiesFull, searchIntervals, listActivityTags, downloadGPX`.
+- **Athletes**: append `, listAthletes, getConnections, getSettings, disconnectApp`.
+- **Activities**: append `, getActivities, listActivitiesAround, searchActivitiesFull, searchIntervals, listActivityTags, downloadActivitiesCSV, downloadGPX, deleteTombstone`.
 - **Events**: append `, listEventTags, listFitnessModelEvents, downloadWorkoutsZip`.
 - **Workouts**: append `, listWorkoutTags`.
 - **Sport Settings**: append `, listMatchingActivities, getPaceDistances`.
@@ -1343,15 +1368,18 @@ describe('AnalyticsService', () => {
 
   it('getIntervalStats sends start_index and end_index', async () => {
     await client.analytics.getIntervalStats('a1', 100, 400);
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/activity/a1/interval-stats');
     expect(seen[0].params).toEqual({ start_index: 100, end_index: 400 });
   });
 
   it('getActivityPowerCurves passes types and fatigue; CSV sibling downloads .csv', async () => {
     await client.analytics.getActivityPowerCurves('a1', { types: ['power', 'pace'], fatigue: true });
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/activity/a1/power-curves');
     expect(seen[0].params).toEqual({ types: ['power', 'pace'], fatigue: true });
     const csv = await client.analytics.getActivityPowerCurvesCSV('a1', { types: ['power'] });
+    expect(seen[1].method).toBe('GET');
     expect(seen[1].url).toBe('/activity/a1/power-curves.csv');
     expect(seen[1].params).toEqual({ types: ['power'] });
     expect(seen[1].responseType).toBe('arraybuffer');
@@ -1360,18 +1388,22 @@ describe('AnalyticsService', () => {
 
   it('getMMPModel sends type and is athlete-scoped', async () => {
     await client.analytics.getMMPModel('Ride');
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/mmp-model');
     expect(seen[0].params).toEqual({ type: 'Ride' });
     await client.analytics.getMMPModel('Run', 'other');
+    expect(seen[1].method).toBe('GET');
     expect(seen[1].url).toBe('/athlete/other/mmp-model');
   });
 
   it('getActivityPaceCurves passes the date range and distances; CSV sibling downloads .csv', async () => {
     const opts = { oldest: '2026-01-01', newest: '2026-03-01', type: 'Run', distances: [1000, 5000], gap: true };
     await client.analytics.getActivityPaceCurves(opts);
+    expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activity-pace-curves');
     expect(seen[0].params).toEqual(opts);
     await client.analytics.getActivityPaceCurvesCSV(opts);
+    expect(seen[1].method).toBe('GET');
     expect(seen[1].url).toBe('/athlete/i1/activity-pace-curves.csv');
     expect(seen[1].responseType).toBe('arraybuffer');
   });
@@ -1496,8 +1528,8 @@ and after `this.search = new SearchService(...)` in the constructor: `this.analy
 
 - [ ] **Step 4: Verify**
 
-Run: `npm run typecheck && npx vitest run tests/analytics.test.ts && node scripts/coverage.mjs --strict; echo exit=$?`
-Expected: tests PASS (11); coverage `--strict` prints `Spec ops covered: 149`, no missing, no phantom, exit 0. (The non-strict run will report 10 newly-covered stale baseline entries until Task 11 rewrites the baseline; that is expected here.)
+Run: `npm run typecheck && npx vitest run tests/analytics.test.ts && node scripts/coverage.mjs --strict`
+Expected: tests PASS (11); coverage `--strict` prints `Spec ops covered: 149`, no missing, no phantom, the command chain exits 0. (The non-strict run will report 10 newly-covered stale baseline entries until Task 11 rewrites the baseline; that is expected here.)
 
 - [ ] **Step 5: Commit**
 
@@ -1570,7 +1602,7 @@ describe.skipIf(!LIVE)('live: phase 3 — analytics', () => {
 
 - [ ] **Step 2: Baseline, strict CI, CONTRIBUTING**
 
-Run: `node scripts/coverage.mjs --write-baseline && node scripts/coverage.mjs --strict; echo exit=$?`
+Run: `node scripts/coverage.mjs --write-baseline && node scripts/coverage.mjs --strict`
 Expected: 149 covered / 0 missing / 0 phantom, exit 0.
 
 In `.github/workflows/ci.yml` change the coverage step to:
@@ -1588,7 +1620,7 @@ CI runs `node scripts/coverage.mjs --strict`: every spec operation must be calle
 
 - [ ] **Step 3: Typecheck and run live (user-run if no key)**
 
-Run: `npm run typecheck && set -a; . ./.env; set +a; npm run test:live`
+Run: `npm run typecheck` (must exit 0 before continuing), then `set -a; . ./.env; set +a; npm run test:live`
 Expected: analytics cases pass or skip; no failures. If the pace-curves shape assertion fails, report the actual shape in the task report; do not change the type without the user's decision.
 
 - [ ] **Step 4: Commit**
@@ -1621,7 +1653,7 @@ Under `### Added`, insert at the top:
 Add a row to the service table after **Performance**:
 
 ```markdown
-| **Analytics** | `client.analytics` | `getPowerHistogram`, `getHRHistogram`, `getPaceHistogram`, `getGAPHistogram`, `getTimeAtHR`, `getIntervalStats`, `getPowerSpikeModel`, `getActivityPowerCurves`, `getMMPModel`, `getActivityPaceCurves` |
+| **Analytics** | `client.analytics` | `getPowerHistogram`, `getHRHistogram`, `getPaceHistogram`, `getGAPHistogram`, `getTimeAtHR`, `getIntervalStats`, `getPowerSpikeModel`, `getActivityPowerCurves`, `getActivityPowerCurvesCSV`, `getMMPModel`, `getActivityPaceCurves`, `getActivityPaceCurvesCSV` |
 ```
 
 Line 9 (intro blockquote): change `139 of 149 spec operations covered` to `all 149 spec operations covered`. Line 17: change `15 services, 100+ methods` to `16 services, 130+ methods` and append `, analytics` to that line's service list. Line 195 (comparison table): change `15 services, 100+ endpoints` to `16 services, 149 endpoints`.

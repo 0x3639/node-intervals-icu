@@ -145,7 +145,7 @@ New, hand-written, in the existing files:
   `hr`, `cadence`; all numbers), `TimeAtHRPlot` (spec name `Plot`; `max_bpm`,
   `min_bpm`, `secs: number[]`, `cumulative_secs: number[]`),
   `IntervalSearchOptions`, `ActivitiesAroundOptions`.
-- `src/types/athlete.ts`: `AthleteConnections` (`id: string` plus the 21
+- `src/types/athlete.ts`: `AthleteConnections` (`id: string` plus the 20
   spec-listed `*_connected: boolean` flags, written out), `AthleteWithTags =
   Athlete & { icu_tags?: string[]; icu_notes?: string }`.
 - `src/types/event.ts`: `WorkoutsZipOptions`.
