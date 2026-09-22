@@ -529,7 +529,8 @@ export interface IntervalSearchOptions {
   minIntensity: number;
   /** Maximum interval intensity (% of threshold) */
   maxIntensity: number;
-  type?: ActivityType | string;
+  /** Interval-detection source; the spec enumerates exactly these four values */
+  type?: 'AUTO' | 'POWER' | 'HR' | 'PACE';
   minReps?: number;
   maxReps?: number;
   limit?: number;
@@ -537,7 +538,7 @@ export interface IntervalSearchOptions {
 
 /** Query for GET /athlete/{id}/activities-around (the activity id itself is a method argument) */
 export interface ActivitiesAroundOptions {
-  /** Restrict to activities on this route */
-  routeId?: number;
+  /** Restrict to activities on this route (wire name, like ListActivitiesOptions.route_id) */
+  route_id?: number;
   limit?: number;
 }
