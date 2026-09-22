@@ -53,6 +53,8 @@ export type {
   AthleteTrainingPlanUpdate,
   AthleteSearchResult,
   AthleteProfile,
+  AthleteConnections,
+  AthleteWithTags,
   StravaGear,
   ActivityFilter,
   CoachTick,
@@ -66,6 +68,8 @@ export type {
   ActivityInput,
   ActivitySearchResult,
   UploadActivityOptions,
+  IntervalSearchOptions,
+  ActivitiesAroundOptions,
   Interval,
   IntervalGroup,
   IntervalsDTO,
@@ -106,6 +110,7 @@ export type {
   DeleteEventsResponse,
   DuplicateEventsDTO,
   ApplyPlanDTO,
+  WorkoutsZipOptions,
 } from './event.js';
 
 // Wellness
