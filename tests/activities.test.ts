@@ -254,4 +254,10 @@ describe('ActivityService — Phase 3 additions', () => {
     await client.activities.downloadGPX('c?3');
     expect(seen[1].url).toBe('/activity/c%3F3/gpx-file');
   });
+
+  it('searchActivitiesFull keeps the explicit q even if options carries one', async () => {
+    const options = { limit: 3, q: 'other' } as { limit?: number };
+    await client.activities.searchActivitiesFull('tempo', options);
+    expect(seen[0].params).toEqual({ limit: 3, q: 'tempo' });
+  });
 });

@@ -126,37 +126,48 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
 
   it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {
     const content = `phase 3 live test ${Date.now()}`;
-    const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content, type: 'TEXT' });
-    // `chat_id` is not in the vendored Message schema; read it defensively from the raw
-    // response and fall back to the new chat's id. Verified only when LIVE_WRITE runs.
-    let chatId = (sent.message as { chat_id?: number } | undefined)?.chat_id ?? sent.new_chat?.id;
-    let msgId = sent.message?.id ?? sent.id;
-    if (typeof chatId !== 'number' || typeof msgId !== 'number') {
-      // The message now exists. Recover it by its unique content so it can still be deleted.
+    const edited = `${content} (edited)`;
+    let chatId: number | undefined;
+    let msgId: number | undefined;
+    // Find the message by its unique content (original or edited) across the caller's chats.
+    const recover = async () => {
       for (const chat of await c().chats.listChats()) {
         if (typeof chat.id !== 'number') continue;
-        const hit = (await c().chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content);
+        const hit = (await c().chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content || m.content === edited);
         if (typeof hit?.id === 'number') {
           chatId = chat.id;
           msgId = hit.id;
-          break;
+          return;
         }
       }
-    }
+    };
     try {
+      const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content, type: 'TEXT' });
+      // `chat_id` is not in the vendored Message schema; read it defensively from the raw
+      // response and fall back to the new chat's id. Verified only when LIVE_WRITE runs.
+      chatId = (sent.message as { chat_id?: number } | undefined)?.chat_id ?? sent.new_chat?.id;
+      msgId = sent.message?.id ?? sent.id;
+      if (typeof chatId !== 'number' || typeof msgId !== 'number') await recover();
       expect(chatId, `could not determine the chat id of the sent message: ${JSON.stringify(sent)}`).toBeTypeOf('number');
       expect(msgId, `could not determine the message id of the sent message: ${JSON.stringify(sent)}`).toBeTypeOf('number');
-      await c().chats.updateMessage(chatId as number, msgId as number, { content: `${content} (edited)` });
+      await c().chats.updateMessage(chatId as number, msgId as number, { content: edited });
       const after = await c().chats.listMessages(chatId as number, { limit: 20 });
-      expect(after.find((m) => m.id === msgId)?.content).toBe(`${content} (edited)`);
+      expect(after.find((m) => m.id === msgId)?.content).toBe(edited);
     } finally {
-      // Always attempt cleanup whenever the ids are known, whether or not an assertion above failed.
+      // The send may have been accepted even if its response was lost or recovery threw:
+      // try recovery once more, then delete whenever the ids are known.
+      if (typeof chatId !== 'number' || typeof msgId !== 'number') {
+        try {
+          await recover();
+        } catch {
+          // Nothing more can be done here; the failing assertion above carries the response body.
+        }
+      }
       if (typeof chatId === 'number' && typeof msgId === 'number') {
         await c().chats.deleteMessage(chatId, msgId);
       }
     }
   });
-
 });
 
 // Irreversible: there is no API to recreate a tombstone, so nothing here can be cleaned up.

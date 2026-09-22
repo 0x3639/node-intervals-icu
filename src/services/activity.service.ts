@@ -241,7 +241,7 @@ export class ActivityService {
     return this.httpClient.request<Activity[]>({
       method: 'GET',
       url: `/athlete/${id}/activities/search-full`,
-      params: { q, ...options } as Record<string, unknown>,
+      params: { ...options, q } as Record<string, unknown>, // q last: options cannot override it
     });
   }
 

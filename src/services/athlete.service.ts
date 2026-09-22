@@ -59,7 +59,7 @@ export class AthleteService {
 
   // ── Phase 3 ──
 
-  /** Athletes the caller follows or coaches, including the caller. */
+  /** Athletes the caller follows or coaches, including the caller. Requires API-key authentication (not available to OAuth app tokens). */
   async listAthletes(options?: { extIdPrefix?: string }): Promise<AthleteWithTags[]> {
     const params = options?.extIdPrefix !== undefined ? { ext_id_prefix: options.extIdPrefix } : undefined;
     return this.httpClient.request<AthleteWithTags[]>({ method: 'GET', url: '/athletes', params });
