@@ -109,4 +109,9 @@ describe('GearService — Phase 3 additions', () => {
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/gear/b123/calc');
   });
+
+  it('calc encodes the gear id segment', async () => {
+    await client.gear.calc('b#1');
+    expect(seen[0].url).toBe('/athlete/i1/gear/b%231/calc');
+  });
 });

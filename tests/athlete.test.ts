@@ -140,4 +140,9 @@ describe('AthleteService — Phase 3 additions', () => {
     expect(seen[0].method).toBe('DELETE');
     expect(seen[0].url).toBe('/disconnect-app');
   });
+
+  it('getSettings encodes the device class segment', async () => {
+    await client.athletes.getSettings('desk top#');
+    expect(seen[0].url).toBe('/athlete/i1/settings/desk%20top%23');
+  });
 });

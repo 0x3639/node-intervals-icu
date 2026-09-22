@@ -220,7 +220,7 @@ export class ActivityService {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<Activity[]>({
       method: 'GET',
-      url: `/athlete/${id}/activities/${ids.join(',')}`,
+      url: `/athlete/${id}/activities/${ids.map(encodeURIComponent).join(',')}`,
       params: options as Record<string, unknown>,
     });
   }
@@ -269,11 +269,14 @@ export class ActivityService {
 
   /** The activity as a GPX file, optionally with power and heart-rate extensions */
   async downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer> {
-    return this.httpClient.download(`/activity/${activityId}/gpx-file`, { params: options as Record<string, unknown> });
+    return this.httpClient.download(`/activity/${encodeURIComponent(activityId)}/gpx-file`, { params: options as Record<string, unknown> });
   }
 
-  /** Remove the tombstone left by a deleted activity so the same file can be re-uploaded */
+  /**
+   * Remove the tombstone left by a deleted activity so the same file can be re-uploaded
+   * The id is URL-encoded: this route is destructive, and an unencoded delimiter (e.g. a trailing "#") would turn it into DELETE /activity/{id}.
+   */
   async deleteTombstone(activityId: string): Promise<void> {
-    await this.httpClient.request<void>({ method: 'DELETE', url: `/activity/${activityId}/tombstone` });
+    await this.httpClient.request<void>({ method: 'DELETE', url: `/activity/${encodeURIComponent(activityId)}/tombstone` });
   }
 }

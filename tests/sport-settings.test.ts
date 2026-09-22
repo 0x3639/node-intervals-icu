@@ -118,4 +118,11 @@ describe('SportSettingsService — Phase 3 additions', () => {
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/sport-settings/5/pace_distances');
   });
+
+  it('encodes a string settings id in both Phase 3 paths', async () => {
+    await client.sportSettings.listMatchingActivities('s#1');
+    expect(seen[0].url).toBe('/athlete/i1/sport-settings/s%231/matching-activities');
+    await client.sportSettings.getPaceDistances('s#1');
+    expect(seen[1].url).toBe('/athlete/i1/sport-settings/s%231/pace_distances');
+  });
 });

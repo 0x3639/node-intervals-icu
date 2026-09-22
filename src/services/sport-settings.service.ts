@@ -57,12 +57,12 @@ export class SportSettingsService {
   /** Activities whose type falls under these sport settings */
   async listMatchingActivities(settingsId: number | string, athleteId?: string): Promise<ActivitySearchResult[]> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<ActivitySearchResult[]>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/matching-activities` });
+    return this.httpClient.request<ActivitySearchResult[]>({ method: 'GET', url: `/athlete/${id}/sport-settings/${encodeURIComponent(String(settingsId))}/matching-activities` });
   }
 
   /** Pace-curve distances and best-effort defaults for the sport */
   async getPaceDistances(settingsId: number | string, athleteId?: string): Promise<PaceDistancesDTO> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PaceDistancesDTO>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/pace_distances` });
+    return this.httpClient.request<PaceDistancesDTO>({ method: 'GET', url: `/athlete/${id}/sport-settings/${encodeURIComponent(String(settingsId))}/pace_distances` });
   }
 }

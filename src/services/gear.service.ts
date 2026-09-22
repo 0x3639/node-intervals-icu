@@ -69,6 +69,6 @@ export class GearService {
   /** Recalculate distance / time / activity totals for one item of gear */
   async calc(gearId: string, athleteId?: string): Promise<GearStats> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<GearStats>({ method: 'GET', url: `/athlete/${id}/gear/${gearId}/calc` });
+    return this.httpClient.request<GearStats>({ method: 'GET', url: `/athlete/${id}/gear/${encodeURIComponent(gearId)}/calc` });
   }
 }

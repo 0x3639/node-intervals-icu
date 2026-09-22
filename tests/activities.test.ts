@@ -240,4 +240,18 @@ describe('ActivityService — Phase 3 additions', () => {
     expect(await client.activities.getActivities([])).toEqual([]);
     expect(seen).toHaveLength(0);
   });
+
+  it('deleteTombstone encodes delimiters in the id so the path still ends in /tombstone', async () => {
+    await client.activities.deleteTombstone('victim#?/%');
+    expect(seen[0].method).toBe('DELETE');
+    expect(seen[0].url).toBe('/activity/victim%23%3F%2F%25/tombstone');
+    expect(seen[0].url.endsWith('/tombstone')).toBe(true);
+  });
+
+  it('getActivities and downloadGPX encode ids as path segments', async () => {
+    await client.activities.getActivities(['a#1', 'b/2']);
+    expect(seen[0].url).toBe('/athlete/i1/activities/a%231,b%2F2');
+    await client.activities.downloadGPX('c?3');
+    expect(seen[1].url).toBe('/activity/c%3F3/gpx-file');
+  });
 });
