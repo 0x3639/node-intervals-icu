@@ -75,6 +75,7 @@ Method names follow each service's existing style. Optional trailing
 
 `WorkoutsZipOptions`: `ext: WorkoutFormat`, `oldest`, `newest` (required),
 `powerRange?`, `hrRange?`, `paceRange?`, `locale?`.
+The `ext` query value is sent without the leading dot (spec: "zwo, mrc, erg or fit").
 
 ### `client.gear` (3)
 

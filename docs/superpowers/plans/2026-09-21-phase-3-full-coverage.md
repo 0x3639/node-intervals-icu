@@ -752,11 +752,11 @@ describe('EventService — Phase 3 additions', () => {
     expect(seen[0].url).toBe('/athlete/i1/fitness-model-events');
   });
 
-  it('downloadWorkoutsZip downloads /workouts.zip with ext and date range as params', async () => {
+  it('downloadWorkoutsZip downloads /workouts.zip with a dot-less ext and the date range as params', async () => {
     const out = await client.events.downloadWorkoutsZip({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/workouts.zip');
-    expect(seen[0].params).toEqual({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
+    expect(seen[0].params).toEqual({ ext: 'zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
     expect(seen[0].responseType).toBe('arraybuffer');
     expect(Buffer.isBuffer(out)).toBe(true);
   });
@@ -802,10 +802,15 @@ Expected: FAIL.
     return this.httpClient.request<Event[]>({ method: 'GET', url: `/athlete/${id}/fitness-model-events` });
   }
 
-  /** Calendar workouts in a date range as a zip of files in the requested format */
+  /**
+   * Calendar workouts in a date range as a zip of files in the requested format.
+   * The API's `ext` query value has no leading dot (spec: "zwo, mrc, erg or fit"),
+   * unlike the `{ext}` path suffix routes, so the dot in WorkoutFormat is stripped here.
+   */
   async downloadWorkoutsZip(options: WorkoutsZipOptions, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.download(`/athlete/${id}/workouts.zip`, { params: options as unknown as Record<string, unknown> });
+    const params = { ...options, ext: options.ext.replace(/^\./, '') } as Record<string, unknown>;
+    return this.httpClient.download(`/athlete/${id}/workouts.zip`, { params });
   }
 ```
 
@@ -1765,5 +1770,6 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Spec coverage: every row of the spec's PR A and PR B tables maps to a task (see the route-to-task map). Spec sections Types, Testing, Coverage gate and CI, Documentation per PR, and Versions are implemented by Tasks 1/9, 7/11, 11, 8/12, 8/12 respectively.
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
+- Task 5 review (2026-09-22): the workouts.zip `ext` query value is dot-less per the spec description; `downloadWorkoutsZip` strips the leading dot from `WorkoutFormat`. Task 7's live test confirms.
 - Task 1 review (2026-09-22) corrected two plan defects: `ActivitiesAroundOptions.route_id` (wire name, was `routeId`) and `IntervalSearchOptions.type` as the spec's `'AUTO' | 'POWER' | 'HR' | 'PACE'` enum (was `ActivityType | string`). Task 2 spreads options into params accordingly.
 - File-content checks resolved while writing the plan (2026-09-21, main at 8f5d966): `ActivityType` import in `activity.ts` (Task 1 states the action), `Message` lacks `chat_id` (Task 7 adds it), `IntervalsDTO.icu_intervals` is the interval list (Task 11 uses it).
