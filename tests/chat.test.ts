@@ -77,3 +77,45 @@ describe('IntervalsClient - Chats', () => {
     await expect(client.chats.markSeen(100, 500)).resolves.toBeUndefined();
   });
 });
+
+describe('ChatService — Phase 3 additions', () => {
+  let client: IntervalsClient;
+  let seen: any[] = [];
+  beforeEach(() => {
+    seen = [];
+    setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return {}; });
+    client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+  });
+
+  it('getChat hits /chats/{id}', async () => {
+    await client.chats.getChat(42);
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/chats/42');
+  });
+
+  it('listGroups hits /athlete/{id}/groups', async () => {
+    await client.chats.listGroups();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/groups');
+  });
+
+  it('blockChat PUTs /chats/{id}/block with on as a query param', async () => {
+    await client.chats.blockChat(42, true);
+    expect(seen[0].method).toBe('PUT');
+    expect(seen[0].url).toBe('/chats/42/block');
+    expect(seen[0].params).toEqual({ on: true });
+  });
+
+  it('updateMessage PUTs the message body to /chats/{id}/messages/{msgId}', async () => {
+    await client.chats.updateMessage(42, 7, { content: 'edited' });
+    expect(seen[0].method).toBe('PUT');
+    expect(seen[0].url).toBe('/chats/42/messages/7');
+    expect(seen[0].data).toEqual({ content: 'edited' });
+  });
+
+  it('deleteMessage sends DELETE /chats/{id}/messages/{msgId}', async () => {
+    await client.chats.deleteMessage(42, 7);
+    expect(seen[0].method).toBe('DELETE');
+    expect(seen[0].url).toBe('/chats/42/messages/7');
+  });
+});
