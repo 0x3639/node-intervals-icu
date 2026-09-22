@@ -128,38 +128,65 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 /**
- * Hand-written types added in Phase 3 must name exactly the properties the vendored
- * spec declares for the same schema. This replaces a generated-types step: it catches a
- * typo or a spec change without committing a 9,700-line generated file.
+ * Hand-written types added in Phase 3 must declare exactly the properties the vendored
+ * spec declares for the same schema, with the same optionality (from the schema's
+ * `required` list) and the matching TypeScript type. This replaces a generated-types
+ * step: it catches a typo or a spec change without committing a 9,700-line generated file.
  */
 const spec = JSON.parse(readFileSync(new URL('../../spec/openapi.json', import.meta.url), 'utf8'));
 
-function schemaProps(name: string): string[] {
-  const schema = spec.components.schemas[name];
-  if (!schema) throw new Error(`schema ${name} not in spec/openapi.json`);
-  return Object.keys(schema.properties ?? {}).sort();
+/** One property as both sides see it: name, whether it may be omitted, and its TypeScript type. */
+interface Member { name: string; optional: boolean; type: string }
+
+/** Map a JSON-schema property to the TypeScript type the hand-written interface should use. */
+function tsType(prop: any): string {
+  if (prop.$ref) return String(prop.$ref).split('/').pop() as string;
+  switch (prop.type) {
+    case 'string': return 'string';
+    case 'boolean': return 'boolean';
+    case 'integer':
+    case 'number': return 'number';
+    case 'array': return `${tsType(prop.items ?? {})}[]`;
+    default: return 'unknown';
+  }
 }
 
-function interfaceProps(file: string, name: string): string[] {
+function schemaMembers(name: string): Member[] {
+  const schema = spec.components.schemas[name];
+  if (!schema) throw new Error(`schema ${name} not in spec/openapi.json`);
+  const required: string[] = schema.required ?? [];
+  return Object.entries(schema.properties ?? {})
+    .map(([k, v]) => ({ name: k, optional: !required.includes(k), type: tsType(v) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Parse `name?: type;` members out of an interface body or an inline object type. */
+function parseMembers(body: string): Member[] {
+  return [...body.matchAll(/^\s*([A-Za-z_][A-Za-z0-9_]*)(\?)?:\s*([^;]+);/gm)]
+    .map((x) => ({ name: x[1], optional: x[2] === '?', type: x[3].trim() }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function interfaceMembers(file: string, name: string): Member[] {
   const src = readFileSync(new URL(`../../src/types/${file}`, import.meta.url), 'utf8');
   const m = new RegExp(`export interface ${name}\\b[^{]*\\{([\\s\\S]*?)\\n\\}`).exec(src);
   if (!m) throw new Error(`interface ${name} not found in src/types/${file}`);
-  return [...m[1].matchAll(/^\s+([A-Za-z_][A-Za-z0-9_]*)\??:/gm)].map((x) => x[1]).sort();
+  return parseMembers(m[1]);
 }
 
-describe('Phase 3 hand-written types match the vendored spec', () => {
+describe('Phase 3 hand-written types match the vendored spec (names, optionality, types)', () => {
   it('AthleteConnections', () => {
-    expect(interfaceProps('athlete.ts', 'AthleteConnections')).toEqual(schemaProps('AthleteConnections'));
+    expect(interfaceMembers('athlete.ts', 'AthleteConnections')).toEqual(schemaMembers('AthleteConnections'));
   });
 
-  it('AthleteWithTags adds exactly icu_tags and icu_notes to Athlete', () => {
-    const extra = schemaProps('AthleteWithTags').filter((k) => !schemaProps('Athlete').includes(k));
-    expect(extra).toEqual(['icu_notes', 'icu_tags']);
+  it('AthleteWithTags adds exactly the members the spec adds to Athlete', () => {
+    const athleteNames = new Set(schemaMembers('Athlete').map((m) => m.name));
+    const extra = schemaMembers('AthleteWithTags').filter((m) => !athleteNames.has(m.name));
+    expect(extra.map((m) => m.name)).toEqual(['icu_notes', 'icu_tags']);
     const src = readFileSync(new URL('../../src/types/athlete.ts', import.meta.url), 'utf8');
     const alias = /export type AthleteWithTags = Athlete & \{([^}]*)\}/.exec(src);
     expect(alias, 'AthleteWithTags alias not found').toBeTruthy();
-    const aliasProps = [...alias![1].matchAll(/([A-Za-z_][A-Za-z0-9_]*)\??:/g)].map((x) => x[1]).sort();
-    expect(aliasProps).toEqual(extra);
+    expect(parseMembers(alias![1].replace(/;\s*$/, '') + ';')).toEqual(extra);
   });
 });
 ```
@@ -204,7 +231,7 @@ export interface AthleteConnections {
 }
 
 /** An athlete as returned by GET /athletes: the profile plus the caller's tags and notes for them. */
-export type AthleteWithTags = Athlete & { icu_tags?: string[]; icu_notes?: string };
+export type AthleteWithTags = Athlete & { icu_tags?: string[]; icu_notes?: string; };
 ```
 
 Append to `src/types/activity.ts`:
@@ -1094,12 +1121,13 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
     }
   });
 
-  // deleteTombstone needs a known tombstoned activity id; there is no API to list them.
-  // Provide one via INTERVALS_TOMBSTONE_ID to exercise it; otherwise it is skipped.
-  it('deleteTombstone removes a tombstone when one is supplied', async (ctx) => {
-    const id = process.env.INTERVALS_TOMBSTONE_ID;
-    if (!id) ctx.skip();
-    await expect(c().activities.deleteTombstone(id as string)).resolves.toBeUndefined();
+});
+
+// Irreversible: there is no API to recreate a tombstone, so nothing here can be cleaned up.
+// This block runs only when the user supplies a tombstoned activity id they intend to clear.
+describe.skipIf(!(LIVE_WRITE && process.env.INTERVALS_TOMBSTONE_ID))('live (write, irreversible): deleteTombstone', () => {
+  it('deleteTombstone clears the supplied tombstone', async () => {
+    await expect(liveClient().activities.deleteTombstone(process.env.INTERVALS_TOMBSTONE_ID as string)).resolves.toBeUndefined();
   });
 });
 ```
@@ -1113,8 +1141,8 @@ Expected: typecheck clean (the tests tsconfig covers `tests/live`); coverage pri
 
 - [ ] **Step 3: Run the live suite (user-run if no key in this environment)**
 
-Run: `set -a; . ./.env; set +a; npm run test:live`
-Expected: every read-only case passes or is reported skipped; no failures. With `INTERVALS_LIVE_WRITE=1` also set, the write block runs; the tombstone case skips unless `INTERVALS_TOMBSTONE_ID` is set. If the key is not available to the implementer, record "live suite not run; user to run before merge" in the task report and continue.
+Run: `set -a && . ./.env && set +a && npm run test:live`
+Expected: every read-only case passes or is reported skipped; no failures. With `INTERVALS_LIVE_WRITE=1` also set, the cleanup-guaranteed write block runs; the irreversible `deleteTombstone` block runs only if `INTERVALS_TOMBSTONE_ID` is also set. If the key is not available to the implementer, record "live suite not run; user to run before merge" in the task report and continue.
 
 - [ ] **Step 4: Commit**
 
@@ -1215,11 +1243,11 @@ Append inside the `describe` in `tests/types/spec-conformance.test.ts`:
 
 ```ts
   it('Bucket', () => {
-    expect(interfaceProps('activity.ts', 'Bucket')).toEqual(schemaProps('Bucket'));
+    expect(interfaceMembers('activity.ts', 'Bucket')).toEqual(schemaMembers('Bucket'));
   });
 
   it('TimeAtHRPlot matches the spec schema named Plot', () => {
-    expect(interfaceProps('activity.ts', 'TimeAtHRPlot')).toEqual(schemaProps('Plot'));
+    expect(interfaceMembers('activity.ts', 'TimeAtHRPlot')).toEqual(schemaMembers('Plot'));
   });
 ```
 
@@ -1620,7 +1648,7 @@ CI runs `node scripts/coverage.mjs --strict`: every spec operation must be calle
 
 - [ ] **Step 3: Typecheck and run live (user-run if no key)**
 
-Run: `npm run typecheck` (must exit 0 before continuing), then `set -a; . ./.env; set +a; npm run test:live`
+Run: `npm run typecheck` (must exit 0 before continuing), then `set -a && . ./.env && set +a && npm run test:live`
 Expected: analytics cases pass or skip; no failures. If the pace-curves shape assertion fails, report the actual shape in the task report; do not change the type without the user's decision.
 
 - [ ] **Step 4: Commit**
