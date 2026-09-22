@@ -109,9 +109,14 @@ export class EventService {
     return this.httpClient.request<Event[]>({ method: 'GET', url: `/athlete/${id}/fitness-model-events` });
   }
 
-  /** Calendar workouts in a date range as a zip of files in the requested format */
+  /**
+   * Calendar workouts in a date range as a zip of files in the requested format.
+   * The API's `ext` query value has no leading dot (spec: "zwo, mrc, erg or fit"),
+   * unlike the `{ext}` path suffix routes, so the dot in WorkoutFormat is stripped here.
+   */
   async downloadWorkoutsZip(options: WorkoutsZipOptions, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.download(`/athlete/${id}/workouts.zip`, { params: options as unknown as Record<string, unknown> });
+    const params = { ...options, ext: options.ext.replace(/^\./, '') } as Record<string, unknown>;
+    return this.httpClient.download(`/athlete/${id}/workouts.zip`, { params });
   }
 }

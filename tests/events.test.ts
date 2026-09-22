@@ -214,11 +214,11 @@ describe('EventService — Phase 3 additions', () => {
     expect(seen[0].url).toBe('/athlete/i1/fitness-model-events');
   });
 
-  it('downloadWorkoutsZip downloads /workouts.zip with ext and date range as params', async () => {
+  it('downloadWorkoutsZip downloads /workouts.zip with a dot-less ext and the date range as params', async () => {
     const out = await client.events.downloadWorkoutsZip({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/workouts.zip');
-    expect(seen[0].params).toEqual({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
+    expect(seen[0].params).toEqual({ ext: 'zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
     expect(seen[0].responseType).toBe('arraybuffer');
     expect(Buffer.isBuffer(out)).toBe(true);
   });
