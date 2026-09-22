@@ -56,7 +56,6 @@ export interface Chat {
 /** Message */
 export interface Message {
   id?: number;
-  chat_id?: number;
   athlete_id?: string;
   name?: string;
   created?: string;

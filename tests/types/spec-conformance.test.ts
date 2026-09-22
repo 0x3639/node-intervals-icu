@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 
 /**
- * Hand-written types added in Phase 3 must declare exactly the properties the vendored
+ * Schema-backed types added in Phase 3 must declare exactly the properties the vendored
  * spec declares for the same schema, with the same optionality (from the schema's
  * `required` list) and the matching TypeScript type. This replaces a generated-types
  * step: it catches a typo or a spec change without committing a 9,700-line generated file.
+ * Query-parameter option types (IntervalSearchOptions, ActivitiesAroundOptions, WorkoutsZipOptions) are checked against paths[...].parameters from PR B onward.
  */
 const spec = JSON.parse(readFileSync(new URL('../../spec/openapi.json', import.meta.url), 'utf8'));
 

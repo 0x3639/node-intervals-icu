@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { LIVE, LIVE_WRITE, athleteId, liveClient } from './setup.js';
+import type { Chat } from '../../src/types/index.js';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const yearAgo = () => new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
@@ -34,7 +35,9 @@ describe.skipIf(!LIVE)('live: phase 3 — existing services', () => {
   it('listActivityTags responds', async () => {
     expect(Array.isArray(await c().activities.listActivityTags())).toBe(true);
   });
-  it('downloadActivitiesCSV returns CSV text', async () => {
+  it('downloadActivitiesCSV returns CSV text', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
     const csv = await c().activities.downloadActivitiesCSV();
     expect(csv.toString().split('\n')[0]).toContain('id');
   });
@@ -109,18 +112,21 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
     const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && x.id);
     if (!chat) ctx.skip();
     const chatId = chat!.id as number;
+    let unblocked: Chat | undefined;
     try {
       const blocked = await c().chats.blockChat(chatId, true);
       expect(blocked.id).toBe(chatId);
     } finally {
-      const unblocked = await c().chats.blockChat(chatId, false);
-      expect(unblocked.id).toBe(chatId);
+      unblocked = await c().chats.blockChat(chatId, false);
     }
+    expect(unblocked.id).toBe(chatId);
   });
 
   it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {
     const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content: 'phase 3 live test', type: 'TEXT' });
-    const chatId = sent.message?.chat_id ?? sent.new_chat?.id;
+    // `chat_id` is not in the vendored Message schema; read it defensively from the raw
+    // response and fall back to the new chat's id. Verified only when LIVE_WRITE runs.
+    const chatId = (sent.message as { chat_id?: number } | undefined)?.chat_id ?? sent.new_chat?.id;
     const msgId = sent.message?.id ?? sent.id;
     // Fail, do not skip: a message now exists and the ids are needed to delete it.
     expect(chatId, `send response lacks a chat id: ${JSON.stringify(sent)}`).toBeTypeOf('number');

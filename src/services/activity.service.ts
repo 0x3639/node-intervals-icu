@@ -215,6 +215,8 @@ export class ActivityService {
 
   /** Fetch multiple activities by id in one call. Ids the athlete does not own are ignored. */
   async getActivities(ids: string[], options?: { intervals?: boolean }, athleteId?: string): Promise<Activity[]> {
+    // An empty list would hit /activities/ (a different route); nothing to fetch.
+    if (ids.length === 0) return [];
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<Activity[]>({
       method: 'GET',
@@ -229,7 +231,7 @@ export class ActivityService {
     return this.httpClient.request<Activity[]>({
       method: 'GET',
       url: `/athlete/${id}/activities-around`,
-      params: { activity_id: activityId, ...options } as Record<string, unknown>,
+      params: { ...options, activity_id: activityId } as Record<string, unknown>,
     });
   }
 
@@ -249,7 +251,7 @@ export class ActivityService {
     return this.httpClient.request<Activity[]>({
       method: 'GET',
       url: `/athlete/${id}/activities/interval-search`,
-      params: options as unknown as Record<string, unknown>,
+      params: { ...options } as Record<string, unknown>,
     });
   }
 

@@ -235,4 +235,9 @@ describe('ActivityService — Phase 3 additions', () => {
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/other/activity-tags');
   });
+
+  it('getActivities with no ids makes no request and returns []', async () => {
+    expect(await client.activities.getActivities([])).toEqual([]);
+    expect(seen).toHaveLength(0);
+  });
 });

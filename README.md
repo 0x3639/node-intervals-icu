@@ -10,7 +10,7 @@
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
-**100+ typed methods** across 15 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~21 KB minified.
+**100+ typed methods** across 15 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~25 KB minified.
 
 ## Features
 
@@ -21,7 +21,7 @@ The most comprehensive TypeScript client for the [Intervals.icu](https://interva
 - **Auto-retry with backoff + jitter** — configurable retries for 429/5xx, respects `Retry-After` header
 - **Rate limit tracking** — `getRateLimitRemaining()` / `getRateLimitReset()` from response headers
 - **Dual output** — ESM + CJS, tree-shakeable
-- **Minimal footprint** — single runtime dependency, ~21 KB minified
+- **Minimal footprint** — single runtime dependency, ~25 KB minified
 
 ## Installation
 
@@ -121,7 +121,7 @@ interface IntervalsConfig {
 | **Workouts** | `client.workouts` | `listWorkouts`, `getWorkout`, `createWorkout`, `updateWorkout`, `deleteWorkout`, `createWorkoutsBulk`, `duplicateWorkouts`, `convertWorkout`, `listWorkoutTags` |
 | **Sport Settings** | `client.sportSettings` | `list`, `get`, `create`, `update`, `delete`, `applyToActivities`, `listMatchingActivities`, `getPaceDistances` |
 | **Folders** | `client.folders` | `list`, `create`, `update`, `delete`, `getSharedWith`, `importWorkout`, `applyPlanChanges` |
-| **Gear** | `client.gear` | `list`, `downloadCSV`, `calc`, `create`, `update`, `delete`, `replace`, `createReminder`, `deleteReminder` |
+| **Gear** | `client.gear` | `list`, `downloadCSV`, `calc`, `create`, `update`, `delete`, `replace`, `createReminder`, `updateReminder`, `deleteReminder` |
 | **Chats** | `client.chats` | `listChats`, `listMessages`, `sendMessage`, `markSeen`, `getChat`, `listGroups`, `blockChat`, `updateMessage`, `deleteMessage` |
 | **Weather** | `client.weather` | `getForecast`, `getWeatherConfig`, `updateWeatherConfig` |
 | **Routes** | `client.routes` | `list`, `get`, `update`, `getSimilarity` |
