@@ -160,3 +160,79 @@ describe('IntervalsClient - Activities', () => {
     });
   });
 });
+
+describe('ActivityService — Phase 3 additions', () => {
+  let client: IntervalsClient;
+  let seen: any[] = [];
+  beforeEach(() => {
+    seen = [];
+    setupAxiosMock(mockedAxios, async (config: any) => {
+      seen.push(config);
+      return config.responseType === 'arraybuffer' ? Buffer.from('PK') : [];
+    });
+    client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+  });
+
+  it('getActivities joins ids with commas in the path and passes intervals', async () => {
+    await client.activities.getActivities(['a1', 'a2'], { intervals: true });
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/activities/a1,a2');
+    expect(seen[0].params).toEqual({ intervals: true });
+  });
+
+  it('listActivitiesAround sends activity_id, route_id and limit', async () => {
+    await client.activities.listActivitiesAround('a1', { route_id: 7, limit: 5 });
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/activities-around');
+    expect(seen[0].params).toEqual({ activity_id: 'a1', route_id: 7, limit: 5 });
+  });
+
+  it('searchActivitiesFull sends q and limit', async () => {
+    await client.activities.searchActivitiesFull('tempo', { limit: 3 });
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/activities/search-full');
+    expect(seen[0].params).toEqual({ q: 'tempo', limit: 3 });
+  });
+
+  it('searchIntervals passes the criteria through as query params', async () => {
+    const criteria = { minSecs: 60, maxSecs: 300, minIntensity: 90, maxIntensity: 120, type: 'POWER' as const, minReps: 3 };
+    await client.activities.searchIntervals(criteria);
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/activities/interval-search');
+    expect(seen[0].params).toEqual(criteria);
+  });
+
+  it('listActivityTags hits /activity-tags', async () => {
+    await client.activities.listActivityTags();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/activity-tags');
+  });
+
+  it('downloadActivitiesCSV downloads /activities.csv as a buffer', async () => {
+    const out = await client.activities.downloadActivitiesCSV();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/activities.csv');
+    expect(seen[0].responseType).toBe('arraybuffer');
+    expect(Buffer.isBuffer(out)).toBe(true);
+  });
+
+  it('downloadGPX downloads /activity/{id}/gpx-file with power and hr flags', async () => {
+    await client.activities.downloadGPX('a1', { power: true, hr: false });
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/activity/a1/gpx-file');
+    expect(seen[0].params).toEqual({ power: true, hr: false });
+    expect(seen[0].responseType).toBe('arraybuffer');
+  });
+
+  it('deleteTombstone sends DELETE /activity/{id}/tombstone', async () => {
+    await client.activities.deleteTombstone('a1');
+    expect(seen[0].method).toBe('DELETE');
+    expect(seen[0].url).toBe('/activity/a1/tombstone');
+  });
+
+  it('athlete-scoped methods accept an explicit athleteId', async () => {
+    await client.activities.listActivityTags('other');
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/other/activity-tags');
+  });
+});

@@ -5,6 +5,7 @@ import type {
   UpdateStreamsResult, MapData, ActivityWeatherSummary,
   BestEfforts, PowerVsHRPlot, HRLoadModel, IcuSegment,
   Message, NewActivityMsg, NewMsg,
+  IntervalSearchOptions, ActivitiesAroundOptions,
 } from '../types/index.js';
 
 /**
@@ -208,5 +209,69 @@ export class ActivityService {
   /** Add a message (comment) to an activity */
   async sendMessage(activityId: string, data: NewActivityMsg): Promise<NewMsg> {
     return this.httpClient.request<NewMsg>({ method: 'POST', url: `/activity/${activityId}/messages`, data });
+  }
+
+  // ── Phase 3: multi-fetch, search, tags, exports ──
+
+  /** Fetch multiple activities by id in one call. Ids the athlete does not own are ignored. */
+  async getActivities(ids: string[], options?: { intervals?: boolean }, athleteId?: string): Promise<Activity[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Activity[]>({
+      method: 'GET',
+      url: `/athlete/${id}/activities/${ids.join(',')}`,
+      params: options as Record<string, unknown>,
+    });
+  }
+
+  /** Activities before and after another activity, closest first; optionally only those on a route. */
+  async listActivitiesAround(activityId: string, options?: ActivitiesAroundOptions, athleteId?: string): Promise<Activity[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Activity[]>({
+      method: 'GET',
+      url: `/athlete/${id}/activities-around`,
+      params: { activity_id: activityId, ...options } as Record<string, unknown>,
+    });
+  }
+
+  /** Search by name or tag and return full Activity objects (search.searchActivities returns summaries). */
+  async searchActivitiesFull(q: string, options?: { limit?: number }, athleteId?: string): Promise<Activity[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Activity[]>({
+      method: 'GET',
+      url: `/athlete/${id}/activities/search-full`,
+      params: { q, ...options } as Record<string, unknown>,
+    });
+  }
+
+  /** Find activities containing intervals that match a duration and intensity window. */
+  async searchIntervals(options: IntervalSearchOptions, athleteId?: string): Promise<Activity[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Activity[]>({
+      method: 'GET',
+      url: `/athlete/${id}/activities/interval-search`,
+      params: options as unknown as Record<string, unknown>,
+    });
+  }
+
+  /** Every tag that has been applied to the athlete's activities */
+  async listActivityTags(athleteId?: string): Promise<string[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<string[]>({ method: 'GET', url: `/athlete/${id}/activity-tags` });
+  }
+
+  /** All activities as CSV */
+  async downloadActivitiesCSV(athleteId?: string): Promise<Buffer> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.download(`/athlete/${id}/activities.csv`);
+  }
+
+  /** The activity as a GPX file, optionally with power and heart-rate extensions */
+  async downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer> {
+    return this.httpClient.download(`/activity/${activityId}/gpx-file`, { params: options as Record<string, unknown> });
+  }
+
+  /** Remove the tombstone left by a deleted activity so the same file can be re-uploaded */
+  async deleteTombstone(activityId: string): Promise<void> {
+    await this.httpClient.request<void>({ method: 'DELETE', url: `/activity/${activityId}/tombstone` });
   }
 }
