@@ -166,8 +166,11 @@ it extracts the interface body from the source file with a regex over
 `^\s+(\w+)\??:` lines and compares the property-name set with
 `components.schemas.<Name>.properties` in `spec/openapi.json`. Any name
 present on one side only fails. `AthleteWithTags` is checked as
-`Athlete`'s names plus `icu_tags`/`icu_notes`. Only these four are covered;
-older types are out of scope.
+`Athlete`'s names plus `icu_tags`/`icu_notes`. From PR B the same file also
+checks the five query-option types against `paths[...].parameters` (name,
+required-ness, type; `ext` is allowed to be the shared `WorkoutFormat` union and
+method-argument parameters such as `activity_id` are omitted). Older types are
+out of scope.
 
 ## Testing
 

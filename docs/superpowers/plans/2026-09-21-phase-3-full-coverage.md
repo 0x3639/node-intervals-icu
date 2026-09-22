@@ -1260,10 +1260,59 @@ Append inside the `describe` in `tests/types/spec-conformance.test.ts`:
   });
 ```
 
+Also add, in the same file, a helper that reads a route's query parameters and cases for the five query-option types (three from PR A, two from this PR). Place `paramMembers` next to `schemaMembers`:
+
+```ts
+/**
+ * Query parameters of one spec operation as Members. `overrides` names members whose
+ * hand-written type deliberately differs from the schema's primitive (e.g. a shared union
+ * type used across the SDK), and `omit` drops parameters that are method arguments rather
+ * than option-object members.
+ */
+function paramMembers(path: string, verb: string, opts: { overrides?: Record<string, string>; omit?: string[] } = {}): Member[] {
+  const op = spec.paths[`/api/v1${path}`]?.[verb];
+  if (!op) throw new Error(`${verb.toUpperCase()} ${path} not in spec/openapi.json`);
+  return (op.parameters ?? [])
+    .filter((p: any) => p.in === 'query' && !(opts.omit ?? []).includes(p.name))
+    .map((p: any) => ({
+      name: p.name,
+      optional: !p.required,
+      type: opts.overrides?.[p.name] ?? (p.schema?.enum ? p.schema.enum.map((v: string) => `'${v}'`).join(' | ') : tsType(p.schema ?? {})),
+    }))
+    .sort((a: Member, b: Member) => a.name.localeCompare(b.name));
+}
+```
+
+and these cases inside the describe (the PR A option types were hand-verified when they landed; this pins them):
+
+```ts
+  it('IntervalSearchOptions matches the interval-search query parameters', () => {
+    expect(interfaceMembers('activity.ts', 'IntervalSearchOptions')).toEqual(paramMembers('/athlete/{id}/activities/interval-search', 'get'));
+  });
+
+  it('ActivitiesAroundOptions matches the activities-around query parameters minus activity_id', () => {
+    expect(interfaceMembers('activity.ts', 'ActivitiesAroundOptions')).toEqual(paramMembers('/athlete/{id}/activities-around', 'get', { omit: ['activity_id'] }));
+  });
+
+  it('WorkoutsZipOptions matches the workouts.zip query parameters (ext is the shared WorkoutFormat union)', () => {
+    expect(interfaceMembers('event.ts', 'WorkoutsZipOptions')).toEqual(paramMembers('/athlete/{id}/workouts.zip', 'get', { overrides: { ext: 'WorkoutFormat' } }));
+  });
+
+  it('ActivityPowerCurvesOptions matches the activity power-curves query parameters', () => {
+    expect(interfaceMembers('performance.ts', 'ActivityPowerCurvesOptions')).toEqual(paramMembers('/activity/{id}/power-curves{ext}', 'get'));
+  });
+
+  it('ActivityPaceCurvesOptions matches the activity-pace-curves query parameters minus filters', () => {
+    expect(interfaceMembers('performance.ts', 'ActivityPaceCurvesOptions')).toEqual(paramMembers('/athlete/{id}/activity-pace-curves{ext}', 'get', { omit: ['filters'] }));
+  });
+```
+
+If a case fails because the spec declares a parameter type this mapping does not model (for example `types` as an array of strings maps to `string[]`, which is what the interface declares), fix the mapping in `tsType`, not the interface, unless the interface is genuinely wrong. Also update the file's docstring to say the test covers schema-backed types AND query-option types.
+
 - [ ] **Step 2: Run to verify failure**
 
 Run: `npx vitest run tests/types/spec-conformance.test.ts`
-Expected: the two new cases FAIL (`interface Bucket not found`).
+Expected: the `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions` and `ActivityPaceCurvesOptions` cases FAIL (`interface ... not found`); the three PR A option-type cases PASS already.
 
 - [ ] **Step 3: Add the types**
 
@@ -1327,7 +1376,7 @@ Exports: add `Bucket,` and `TimeAtHRPlot,` to the `// Activity` block and `Activ
 - [ ] **Step 4: Verify**
 
 Run: `npx vitest run tests/types/spec-conformance.test.ts && npm run typecheck`
-Expected: 4 tests PASS; typecheck clean.
+Expected: 9 tests PASS; typecheck clean.
 
 - [ ] **Step 5: Commit**
 
@@ -1770,6 +1819,7 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Spec coverage: every row of the spec's PR A and PR B tables maps to a task (see the route-to-task map). Spec sections Types, Testing, Coverage gate and CI, Documentation per PR, and Versions are implemented by Tasks 1/9, 7/11, 11, 8/12, 8/12 respectively.
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
+- Final review of PR A (2026-09-22): `Message.chat_id` removed from the public type (not in the vendored spec; the live write test reads it via a local cast). Query-parameter conformance checks for the option types were added to Task 9 rather than PR A.
 - Task 5 review (2026-09-22): the workouts.zip `ext` query value is dot-less per the spec description; `downloadWorkoutsZip` strips the leading dot from `WorkoutFormat`. Task 7's live test confirms.
 - Task 1 review (2026-09-22) corrected two plan defects: `ActivitiesAroundOptions.route_id` (wire name, was `routeId`) and `IntervalSearchOptions.type` as the spec's `'AUTO' | 'POWER' | 'HR' | 'PACE'` enum (was `ActivityType | string`). Task 2 spreads options into params accordingly.
 - File-content checks resolved while writing the plan (2026-09-21, main at 8f5d966): `ActivityType` import in `activity.ts` (Task 1 states the action), `Message` lacks `chat_id` (Task 7 adds it), `IntervalsDTO.icu_intervals` is the interval list (Task 11 uses it).
