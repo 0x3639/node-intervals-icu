@@ -1113,18 +1113,35 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
   });
 
   it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {
-    const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content: 'phase 3 live test', type: 'TEXT' });
-    const chatId = sent.message?.chat_id ?? sent.new_chat?.id;
-    const msgId = sent.message?.id ?? sent.id;
-    // Fail, do not skip: a message now exists and the ids are needed to delete it.
-    expect(chatId, `send response lacks a chat id: ${JSON.stringify(sent)}`).toBeTypeOf('number');
-    expect(msgId, `send response lacks a message id: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+    const content = `phase 3 live test ${Date.now()}`;
+    const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content, type: 'TEXT' });
+    // `chat_id` is not in the vendored Message schema; read it defensively from the raw
+    // response and fall back to the new chat's id. Verified only when LIVE_WRITE runs.
+    let chatId = (sent.message as { chat_id?: number } | undefined)?.chat_id ?? sent.new_chat?.id;
+    let msgId = sent.message?.id ?? sent.id;
+    if (typeof chatId !== 'number' || typeof msgId !== 'number') {
+      // The message now exists. Recover it by its unique content so it can still be deleted.
+      for (const chat of await c().chats.listChats()) {
+        if (typeof chat.id !== 'number') continue;
+        const hit = (await c().chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content);
+        if (typeof hit?.id === 'number') {
+          chatId = chat.id;
+          msgId = hit.id;
+          break;
+        }
+      }
+    }
     try {
-      await c().chats.updateMessage(chatId as number, msgId as number, { content: 'phase 3 live test (edited)' });
+      expect(chatId, `could not determine the chat id of the sent message: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+      expect(msgId, `could not determine the message id of the sent message: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+      await c().chats.updateMessage(chatId as number, msgId as number, { content: `${content} (edited)` });
       const after = await c().chats.listMessages(chatId as number, { limit: 20 });
-      expect(after.find((m) => m.id === msgId)?.content).toBe('phase 3 live test (edited)');
+      expect(after.find((m) => m.id === msgId)?.content).toBe(`${content} (edited)`);
     } finally {
-      await c().chats.deleteMessage(chatId as number, msgId as number);
+      // Always attempt cleanup whenever the ids are known, whether or not an assertion above failed.
+      if (typeof chatId === 'number' && typeof msgId === 'number') {
+        await c().chats.deleteMessage(chatId, msgId);
+      }
     }
   });
 
@@ -1819,6 +1836,7 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Spec coverage: every row of the spec's PR A and PR B tables maps to a task (see the route-to-task map). Spec sections Types, Testing, Coverage gate and CI, Documentation per PR, and Versions are implemented by Tasks 1/9, 7/11, 11, 8/12, 8/12 respectively.
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
+- CodeRabbit on PR A (2026-09-22): the edit/delete write test recovers the sent message by unique content and always deletes in `finally` when the ids are known; path-segment URL-encoding was deferred as a repo-wide change (no existing method encodes).
 - Final review of PR A (2026-09-22): `Message.chat_id` removed from the public type (not in the vendored spec; the live write test reads it via a local cast). Query-parameter conformance checks for the option types were added to Task 9 rather than PR A.
 - Task 5 review (2026-09-22): the workouts.zip `ext` query value is dot-less per the spec description; `downloadWorkoutsZip` strips the leading dot from `WorkoutFormat`. Task 7's live test confirms.
 - Task 1 review (2026-09-22) corrected two plan defects: `ActivitiesAroundOptions.route_id` (wire name, was `routeId`) and `IntervalSearchOptions.type` as the spec's `'AUTO' | 'POWER' | 'HR' | 'PACE'` enum (was `ActivityType | string`). Task 2 spreads options into params accordingly.
