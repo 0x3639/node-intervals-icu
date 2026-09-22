@@ -97,3 +97,25 @@ describe('IntervalsClient - Sport Settings', () => {
   });
 
 });
+
+describe('SportSettingsService — Phase 3 additions', () => {
+  let client: IntervalsClient;
+  let seen: any[] = [];
+  beforeEach(() => {
+    seen = [];
+    setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return []; });
+    client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+  });
+
+  it('listMatchingActivities hits .../sport-settings/{id}/matching-activities', async () => {
+    await client.sportSettings.listMatchingActivities(5);
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/sport-settings/5/matching-activities');
+  });
+
+  it('getPaceDistances hits .../sport-settings/{id}/pace_distances', async () => {
+    await client.sportSettings.getPaceDistances(5);
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/sport-settings/5/pace_distances');
+  });
+});

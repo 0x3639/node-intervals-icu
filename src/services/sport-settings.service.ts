@@ -1,5 +1,5 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
-import type { SportSettings } from '../types/index.js';
+import type { SportSettings, ActivitySearchResult, PaceDistancesDTO } from '../types/index.js';
 
 /**
  * Service for sport settings (thresholds, zones, load settings per sport type group)
@@ -50,5 +50,19 @@ export class SportSettingsService {
   async applyToActivities(settingsId: number | string, athleteId?: string): Promise<void> {
     const id = athleteId || this.defaultAthleteId;
     await this.httpClient.request<void>({ method: 'PUT', url: `/athlete/${id}/sport-settings/${settingsId}/apply` });
+  }
+
+  // ── Phase 3 ──
+
+  /** Activities whose type falls under these sport settings */
+  async listMatchingActivities(settingsId: number | string, athleteId?: string): Promise<ActivitySearchResult[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<ActivitySearchResult[]>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/matching-activities` });
+  }
+
+  /** Pace-curve distances and best-effort defaults for the sport */
+  async getPaceDistances(settingsId: number | string, athleteId?: string): Promise<PaceDistancesDTO> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<PaceDistancesDTO>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/pace_distances` });
   }
 }
