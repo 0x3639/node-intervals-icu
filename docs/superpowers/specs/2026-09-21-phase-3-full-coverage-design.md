@@ -35,7 +35,7 @@ Method names follow each service's existing style. Optional trailing
 | Method | Route | Returns |
 |---|---|---|
 | `getActivities(ids: string[], options?: { intervals?: boolean })` | `GET /athlete/{athleteId}/activities/{ids}` — ids comma-joined in the path | `Activity[]` |
-| `listActivitiesAround(activityId, options?: { routeId?, limit? })` | `GET /athlete/{id}/activities-around` | `Activity[]` |
+| `listActivitiesAround(activityId, options?: { route_id?, limit? })` | `GET /athlete/{id}/activities-around` | `Activity[]` |
 | `searchActivitiesFull(q, options?: { limit? })` | `GET /athlete/{id}/activities/search-full` | `Activity[]` |
 | `searchIntervals(options: IntervalSearchOptions)` | `GET /athlete/{id}/activities/interval-search` | `Activity[]` |
 | `listActivityTags()` | `GET /athlete/{id}/activity-tags` | `string[]` |
@@ -44,7 +44,7 @@ Method names follow each service's existing style. Optional trailing
 | `deleteTombstone(activityId)` | `DELETE /activity/{id}/tombstone` | `void` |
 
 `IntervalSearchOptions`: `minSecs`, `maxSecs`, `minIntensity`, `maxIntensity`
-(required), `type?`, `minReps?`, `maxReps?`, `limit?`.
+(required), `type?: 'AUTO' | 'POWER' | 'HR' | 'PACE'`, `minReps?`, `maxReps?`, `limit?`.
 
 ### `client.athletes` (4)
 

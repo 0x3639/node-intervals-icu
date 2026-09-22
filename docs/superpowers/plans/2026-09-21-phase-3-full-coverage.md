@@ -247,7 +247,8 @@ export interface IntervalSearchOptions {
   minIntensity: number;
   /** Maximum interval intensity (% of threshold) */
   maxIntensity: number;
-  type?: ActivityType | string;
+  /** Interval-detection source; the spec enumerates exactly these four values */
+  type?: 'AUTO' | 'POWER' | 'HR' | 'PACE';
   minReps?: number;
   maxReps?: number;
   limit?: number;
@@ -255,13 +256,13 @@ export interface IntervalSearchOptions {
 
 /** Query for GET /athlete/{id}/activities-around (the activity id itself is a method argument) */
 export interface ActivitiesAroundOptions {
-  /** Restrict to activities on this route */
-  routeId?: number;
+  /** Restrict to activities on this route (wire name, like ListActivitiesOptions.route_id) */
+  route_id?: number;
   limit?: number;
 }
 ```
 
-(`ActivityType` is already imported at the top of `activity.ts`.)
+(`IntervalSearchOptions.type` is a literal union, so no `ActivityType` import is needed for these two interfaces.)
 
 Append to `src/types/event.ts`:
 
@@ -311,7 +312,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `IntervalSearchOptions`, `ActivitiesAroundOptions` from Task 1.
-- Produces: `getActivities(ids: string[], options?: { intervals?: boolean }, athleteId?): Promise<Activity[]>`; `listActivitiesAround(activityId: string, options?: ActivitiesAroundOptions, athleteId?): Promise<Activity[]>`; `searchActivitiesFull(q: string, options?: { limit?: number }, athleteId?): Promise<Activity[]>`; `searchIntervals(options: IntervalSearchOptions, athleteId?): Promise<Activity[]>`; `listActivityTags(athleteId?): Promise<string[]>`; `downloadActivitiesCSV(athleteId?): Promise<Buffer>`; `downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer>`; `deleteTombstone(activityId: string): Promise<void>`.
+- Produces: `getActivities(ids: string[], options?: { intervals?: boolean }, athleteId?): Promise<Activity[]>`; `listActivitiesAround(activityId: string, options?: ActivitiesAroundOptions, athleteId?): Promise<Activity[]>` (options spread straight into params, keys are wire names); `searchActivitiesFull(q: string, options?: { limit?: number }, athleteId?): Promise<Activity[]>`; `searchIntervals(options: IntervalSearchOptions, athleteId?): Promise<Activity[]>`; `listActivityTags(athleteId?): Promise<string[]>`; `downloadActivitiesCSV(athleteId?): Promise<Buffer>`; `downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer>`; `deleteTombstone(activityId: string): Promise<void>`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -338,7 +339,7 @@ describe('ActivityService — Phase 3 additions', () => {
   });
 
   it('listActivitiesAround sends activity_id, route_id and limit', async () => {
-    await client.activities.listActivitiesAround('a1', { routeId: 7, limit: 5 });
+    await client.activities.listActivitiesAround('a1', { route_id: 7, limit: 5 });
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activities-around');
     expect(seen[0].params).toEqual({ activity_id: 'a1', route_id: 7, limit: 5 });
@@ -352,7 +353,7 @@ describe('ActivityService — Phase 3 additions', () => {
   });
 
   it('searchIntervals passes the criteria through as query params', async () => {
-    const criteria = { minSecs: 60, maxSecs: 300, minIntensity: 90, maxIntensity: 120, type: 'Ride', minReps: 3 };
+    const criteria = { minSecs: 60, maxSecs: 300, minIntensity: 90, maxIntensity: 120, type: 'POWER' as const, minReps: 3 };
     await client.activities.searchIntervals(criteria);
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activities/interval-search');
@@ -420,10 +421,11 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
   /** Activities before and after another activity, closest first; optionally only those on a route. */
   async listActivitiesAround(activityId: string, options?: ActivitiesAroundOptions, athleteId?: string): Promise<Activity[]> {
     const id = athleteId || this.defaultAthleteId;
-    const params: Record<string, unknown> = { activity_id: activityId };
-    if (options?.routeId !== undefined) params.route_id = options.routeId;
-    if (options?.limit !== undefined) params.limit = options.limit;
-    return this.httpClient.request<Activity[]>({ method: 'GET', url: `/athlete/${id}/activities-around`, params });
+    return this.httpClient.request<Activity[]>({
+      method: 'GET',
+      url: `/athlete/${id}/activities-around`,
+      params: { activity_id: activityId, ...options } as Record<string, unknown>,
+    });
   }
 
   /** Search by name or tag and return full Activity objects (search.searchActivities returns summaries). */
@@ -1763,4 +1765,5 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Spec coverage: every row of the spec's PR A and PR B tables maps to a task (see the route-to-task map). Spec sections Types, Testing, Coverage gate and CI, Documentation per PR, and Versions are implemented by Tasks 1/9, 7/11, 11, 8/12, 8/12 respectively.
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
+- Task 1 review (2026-09-22) corrected two plan defects: `ActivitiesAroundOptions.route_id` (wire name, was `routeId`) and `IntervalSearchOptions.type` as the spec's `'AUTO' | 'POWER' | 'HR' | 'PACE'` enum (was `ActivityType | string`). Task 2 spreads options into params accordingly.
 - File-content checks resolved while writing the plan (2026-09-21, main at 8f5d966): `ActivityType` import in `activity.ts` (Task 1 states the action), `Message` lacks `chat_id` (Task 7 adds it), `IntervalsDTO.icu_intervals` is the interval list (Task 11 uses it).
