@@ -187,7 +187,8 @@ downloads. Tests live in the existing per-service files; PR B adds
 - Write-gated behind `INTERVALS_LIVE_WRITE=1`, each cleaning up after itself:
   `blockChat` (on then off on a private chat the test finds; skipped if none),
   `updateMessage` and `deleteMessage` (on a message the test sends first),
-  `deleteTombstone` (skipped unless a tombstone exists).
+  `deleteTombstone` runs only behind a separate destructive opt-in
+  (`INTERVALS_LIVE_DESTRUCTIVE=1` plus `INTERVALS_TOMBSTONE_ID`), since it cannot be undone.
 - `disconnectApp` is never called live.
 
 The live suite is run by the user; the plan lists the commands and expected

@@ -101,7 +101,7 @@ describe('<Service> — Phase 3 additions', () => {
 set -a && . ./.env && set +a && npm run test:live
 ```
 
-`.env` (gitignored) holds `INTERVALS_API_KEY` and `INTERVALS_ATHLETE_ID`; add `INTERVALS_LIVE_WRITE=1` to run the write-gated block.
+`.env` (gitignored) holds `INTERVALS_API_KEY` and `INTERVALS_ATHLETE_ID`; add `INTERVALS_LIVE_WRITE=1` to run the cleanup-guaranteed write block. The one irreversible case (`deleteTombstone`) additionally needs `INTERVALS_LIVE_DESTRUCTIVE=1` and `INTERVALS_TOMBSTONE_ID=<activity id>`; never set these by default.
 
 ---
 
@@ -1124,8 +1124,10 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
 });
 
 // Irreversible: there is no API to recreate a tombstone, so nothing here can be cleaned up.
-// This block runs only when the user supplies a tombstoned activity id they intend to clear.
-describe.skipIf(!(LIVE_WRITE && process.env.INTERVALS_TOMBSTONE_ID))('live (write, irreversible): deleteTombstone', () => {
+// LIVE_WRITE is not enough. This block also needs INTERVALS_LIVE_DESTRUCTIVE=1, a separate
+// opt-in that says "I accept permanent changes", plus the tombstoned activity id to clear.
+const DESTRUCTIVE = LIVE_WRITE && process.env.INTERVALS_LIVE_DESTRUCTIVE === '1' && !!process.env.INTERVALS_TOMBSTONE_ID;
+describe.skipIf(!DESTRUCTIVE)('live (write, irreversible): deleteTombstone', () => {
   it('deleteTombstone clears the supplied tombstone', async () => {
     await expect(liveClient().activities.deleteTombstone(process.env.INTERVALS_TOMBSTONE_ID as string)).resolves.toBeUndefined();
   });
@@ -1142,7 +1144,7 @@ Expected: typecheck clean (the tests tsconfig covers `tests/live`); coverage pri
 - [ ] **Step 3: Run the live suite (user-run if no key in this environment)**
 
 Run: `set -a && . ./.env && set +a && npm run test:live`
-Expected: every read-only case passes or is reported skipped; no failures. With `INTERVALS_LIVE_WRITE=1` also set, the cleanup-guaranteed write block runs; the irreversible `deleteTombstone` block runs only if `INTERVALS_TOMBSTONE_ID` is also set. If the key is not available to the implementer, record "live suite not run; user to run before merge" in the task report and continue.
+Expected: every read-only case passes or is reported skipped; no failures. With `INTERVALS_LIVE_WRITE=1` also set, the cleanup-guaranteed write block runs; the irreversible `deleteTombstone` block runs only if `INTERVALS_LIVE_DESTRUCTIVE=1` and `INTERVALS_TOMBSTONE_ID` are both also set. If the key is not available to the implementer, record "live suite not run; user to run before merge" in the task report and continue.
 
 - [ ] **Step 4: Commit**
 
