@@ -71,10 +71,10 @@ export class AthleteService {
     return this.httpClient.request<AthleteConnections>({ method: 'GET', url: `/athlete/${id}/connections` });
   }
 
-  /** UI settings for a device class. The spec types the response as an open object map. */
-  async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, unknown>> {
+  /** UI settings for a device class: a map of setting groups, each an open object (spec: object of objects). */
+  async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, Record<string, unknown>>> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<Record<string, unknown>>({ method: 'GET', url: `/athlete/${id}/settings/${deviceClass}` });
+    return this.httpClient.request<Record<string, Record<string, unknown>>>({ method: 'GET', url: `/athlete/${id}/settings/${deviceClass}` });
   }
 
   /**

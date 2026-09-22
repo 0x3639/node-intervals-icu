@@ -80,7 +80,7 @@ export type {
   Gear, GearReminder, GearStats,
 
   // Chat
-  Chat, ChatMember, Message, NewMessage, NewActivityMsg, SendResponse, NewMsg,
+  Chat, ChatMember, Message, UpdateMessageDTO, NewMessage, NewActivityMsg, SendResponse, NewMsg,
 
   // Weather
   Forecast, WeatherDTO, WeatherConfig,

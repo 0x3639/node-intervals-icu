@@ -108,18 +108,20 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
 
   // Every write below restores state in a `finally` so a failed assertion or a thrown
   // request cannot leave the account blocked or with a stray message.
-  it('blockChat toggles a private chat on and back off', async (ctx) => {
-    const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && x.id);
+  it('blockChat toggles a private chat and restores its original state', async (ctx) => {
+    const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && typeof x.id === 'number');
     if (!chat) ctx.skip();
     const chatId = chat!.id as number;
-    let unblocked: Chat | undefined;
+    // Restore whatever the chat was before, so an already-blocked chat stays blocked.
+    const wasBlocked = Boolean(chat!.blocked);
+    let restored: Chat | undefined;
     try {
-      const blocked = await c().chats.blockChat(chatId, true);
-      expect(blocked.id).toBe(chatId);
+      const toggled = await c().chats.blockChat(chatId, !wasBlocked);
+      expect(toggled.id).toBe(chatId);
     } finally {
-      unblocked = await c().chats.blockChat(chatId, false);
+      restored = await c().chats.blockChat(chatId, wasBlocked);
     }
-    expect(unblocked.id).toBe(chatId);
+    expect(restored.id).toBe(chatId);
   });
 
   it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {

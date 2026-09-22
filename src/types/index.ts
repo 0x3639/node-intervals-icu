@@ -154,6 +154,7 @@ export type {
   Chat,
   ChatMember,
   Message,
+  UpdateMessageDTO,
   NewMessage,
   NewActivityMsg,
   SendResponse,

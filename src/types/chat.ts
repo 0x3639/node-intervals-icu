@@ -20,6 +20,8 @@ export interface ChatMember {
 export interface Chat {
   id?: number;
   type?: ChatType;
+  /** ISO-8601 timestamp set while the other athlete in a private chat is blocked; absent otherwise */
+  blocked?: string;
   coaching_group?: string;
   updated?: string;
   name?: string;
@@ -73,6 +75,12 @@ export interface Message {
   join_group_id?: number;
   accept_coaching_group_id?: number;
   seen?: boolean;
+}
+
+/** Body for chats.updateMessage(): the API updates only these two fields (spec: "Only the content or answer can be updated"). */
+export interface UpdateMessageDTO {
+  content?: string;
+  answer?: string;
 }
 
 /** New message for sending */

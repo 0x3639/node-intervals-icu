@@ -1,5 +1,5 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
-import type { Chat, Message, NewMessage, SendResponse } from '../types/index.js';
+import type { Chat, Message, NewMessage, SendResponse, UpdateMessageDTO } from '../types/index.js';
 
 /**
  * Service for chats and messages
@@ -49,8 +49,8 @@ export class ChatService {
     return this.httpClient.request<Chat>({ method: 'PUT', url: `/chats/${chatId}/block`, params: { on } });
   }
 
-  /** Edit a message. The API returns an untyped object. */
-  async updateMessage(chatId: number, messageId: number, message: Partial<Message>): Promise<Record<string, unknown>> {
+  /** Edit a message's content or answer (the only fields the API updates). Returns an untyped object. */
+  async updateMessage(chatId: number, messageId: number, message: UpdateMessageDTO): Promise<Record<string, unknown>> {
     return this.httpClient.request<Record<string, unknown>>({ method: 'PUT', url: `/chats/${chatId}/messages/${messageId}`, data: message });
   }
 
