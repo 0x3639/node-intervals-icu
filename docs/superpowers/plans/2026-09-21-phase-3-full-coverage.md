@@ -986,7 +986,6 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 **Files:**
 - Create: `tests/live/phase3.live.test.ts`
-- Modify: `src/types/chat.ts` (add `chat_id` to `Message`)
 - Modify: `spec/coverage-baseline.json` (regenerated)
 
 **Interfaces:**
@@ -1176,7 +1175,7 @@ describe.skipIf(!DESTRUCTIVE)('live (write, irreversible): deleteTombstone', () 
 });
 ```
 
-`Message` in `src/types/chat.ts` has no `chat_id` field today; add `chat_id?: number;` directly after `id?: number;` in that interface (the live payload carries it, and the write test above reads it).
+`Message` in `src/types/chat.ts` has no `chat_id` field and must not gain one: the vendored spec does not declare it. The write test above reads it from the raw response via a local cast (`(sent.message as { chat_id?: number } | undefined)?.chat_id`) and falls back to `sent.new_chat?.id`.
 
 - [ ] **Step 2: Typecheck the live file and rewrite the baseline**
 
@@ -1191,7 +1190,7 @@ Expected: every read-only case passes or is reported skipped; no failures. With 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add tests/live/phase3.live.test.ts spec/coverage-baseline.json src/types/chat.ts
+git add tests/live/phase3.live.test.ts spec/coverage-baseline.json
 git commit -m "test(live): Phase 3 read-only and write-gated cases; baseline 139 covered
 
 Co-Authored-By: Claude <model> <noreply@anthropic.com>"
