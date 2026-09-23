@@ -30,8 +30,8 @@ monthAhead.setDate(monthAhead.getDate() + 30);
 const oldest = localDate(now);
 const newest = localDate(monthAhead);
 
-const hasWorkouts = events.some((event) => event.category === 'WORKOUT');
-if (!hasWorkouts) {
+const upcomingWorkouts = await client.events.listEvents({ oldest, newest, category: ['WORKOUT'] });
+if (upcomingWorkouts.length === 0) {
   console.log('No workout events to zip up in the next 30 days');
 } else {
   const zip = await client.events.downloadWorkoutsZip({ ext: '.zwo', oldest, newest });

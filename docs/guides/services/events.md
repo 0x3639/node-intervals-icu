@@ -34,17 +34,17 @@ List planned workouts and races in the next 7 days, then list every tag that has
 
 {@includeCode ../../../examples/events/calendar-week.ts#main}
 
-### Create and mark done
+### Create, update and delete a note
 
-Create a NOTE event for today, mark it done, then delete it.
+Create a NOTE event for today, update its description, then delete it.
 
 CI never runs this example; running it by hand changes the authenticated account.
 
-{@includeCode ../../../examples/events/create-and-mark-done.ts#main}
+{@includeCode ../../../examples/events/create-update-delete.ts#main}
 
 ### Fitness model events
 
-List the events that influence the fitness (CTL/ATL) calculation, then download the next month of planned workouts as a zip of files.
+List the events that influence the fitness (CTL/ATL) calculation, then download the next 30 days of planned workouts as a zip of files.
 
 {@includeCode ../../../examples/events/fitness-model-events.ts#main}
 

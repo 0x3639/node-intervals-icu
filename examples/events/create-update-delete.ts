@@ -1,13 +1,15 @@
 /**
- * Create a NOTE event on today's calendar, mark it done, then delete it. This
- * writes to the account: it creates and removes a real calendar event.
+ * Create a NOTE event on today's calendar, update its description, then
+ * delete it. This writes to the account: it creates and removes a real
+ * calendar event. The event is deleted in a finally block so a failed step
+ * does not leave it behind.
  *
  * CI never runs this example. Running it by hand changes the authenticated
  * account (briefly).
  *
  * Run:
  *   export INTERVALS_API_KEY="your-api-key"
- *   npx tsx examples/events/create-and-mark-done.ts
+ *   npx tsx examples/events/create-update-delete.ts
  */
 import { IntervalsClient } from '../../src/index.js';
 
@@ -21,7 +23,8 @@ if (!apiKey) {
 const client = new IntervalsClient({ apiKey });
 
 const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const today = localDate(new Date());
+const now = new Date();
+const today = localDate(now);
 
 const event = await client.events.createEvent({
   category: 'NOTE',
@@ -30,9 +33,11 @@ const event = await client.events.createEvent({
 });
 console.log(`Created event id=${event.id}`);
 
-await client.events.markEventAsDone(event.id!);
-console.log(`Marked event ${event.id} as done`);
-
-await client.events.deleteEvent(event.id!);
-console.log(`Deleted event ${event.id}`);
+try {
+  const updated = await client.events.updateEvent(event.id!, { description: 'Edited by the SDK example' });
+  console.log(`Updated description: ${updated.description}`);
+} finally {
+  await client.events.deleteEvent(event.id!);
+  console.log(`Deleted event ${event.id}`);
+}
 // #endregion main
