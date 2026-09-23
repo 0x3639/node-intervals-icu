@@ -97,7 +97,15 @@ a one-line note that they are not run against real accounts.
 - The five undocumented exports in `src/types/activity.ts` (`MapData`,
   `WeatherTime`, `WeatherPoint`, `WeatherClosest`, `ActivityWeather`) and
   `PowerModelType` in `src/types/enums.ts` gain one-line JSDoc comments so TypeDoc emits no
-  "not documented" warning. No other source changes.
+  "not documented" warning. `CurveOptions`, a non-exported options interface
+  in `src/services/performance.service.ts` that exported methods reference,
+  moves to `src/types/performance.ts` and is exported from both barrels (TypeDoc
+  otherwise warns that it is not included). No other source changes.
+- Documentation is required for classes, interfaces, methods, type aliases,
+  enums and functions (`requiredToBeDocumented`); interface *properties* are
+  not required, since about 1,100 of them carry no comment today and
+  documenting them is out of scope. With that setting the probe build shows
+  exactly the seven warnings the touch-ups above remove.
 - A root `docs-dist/index.html` is written by the docs script and redirects
   to `./latest/`.
 
