@@ -20,6 +20,7 @@ import { CustomItemService } from './services/custom-item.service.js';
 import { SharedEventService } from './services/shared-event.service.js';
 import { PerformanceService } from './services/performance.service.js';
 import { SearchService } from './services/search.service.js';
+import { AnalyticsService } from './services/analytics.service.js';
 import type { IHttpClient } from './core/http-client.interface.js';
 
 export { IntervalsAPIError } from './core/error-handler.js';
@@ -28,7 +29,7 @@ export { IntervalsAPIError } from './core/error-handler.js';
  * Intervals.icu API Client (v2)
  *
  * Comprehensive TypeScript client for the Intervals.icu API.
- * Supports 100+ endpoints across 15 resource groups.
+ * Supports 149 endpoints across 16 resource groups.
  *
  * @example
  * ```typescript
@@ -80,6 +81,8 @@ export class IntervalsClient {
   public readonly performance: PerformanceService;
   /** Search activities and athletes */
   public readonly search: SearchService;
+  /** Histograms, time-at-HR, interval stats, power models, multi-activity curves */
+  public readonly analytics: AnalyticsService;
 
   constructor(config: IntervalsConfig) {
     if (!config.apiKey && !config.accessToken) {
@@ -107,6 +110,7 @@ export class IntervalsClient {
     this.sharedEvents = new SharedEventService(this.httpClient);
     this.performance = new PerformanceService(this.httpClient, athleteId);
     this.search = new SearchService(this.httpClient, athleteId);
+    this.analytics = new AnalyticsService(this.httpClient, athleteId);
   }
 
   // ── Rate limiting ──

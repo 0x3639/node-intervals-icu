@@ -9,6 +9,7 @@ export type ActivityType =
   | 'EBikeRide' | 'EMountainBikeRide' | 'Elliptical' | 'Golf' | 'GravelRide'
   | 'TrackRide' | 'Handcycle' | 'HighIntensityIntervalTraining' | 'Hockey'
   | 'IceSkate' | 'InlineSkate' | 'Kayaking' | 'Kitesurf' | 'MountainBikeRide'
+  | 'Cyclocross'
   | 'NordicSki' | 'OpenWaterSwim' | 'Padel' | 'Pilates' | 'Pickleball'
   | 'Racquetball' | 'Rugby' | 'RockClimbing' | 'RollerSki' | 'Rowing'
   | 'Sail' | 'Skateboard' | 'Snowboard' | 'Snowshoe' | 'Soccer' | 'Squash'
@@ -104,7 +105,7 @@ export type TIZOrder =
 
 /** Pace/power model types */
 export type PaceModelType = 'CS';
-export type PowerModelType = string;
+export type PowerModelType = 'MS_2P' | 'MORTON_3P' | 'FFT_CURVES' | 'ECP';
 
 /** Data curve type (pace curves) */
 export type DataCurveType = 'POWER' | 'HR' | 'PACE' | 'GAP';

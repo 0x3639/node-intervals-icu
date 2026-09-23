@@ -6,22 +6,22 @@
 [![license](https://img.shields.io/npm/l/%400x3639%2Fintervals-icu)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
-> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — 139 of 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
+> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — all 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
-**100+ typed methods** across 15 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~25 KB minified.
+**130+ typed methods** across 16 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~27 KB minified.
 
 ## Features
 
-- **15 services, 100+ methods** — athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, performance curves, search
+- **16 services, 130+ methods** — athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, performance curves, search, analytics
 - **Full TypeScript types** — ~100 exported interfaces with JSDoc on every public method
 - **Dual authentication** — API key (personal use) or OAuth bearer token (third-party apps)
 - **File upload & download** — multipart activity uploads (.fit/.tcx/.gpx/.zip), binary exports
 - **Auto-retry with backoff + jitter** — configurable retries for 429/5xx, respects `Retry-After` header
 - **Rate limit tracking** — `getRateLimitRemaining()` / `getRateLimitReset()` from response headers
 - **Dual output** — ESM + CJS, tree-shakeable
-- **Minimal footprint** — single runtime dependency, ~25 KB minified
+- **Minimal footprint** — single runtime dependency, ~27 KB minified
 
 ## Installation
 
@@ -127,7 +127,8 @@ interface IntervalsConfig {
 | **Routes** | `client.routes` | `list`, `get`, `update`, `getSimilarity` |
 | **Custom Items** | `client.customItems` | `list`, `get`, `create`, `update`, `delete`, `reorder`, `uploadImage` |
 | **Shared Events** | `client.sharedEvents` | `get`, `create`, `update`, `delete` |
-| **Performance** | `client.performance` | `getPowerCurves`, `getPaceCurves`, `getHRCurves`, `getPowerHRCurve`, `getActivityPowerCurves` |
+| **Performance** | `client.performance` | `getPowerCurves`, `getPaceCurves`, `getHRCurves`, `getPowerHRCurve`, `getActivityPowerCurves`, `getActivityPaceCurves`, `getActivityPaceCurvesCSV` |
+| **Analytics** | `client.analytics` | `getPowerHistogram`, `getHRHistogram`, `getPaceHistogram`, `getGAPHistogram`, `getTimeAtHR`, `getIntervalStats`, `getPowerSpikeModel`, `getCurves`, `getCurvesCSV`, `getMMPModel` |
 | **Search** | `client.search` | `searchActivities` |
 
 ## Error Handling
@@ -192,11 +193,11 @@ The TypeScript/Node.js ecosystem has a few Intervals.icu API clients worth knowi
 
 | Library | npm | Approach | Coverage | Error handling |
 |---------|-----|----------|----------|---------------|
-| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 15 services, 100+ endpoints | throws `IntervalsAPIError` |
+| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 16 services, 149 spec operations | throws `IntervalsAPIError` |
 | **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` — never throws |
 
 **When to use `@0x3639/intervals-icu` (this library):**
-- You need the broadest API coverage (15 service groups including routes, gear, weather, custom items, performance, and search)
+- You need the broadest API coverage (16 service groups including routes, gear, weather, custom items, performance, analytics, and search)
 - You prefer familiar `try/catch` error handling
 - You're comfortable tracking an actively-developed fork (see [AUDIT.md](./AUDIT.md) for known gaps and CHANGELOG for breaking changes)
 

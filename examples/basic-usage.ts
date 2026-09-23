@@ -67,6 +67,13 @@ async function main() {
       console.log(`  - ${a.start_date_local}: ${a.name} (${a.type}) — ${((a.distance || 0) / 1000).toFixed(1)} km`);
     });
 
+    // 4b. Analytics: power histogram of the most recent activity
+    const latestActivity = activities.find((a) => a.type);
+    if (latestActivity?.id) {
+      const buckets = await client.analytics.getPowerHistogram(latestActivity.id, { bucketSize: 50 });
+      console.log(`Power histogram: ${buckets.length} buckets`);
+    }
+
     // 5. Wellness
     console.log('\n=== Recent Wellness ===');
     const wellness = await client.wellness.listWellness({ oldest, newest });

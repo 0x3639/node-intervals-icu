@@ -2,6 +2,7 @@ import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   PowerCurveSet, PaceCurveSet, HRCurveSet, PowerHRCurve,
   ActivityPowerCurvePayload, ActivityHRCurvePayload,
+  ActivityPaceCurvesOptions, ActivityPaceCurves,
   ActivityType,
 } from '../types/index.js';
 
@@ -77,6 +78,28 @@ export class PerformanceService {
       url: `/athlete/${id}/activity-hr-curves`,
       params: { id: activityIds.join(',') } as Record<string, unknown>,
     });
+  }
+
+  // ── Activity pace curves (athlete-level, across activities) ──
+
+  /** Best pace over a set of distances across the activities in a date range. Returns { distances, gap, curves } (no spec schema; shape observed live 2026-09-22). */
+  async getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<ActivityPaceCurves> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<ActivityPaceCurves>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: { ...options } as Record<string, unknown> });
+  }
+
+  /**
+   * Same as getActivityPaceCurves, as CSV. Observed live (2026-09-22): this form returns HTTP 500
+   * unless `distances` is supplied (the JSON form accepts the omission), so `distances` is required here.
+   * At least one distance is required: axios drops an empty array from the query string, which
+   * reproduces the 500.
+   */
+  async getActivityPaceCurvesCSV(
+    options: ActivityPaceCurvesOptions & { distances: [number, ...number[]] },
+    athleteId?: string,
+  ): Promise<Buffer> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.download(`/athlete/${id}/activity-pace-curves.csv`, { params: { ...options } as Record<string, unknown> });
   }
 
   // ── Power vs HR ──

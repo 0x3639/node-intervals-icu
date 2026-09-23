@@ -179,3 +179,57 @@ describe.skipIf(!DESTRUCTIVE)('live (write, irreversible): deleteTombstone', () 
     await expect(liveClient().activities.deleteTombstone(process.env.INTERVALS_TOMBSTONE_ID as string)).resolves.toBeUndefined();
   });
 });
+
+describe.skipIf(!LIVE)('live: phase 3 — analytics and activity pace curves', () => {
+  const c = () => liveClient();
+
+  it('the four histograms return arrays for the latest activity', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    for (const fn of ['getPowerHistogram', 'getHRHistogram', 'getPaceHistogram', 'getGAPHistogram'] as const) {
+      expect(Array.isArray(await c().analytics[fn](id as string)), fn).toBe(true);
+    }
+  });
+  it('getTimeAtHR returns secs arrays', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    const plot = await c().analytics.getTimeAtHR(id as string);
+    expect(Array.isArray(plot.secs)).toBe(true);
+  });
+  it('getIntervalStats works on the first interval of an activity that has one', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    const [iv] = (await c().activities.getIntervals(id as string)).icu_intervals ?? [];
+    if (iv?.start_index === undefined || iv?.end_index === undefined) ctx.skip();
+    const stats = await c().analytics.getIntervalStats(id as string, iv!.start_index as number, iv!.end_index as number);
+    expect(stats).toBeTypeOf('object');
+  });
+  it('getPowerSpikeModel responds', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    const model = await c().analytics.getPowerSpikeModel(id as string);
+    expect(Object.keys(model)).toContain('criticalPower');
+  });
+  // LIVE: the API returns 422 for stream or fatigue values the activity cannot serve (observed: hr, pace, kj0, kj1 on a ride); watts + normal bind both array params on the wire.
+  it('getCurves and its CSV sibling respond', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    expect(Array.isArray(await c().analytics.getCurves(id as string, { types: ['watts'], fatigue: ['normal'] }))).toBe(true);
+    expect((await c().analytics.getCurvesCSV(id as string, { types: ['watts'] })).length).toBeGreaterThan(0);
+  });
+  it('getMMPModel responds for Ride', async () => {
+    const model = await c().analytics.getMMPModel('Ride');
+    expect(Object.keys(model)).toContain('criticalPower');
+  });
+  it('getActivityPaceCurves returns { distances, gap, curves }', async () => {
+    const r = await c().performance.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    expect(Array.isArray(r.distances)).toBe(true);
+    expect(typeof r.gap).toBe('boolean');
+    expect(Array.isArray(r.curves)).toBe(true);
+  });
+  // LIVE: the CSV form returns 500 without `distances` (JSON form does not); always pass distances here.
+  it('getActivityPaceCurvesCSV responds when distances are supplied', async () => {
+    const csv = await c().performance.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    expect(csv.length).toBeGreaterThan(0);
+  });
+});

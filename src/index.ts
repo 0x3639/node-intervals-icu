@@ -2,7 +2,7 @@
  * node-intervals-icu v2.0
  *
  * Comprehensive TypeScript client library for the Intervals.icu API.
- * Supports 100+ endpoints across 13 resource groups with full type safety.
+ * Supports 149 endpoints across 16 resource groups with full type safety.
  *
  * @packageDocumentation
  */
@@ -27,6 +27,7 @@ export { CustomItemService } from './services/custom-item.service.js';
 export { SharedEventService } from './services/shared-event.service.js';
 export { PerformanceService } from './services/performance.service.js';
 export { SearchService } from './services/search.service.js';
+export { AnalyticsService } from './services/analytics.service.js';
 
 // Core (for advanced usage)
 export type { IHttpClient, HttpRequestConfig, UploadConfig, DownloadOptions } from './core/http-client.interface.js';
@@ -52,7 +53,7 @@ export type {
 
   // Activity
   Activity, ActivityInput, ActivitySearchResult, UploadActivityOptions,
-  IntervalSearchOptions, ActivitiesAroundOptions,
+  IntervalSearchOptions, ActivitiesAroundOptions, Bucket, TimeAtHRPlot,
   Interval, IntervalGroup, IntervalsDTO, ActivityStream, UpdateStreamsResult,
   ActivityId, UploadResponse, ZoneInfo, ZoneSet, ZoneTime, HRRecovery,
   IcuAchievement, IgnorePart, Attachment, Effort, BestEfforts,
@@ -100,6 +101,7 @@ export type {
   HRCurve, HRCurveSet, PowerHRCurve,
   ActivityPowerCurve, ActivityPowerCurvePayload,
   ActivityHRCurve, ActivityHRCurvePayload, PaceDistancesDTO,
+  ActivityPowerCurvesOptions, ActivityPaceCurvesOptions, ActivityPaceCurves,
 
   // Fitness
   CategorySummary, SummaryWithCats,

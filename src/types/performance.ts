@@ -1,22 +1,18 @@
 /**
  * Performance curve types from the Intervals.icu API
  */
-import type { DataCurveType, PaceModelType } from './enums.js';
+import type { ActivityType, DataCurveType, PaceModelType, PowerModelType } from './enums.js';
 import type { Activity } from './activity.js';
 import type { ActivityFilter } from './athlete.js';
 
-/** Power model fitted to a power curve */
+/** Power model fitted to a power curve (spec schema PowerModel; field names confirmed live 2026-09-22) */
 export interface PowerModel {
-  type?: string;
-  cp?: number;
-  w_prime?: number;
-  p_max?: number;
-  ftp?: number;
-  ftp_watts?: number;
-  ftp_secs?: number;
-  r2?: number;
+  type?: PowerModelType;
+  criticalPower?: number;
+  wPrime?: number;
+  pMax?: number;
   inputPointIndexes?: number[];
-  [key: string]: unknown;
+  ftp?: number;
 }
 
 /** Pace model fitted to a pace curve */
@@ -195,4 +191,44 @@ export interface ActivityHRCurvePayload {
 export interface PaceDistancesDTO {
   distances?: number[];
   defaults?: number[];
+}
+
+/** Query for GET /activity/{id}/power-curves{ext} */
+export interface ActivityPowerCurvesOptions {
+  /** Streams required, e.g. ['watts', 'pace'] (default watts) */
+  types?: string[];
+  /** Which curves to return: any of 'normal', 'kj0', 'kj1' (normal and/or fatigued) */
+  fatigue?: string[];
+}
+
+/**
+ * Query for GET /athlete/{id}/activity-pace-curves{ext}. The spec's `filters` param (an
+ * array of ActivityFilter objects) is omitted until its query-string encoding is verified live.
+ */
+export interface ActivityPaceCurvesOptions {
+  /** Oldest local date, ISO-8601 */
+  oldest: string;
+  /** Newest local date, ISO-8601 */
+  newest: string;
+  /** Sport type; the spec enumerates the full activity-type list, so this reuses the shared union */
+  type?: ActivityType;
+  /** Distances in metres */
+  distances?: number[];
+  /** Use grade-adjusted pace */
+  gap?: boolean;
+}
+
+/**
+ * Response of GET /athlete/{id}/activity-pace-curves. The spec declares no schema; this is the
+ * shape observed live (2026-09-22): the requested distances, the gap flag, and one entry per
+ * curve. `curves` was empty for every sport on the test account, so its element shape is not
+ * yet modelled.
+ */
+export interface ActivityPaceCurves {
+  /** Distances in metres, echoed from the request */
+  distances?: number[];
+  /** Whether gradient-adjusted pace was used */
+  gap?: boolean;
+  /** One entry per pace curve; element shape not yet observed */
+  curves?: unknown[];
 }

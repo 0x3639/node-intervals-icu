@@ -27,8 +27,14 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - `ChatService` constructor now requires `defaultAthleteId` (only relevant if you construct services directly).
 - `client.activities.downloadFitFiles()` sends POST; `updateStreamsCSV()` sends PUT.
 - `IHttpClient.download(url, options)` replaces `download(url, params)`: query params go in `options.params` (object or `URLSearchParams`), `options.method` may be `POST`, `options.data` is a JSON body. `upload()` accepts `method`. Breaking only for custom `IHttpClient` implementations.
+- `PowerModel` now has the spec's field names (`criticalPower`, `wPrime`, `pMax`, `inputPointIndexes`, `ftp`, `type`); the previous `cp`/`w_prime`/`p_max`/`ftp_watts`/`ftp_secs`/`r2` fields were never returned by the API. The `[key: string]: unknown` index signature is gone and `PowerModelType` narrows from `string` to `'MS_2P' | 'MORTON_3P' | 'FFT_CURVES' | 'ECP'`.
 
 ### Added
+- `client.analytics` (`AnalyticsService`): `getPowerHistogram()`, `getHRHistogram()`, `getPaceHistogram()`, `getGAPHistogram()`, `getTimeAtHR()`, `getIntervalStats()`, `getPowerSpikeModel()`, `getCurves()` / `getCurvesCSV()`, `getMMPModel()`. Activity ids are URL-encoded in paths. Types `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions` (`fatigue` is a list of `normal`/`kj0`/`kj1`), `ActivityPaceCurvesOptions`, and `ActivityPaceCurves` (the observed `{ distances, gap, curves }` response; the spec declares no schema). The CSV pace-curves form needs `distances` (observed HTTP 500 without it).
+- `client.performance.getActivityPaceCurves()` / `getActivityPaceCurvesCSV()` (athlete-level, beside `getActivityPowerCurves`); the CSV form requires `distances` because the API returns HTTP 500 without them.
+- `ActivityType` gains `'Cyclocross'`, which the spec's sport enum includes.
+- `tests/types/spec-conformance.test.ts` now also checks the five query-option types against `paths[...].parameters`.
+- Coverage: 149/149 spec operations; CI now runs the coverage gate in `--strict` mode.
 - Activities: `getActivities(ids)`, `listActivitiesAround()`, `searchActivitiesFull()`, `searchIntervals()`, `listActivityTags()`, `downloadActivitiesCSV()`, `downloadGPX()`, `deleteTombstone()`.
 - Athletes: `listAthletes()`, `getConnections()`, `getSettings(deviceClass)`, `disconnectApp()`.
 - Chats: `getChat()`, `listGroups()`, `blockChat()`, `updateMessage()`, `deleteMessage()`.
