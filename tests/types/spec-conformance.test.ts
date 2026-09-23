@@ -28,12 +28,17 @@ function tsType(prop: any): string {
   }
 }
 
-function schemaMembers(name: string): Member[] {
+/**
+ * Properties of one spec schema as Members. `overrides` names members whose hand-written
+ * type deliberately differs from the schema's primitive (e.g. a shared union type used
+ * across the SDK), applied after `tsType`.
+ */
+function schemaMembers(name: string, opts: { overrides?: Record<string, string> } = {}): Member[] {
   const schema = spec.components.schemas[name];
   if (!schema) throw new Error(`schema ${name} not in spec/openapi.json`);
   const required: string[] = schema.required ?? [];
   return Object.entries(schema.properties ?? {})
-    .map(([k, v]) => ({ name: k, optional: !required.includes(k), type: tsType(v) }))
+    .map(([k, v]) => ({ name: k, optional: !required.includes(k), type: opts.overrides?.[k] ?? tsType(v) }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -55,7 +60,7 @@ function interfaceMembers(file: string, name: string): Member[] {
  * Query parameters of one spec operation as Members. `overrides` names members whose
  * hand-written type deliberately differs from the schema's primitive (e.g. a shared union
  * type used across the SDK), and `omit` drops parameters that are method arguments rather
- * than option-object members.
+ * than option-object members, or that the SDK deliberately does not support yet (e.g. `filters`).
  */
 function paramMembers(path: string, verb: string, opts: { overrides?: Record<string, string>; omit?: string[] } = {}): Member[] {
   const op = spec.paths[`/api/v1${path}`]?.[verb];
@@ -111,5 +116,18 @@ describe('Phase 3 hand-written types match the vendored spec (names, optionality
 
   it('ActivityPaceCurvesOptions matches the activity-pace-curves query parameters minus filters (type is the shared ActivityType union)', () => {
     expect(interfaceMembers('performance.ts', 'ActivityPaceCurvesOptions')).toEqual(paramMembers('/athlete/{id}/activity-pace-curves{ext}', 'get', { omit: ['filters'], overrides: { type: 'ActivityType' } }));
+  });
+
+  it('PowerModel', () => {
+    expect(interfaceMembers('performance.ts', 'PowerModel')).toEqual(schemaMembers('PowerModel', { overrides: { type: 'PowerModelType' } }));
+  });
+
+  it('ActivityType union equals the spec sport enum (mmp-model type parameter)', () => {
+    const src = readFileSync(new URL('../../src/types/enums.ts', import.meta.url), 'utf8');
+    const m = /export type ActivityType =([\s\S]*?);/.exec(src);
+    expect(m, 'ActivityType not found').toBeTruthy();
+    const members = [...m![1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
+    const enumValues = spec.paths['/api/v1/athlete/{id}/mmp-model'].get.parameters.find((p: any) => p.name === 'type').schema.enum.slice().sort();
+    expect(members).toEqual(enumValues);
   });
 });

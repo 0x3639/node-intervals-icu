@@ -2,7 +2,7 @@
  * node-intervals-icu v2.0
  *
  * Comprehensive TypeScript client library for the Intervals.icu API.
- * Supports 100+ endpoints across 13 resource groups with full type safety.
+ * Supports 149 endpoints across 16 resource groups with full type safety.
  *
  * @packageDocumentation
  */

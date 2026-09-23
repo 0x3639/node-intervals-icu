@@ -1,12 +1,12 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
-  Bucket, TimeAtHRPlot, Interval, PowerModel, PowerCurve, ActivityPaceCurves,
-  ActivityPowerCurvesOptions, ActivityPaceCurvesOptions, ActivityType,
+  Bucket, TimeAtHRPlot, Interval, PowerModel, PowerCurve,
+  ActivityPowerCurvesOptions, ActivityType,
 } from '../types/index.js';
 
 /**
  * Activity- and athlete-level analytics: histograms, time-at-HR, interval statistics,
- * power models and multi-activity curves. Activity-level methods take an activity id;
+ * power models and activity curves. Activity-level methods take an activity id;
  * athlete-level methods take the usual optional trailing athleteId.
  *
  * The older single-curve activity methods (activities.getPowerCurve and friends) hit
@@ -63,13 +63,13 @@ export class AnalyticsService {
     return this.httpClient.request<PowerModel>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/power-spike-model` });
   }
 
-  /** Multiple curves (power, pace, HR ...) for one activity */
-  async getActivityPowerCurves(activityId: string, options?: ActivityPowerCurvesOptions): Promise<PowerCurve[]> {
+  /** Curves (watts, pace, hr ... per `types`) for one activity, optionally with fatigued variants */
+  async getCurves(activityId: string, options?: ActivityPowerCurvesOptions): Promise<PowerCurve[]> {
     return this.httpClient.request<PowerCurve[]>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/power-curves`, params: options as Record<string, unknown> });
   }
 
-  /** Same as getActivityPowerCurves, as CSV */
-  async getActivityPowerCurvesCSV(activityId: string, options?: ActivityPowerCurvesOptions): Promise<Buffer> {
+  /** Same as getCurves, as CSV */
+  async getCurvesCSV(activityId: string, options?: ActivityPowerCurvesOptions): Promise<Buffer> {
     return this.httpClient.download(`/activity/${encodeURIComponent(activityId)}/power-curves.csv`, { params: options as Record<string, unknown> });
   }
 
@@ -79,17 +79,5 @@ export class AnalyticsService {
   async getMMPModel(type: ActivityType, athleteId?: string): Promise<PowerModel> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<PowerModel>({ method: 'GET', url: `/athlete/${id}/mmp-model`, params: { type } });
-  }
-
-  /** Best pace over a set of distances across the activities in a date range. Returns { distances, gap, curves } (no spec schema; shape observed live). */
-  async getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<ActivityPaceCurves> {
-    const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<ActivityPaceCurves>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: { ...options } as Record<string, unknown> });
-  }
-
-  /** Same as getActivityPaceCurves, as CSV. Observed live (2026-09-22): the CSV form returns HTTP 500 unless `distances` is supplied, while the JSON form accepts the omission. */
-  async getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<Buffer> {
-    const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.download(`/athlete/${id}/activity-pace-curves.csv`, { params: { ...options } as Record<string, unknown> });
   }
 }

@@ -29,7 +29,7 @@ export { IntervalsAPIError } from './core/error-handler.js';
  * Intervals.icu API Client (v2)
  *
  * Comprehensive TypeScript client for the Intervals.icu API.
- * Supports 100+ endpoints across 15 resource groups.
+ * Supports 149 endpoints across 16 resource groups.
  *
  * @example
  * ```typescript

@@ -105,7 +105,7 @@ export type TIZOrder =
 
 /** Pace/power model types */
 export type PaceModelType = 'CS';
-export type PowerModelType = string;
+export type PowerModelType = 'MS_2P' | 'MORTON_3P' | 'FFT_CURVES' | 'ECP';
 
 /** Data curve type (pace curves) */
 export type DataCurveType = 'POWER' | 'HR' | 'PACE' | 'GAP';

@@ -52,15 +52,15 @@ describe('AnalyticsService', () => {
     expect(seen[0].params).toEqual({ start_index: 100, end_index: 400 });
   });
 
-  it('getActivityPowerCurves passes types and fatigue; CSV sibling downloads .csv', async () => {
-    await client.analytics.getActivityPowerCurves('a1', { types: ['watts', 'pace'], fatigue: ['normal', 'kj0'] });
+  it('getCurves passes types and fatigue; CSV sibling downloads .csv', async () => {
+    await client.analytics.getCurves('a1', { types: ['watts', 'pace'], fatigue: ['normal', 'kj0'] });
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/activity/a1/power-curves');
     expect(seen[0].params).toEqual({ types: ['watts', 'pace'], fatigue: ['normal', 'kj0'] });
-    const csv = await client.analytics.getActivityPowerCurvesCSV('a1', { types: ['power'] });
+    const csv = await client.analytics.getCurvesCSV('a1', { types: ['watts', 'pace'] });
     expect(seen[1].method).toBe('GET');
     expect(seen[1].url).toBe('/activity/a1/power-curves.csv');
-    expect(seen[1].params).toEqual({ types: ['power'] });
+    expect(seen[1].params).toEqual({ types: ['watts', 'pace'] });
     expect(seen[1].responseType).toBe('arraybuffer');
     expect(csv.toString()).toBe('secs,watts');
   });
@@ -73,24 +73,13 @@ describe('AnalyticsService', () => {
     await client.analytics.getMMPModel('Run', 'other');
     expect(seen[1].method).toBe('GET');
     expect(seen[1].url).toBe('/athlete/other/mmp-model');
+    expect(seen[1].params).toEqual({ type: 'Run' });
   });
 
   it('encodes delimiters in the activity id so the route suffix is preserved', async () => {
     await client.analytics.getPowerHistogram('victim#?/%');
     expect(seen[0].url).toBe('/activity/victim%23%3F%2F%25/power-histogram');
-    await client.analytics.getActivityPowerCurvesCSV('a#1');
+    await client.analytics.getCurvesCSV('a#1');
     expect(seen[1].url).toBe('/activity/a%231/power-curves.csv');
-  });
-
-  it('getActivityPaceCurves passes the date range and distances; CSV sibling downloads .csv', async () => {
-    const opts = { oldest: '2026-01-01', newest: '2026-03-01', type: 'Run', distances: [1000, 5000], gap: true };
-    await client.analytics.getActivityPaceCurves(opts);
-    expect(seen[0].method).toBe('GET');
-    expect(seen[0].url).toBe('/athlete/i1/activity-pace-curves');
-    expect(seen[0].params).toEqual(opts);
-    await client.analytics.getActivityPaceCurvesCSV(opts);
-    expect(seen[1].method).toBe('GET');
-    expect(seen[1].url).toBe('/athlete/i1/activity-pace-curves.csv');
-    expect(seen[1].responseType).toBe('arraybuffer');
   });
 });

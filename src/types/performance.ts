@@ -1,22 +1,18 @@
 /**
  * Performance curve types from the Intervals.icu API
  */
-import type { ActivityType, DataCurveType, PaceModelType } from './enums.js';
+import type { ActivityType, DataCurveType, PaceModelType, PowerModelType } from './enums.js';
 import type { Activity } from './activity.js';
 import type { ActivityFilter } from './athlete.js';
 
-/** Power model fitted to a power curve */
+/** Power model fitted to a power curve (spec schema PowerModel; field names confirmed live 2026-09-22) */
 export interface PowerModel {
-  type?: string;
-  cp?: number;
-  w_prime?: number;
-  p_max?: number;
-  ftp?: number;
-  ftp_watts?: number;
-  ftp_secs?: number;
-  r2?: number;
+  type?: PowerModelType;
+  criticalPower?: number;
+  wPrime?: number;
+  pMax?: number;
   inputPointIndexes?: number[];
-  [key: string]: unknown;
+  ftp?: number;
 }
 
 /** Pace model fitted to a pace curve */
@@ -199,9 +195,9 @@ export interface PaceDistancesDTO {
 
 /** Query for GET /activity/{id}/power-curves{ext} */
 export interface ActivityPowerCurvesOptions {
-  /** Curve types (streams) to include, e.g. ['power', 'pace']; default is watts */
+  /** Streams required, e.g. ['watts', 'pace'] (default watts) */
   types?: string[];
-  /** Comma-separated normal/kj0/kj1 selection; the spec models it as a string array, not a boolean */
+  /** Which curves to return: any of 'normal', 'kj0', 'kj1' (normal and/or fatigued) */
   fatigue?: string[];
 }
 

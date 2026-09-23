@@ -180,7 +180,7 @@ describe.skipIf(!DESTRUCTIVE)('live (write, irreversible): deleteTombstone', () 
   });
 });
 
-describe.skipIf(!LIVE)('live: phase 3 — analytics', () => {
+describe.skipIf(!LIVE)('live: phase 3 — analytics and activity pace curves', () => {
   const c = () => liveClient();
 
   it('the four histograms return arrays for the latest activity', async (ctx) => {
@@ -207,26 +207,28 @@ describe.skipIf(!LIVE)('live: phase 3 — analytics', () => {
   it('getPowerSpikeModel responds', async (ctx) => {
     const id = await latestActivityId();
     if (!id) ctx.skip();
-    expect(await c().analytics.getPowerSpikeModel(id as string)).toBeTypeOf('object');
+    const model = await c().analytics.getPowerSpikeModel(id as string);
+    expect(Object.keys(model)).toContain('criticalPower');
   });
-  it('getActivityPowerCurves and its CSV sibling respond', async (ctx) => {
+  it('getCurves and its CSV sibling respond', async (ctx) => {
     const id = await latestActivityId();
     if (!id) ctx.skip();
-    expect(Array.isArray(await c().analytics.getActivityPowerCurves(id as string))).toBe(true);
-    expect((await c().analytics.getActivityPowerCurvesCSV(id as string)).length).toBeGreaterThan(0);
+    expect(Array.isArray(await c().analytics.getCurves(id as string, { fatigue: ['normal', 'kj0'] }))).toBe(true);
+    expect((await c().analytics.getCurvesCSV(id as string)).length).toBeGreaterThan(0);
   });
   it('getMMPModel responds for Ride', async () => {
-    expect(await c().analytics.getMMPModel('Ride')).toBeTypeOf('object');
+    const model = await c().analytics.getMMPModel('Ride');
+    expect(Object.keys(model)).toContain('criticalPower');
   });
   it('getActivityPaceCurves returns { distances, gap, curves }', async () => {
-    const r = await c().analytics.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    const r = await c().performance.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
     expect(Array.isArray(r.distances)).toBe(true);
     expect(typeof r.gap).toBe('boolean');
     expect(Array.isArray(r.curves)).toBe(true);
   });
   // LIVE: the CSV form returns 500 without `distances` (JSON form does not); always pass distances here.
   it('getActivityPaceCurvesCSV responds when distances are supplied', async () => {
-    const csv = await c().analytics.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    const csv = await c().performance.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
     expect(csv.length).toBeGreaterThan(0);
   });
 });

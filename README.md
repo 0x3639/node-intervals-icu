@@ -10,7 +10,7 @@
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
-**130+ typed methods** across 16 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~25 KB minified.
+**130+ typed methods** across 16 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~27 KB minified.
 
 ## Features
 
@@ -21,7 +21,7 @@ The most comprehensive TypeScript client for the [Intervals.icu](https://interva
 - **Auto-retry with backoff + jitter** — configurable retries for 429/5xx, respects `Retry-After` header
 - **Rate limit tracking** — `getRateLimitRemaining()` / `getRateLimitReset()` from response headers
 - **Dual output** — ESM + CJS, tree-shakeable
-- **Minimal footprint** — single runtime dependency, ~25 KB minified
+- **Minimal footprint** — single runtime dependency, ~27 KB minified
 
 ## Installation
 
@@ -127,8 +127,8 @@ interface IntervalsConfig {
 | **Routes** | `client.routes` | `list`, `get`, `update`, `getSimilarity` |
 | **Custom Items** | `client.customItems` | `list`, `get`, `create`, `update`, `delete`, `reorder`, `uploadImage` |
 | **Shared Events** | `client.sharedEvents` | `get`, `create`, `update`, `delete` |
-| **Performance** | `client.performance` | `getPowerCurves`, `getPaceCurves`, `getHRCurves`, `getPowerHRCurve`, `getActivityPowerCurves` |
-| **Analytics** | `client.analytics` | `getPowerHistogram`, `getHRHistogram`, `getPaceHistogram`, `getGAPHistogram`, `getTimeAtHR`, `getIntervalStats`, `getPowerSpikeModel`, `getActivityPowerCurves`, `getActivityPowerCurvesCSV`, `getMMPModel`, `getActivityPaceCurves`, `getActivityPaceCurvesCSV` |
+| **Performance** | `client.performance` | `getPowerCurves`, `getPaceCurves`, `getHRCurves`, `getPowerHRCurve`, `getActivityPowerCurves`, `getActivityPaceCurves`, `getActivityPaceCurvesCSV` |
+| **Analytics** | `client.analytics` | `getPowerHistogram`, `getHRHistogram`, `getPaceHistogram`, `getGAPHistogram`, `getTimeAtHR`, `getIntervalStats`, `getPowerSpikeModel`, `getCurves`, `getCurvesCSV`, `getMMPModel` |
 | **Search** | `client.search` | `searchActivities` |
 
 ## Error Handling
@@ -193,7 +193,7 @@ The TypeScript/Node.js ecosystem has a few Intervals.icu API clients worth knowi
 
 | Library | npm | Approach | Coverage | Error handling |
 |---------|-----|----------|----------|---------------|
-| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 16 services, 149 endpoints | throws `IntervalsAPIError` |
+| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 16 services, 149 spec operations | throws `IntervalsAPIError` |
 | **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` — never throws |
 
 **When to use `@0x3639/intervals-icu` (this library):**
