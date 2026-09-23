@@ -6,7 +6,7 @@
 [![license](https://img.shields.io/npm/l/%400x3639%2Fintervals-icu)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
-> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — 139 of 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
+> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — all 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
@@ -14,7 +14,7 @@ The most comprehensive TypeScript client for the [Intervals.icu](https://interva
 
 ## Features
 
-- **15 services, 100+ methods** — athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, performance curves, search
+- **16 services, 130+ methods** — athletes, activities, events, wellness, workouts, sport settings, folders, gear, chats, weather, routes, custom items, shared events, performance curves, search, analytics
 - **Full TypeScript types** — ~100 exported interfaces with JSDoc on every public method
 - **Dual authentication** — API key (personal use) or OAuth bearer token (third-party apps)
 - **File upload & download** — multipart activity uploads (.fit/.tcx/.gpx/.zip), binary exports
@@ -128,6 +128,7 @@ interface IntervalsConfig {
 | **Custom Items** | `client.customItems` | `list`, `get`, `create`, `update`, `delete`, `reorder`, `uploadImage` |
 | **Shared Events** | `client.sharedEvents` | `get`, `create`, `update`, `delete` |
 | **Performance** | `client.performance` | `getPowerCurves`, `getPaceCurves`, `getHRCurves`, `getPowerHRCurve`, `getActivityPowerCurves` |
+| **Analytics** | `client.analytics` | `getPowerHistogram`, `getHRHistogram`, `getPaceHistogram`, `getGAPHistogram`, `getTimeAtHR`, `getIntervalStats`, `getPowerSpikeModel`, `getActivityPowerCurves`, `getActivityPowerCurvesCSV`, `getMMPModel`, `getActivityPaceCurves`, `getActivityPaceCurvesCSV` |
 | **Search** | `client.search` | `searchActivities` |
 
 ## Error Handling
@@ -192,7 +193,7 @@ The TypeScript/Node.js ecosystem has a few Intervals.icu API clients worth knowi
 
 | Library | npm | Approach | Coverage | Error handling |
 |---------|-----|----------|----------|---------------|
-| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 15 services, 100+ endpoints | throws `IntervalsAPIError` |
+| **@0x3639/intervals-icu** *(this library)* | `@0x3639/intervals-icu` | axios, TypeScript types | 16 services, 149 endpoints | throws `IntervalsAPIError` |
 | **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` — never throws |
 
 **When to use `@0x3639/intervals-icu` (this library):**
