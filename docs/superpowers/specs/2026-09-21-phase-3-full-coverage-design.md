@@ -118,7 +118,7 @@ defaultAthleteId)` like every other service, wired as `client.analytics` in
 | `getPowerSpikeModel(activityId)` | `GET /activity/{id}/power-spike-model` | `PowerModel` |
 | `getActivityPowerCurves(activityId, options?: ActivityPowerCurvesOptions)` | `GET /activity/{id}/power-curves` | `PowerCurve[]` |
 | `getActivityPowerCurvesCSV(activityId, options?)` | `GET /activity/{id}/power-curves.csv` | `Buffer` |
-| `getMMPModel(type: string, athleteId?)` | `GET /athlete/{id}/mmp-model` | `PowerModel` |
+| `getMMPModel(type: ActivityType, athleteId?)` | `GET /athlete/{id}/mmp-model` | `PowerModel` |
 | `getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?)` | `GET /athlete/{id}/activity-pace-curves` | `PaceCurveSet` |
 | `getActivityPaceCurvesCSV(options, athleteId?)` | `GET /athlete/{id}/activity-pace-curves.csv` | `Buffer` |
 

@@ -1507,6 +1507,13 @@ describe('AnalyticsService', () => {
     expect(csv.toString()).toBe('secs,watts');
   });
 
+  it('encodes delimiters in the activity id so the route suffix is preserved', async () => {
+    await client.analytics.getPowerHistogram('victim#?/%');
+    expect(seen[0].url).toBe('/activity/victim%23%3F%2F%25/power-histogram');
+    await client.analytics.getActivityPowerCurvesCSV('a#1');
+    expect(seen[1].url).toBe('/activity/a%231/power-curves.csv');
+  });
+
   it('getMMPModel sends type and is athlete-scoped', async () => {
     await client.analytics.getMMPModel('Ride');
     expect(seen[0].method).toBe('GET');
@@ -1544,7 +1551,7 @@ Create `src/services/analytics.service.ts`:
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   Bucket, TimeAtHRPlot, Interval, PowerModel, PowerCurve, PaceCurveSet,
-  ActivityPowerCurvesOptions, ActivityPaceCurvesOptions,
+  ActivityPowerCurvesOptions, ActivityPaceCurvesOptions, ActivityType,
 } from '../types/index.js';
 
 /**
@@ -1554,6 +1561,8 @@ import type {
  *
  * The older single-curve activity methods (activities.getPowerCurve and friends) hit
  * different routes and remain on ActivityService.
+ *
+ * Caller-supplied activity ids are URL-encoded before interpolation so a delimiter in an id cannot change the route.
  */
 export class AnalyticsService {
   constructor(
@@ -1565,59 +1574,59 @@ export class AnalyticsService {
 
   /** Time in power buckets */
   async getPowerHistogram(activityId: string, options?: { bucketSize?: number }): Promise<Bucket[]> {
-    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${activityId}/power-histogram`, params: options as Record<string, unknown> });
+    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/power-histogram`, params: options as Record<string, unknown> });
   }
 
   /** Time in heart-rate buckets */
   async getHRHistogram(activityId: string, options?: { bucketSize?: number }): Promise<Bucket[]> {
-    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${activityId}/hr-histogram`, params: options as Record<string, unknown> });
+    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/hr-histogram`, params: options as Record<string, unknown> });
   }
 
   /** Time in pace buckets */
   async getPaceHistogram(activityId: string): Promise<Bucket[]> {
-    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${activityId}/pace-histogram` });
+    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/pace-histogram` });
   }
 
   /** Time in grade-adjusted-pace buckets */
   async getGAPHistogram(activityId: string): Promise<Bucket[]> {
-    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${activityId}/gap-histogram` });
+    return this.httpClient.request<Bucket[]>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/gap-histogram` });
   }
 
   // ── Activity models and statistics ──
 
   /** Seconds spent at each heart rate */
   async getTimeAtHR(activityId: string): Promise<TimeAtHRPlot> {
-    return this.httpClient.request<TimeAtHRPlot>({ method: 'GET', url: `/activity/${activityId}/time-at-hr` });
+    return this.httpClient.request<TimeAtHRPlot>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/time-at-hr` });
   }
 
   /** Statistics for an arbitrary index range of the activity, as if it were an interval */
   async getIntervalStats(activityId: string, startIndex: number, endIndex: number): Promise<Interval> {
     return this.httpClient.request<Interval>({
       method: 'GET',
-      url: `/activity/${activityId}/interval-stats`,
+      url: `/activity/${encodeURIComponent(activityId)}/interval-stats`,
       params: { start_index: startIndex, end_index: endIndex },
     });
   }
 
   /** Power model fitted to the activity, used to detect power spikes */
   async getPowerSpikeModel(activityId: string): Promise<PowerModel> {
-    return this.httpClient.request<PowerModel>({ method: 'GET', url: `/activity/${activityId}/power-spike-model` });
+    return this.httpClient.request<PowerModel>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/power-spike-model` });
   }
 
   /** Multiple curves (power, pace, HR ...) for one activity */
   async getActivityPowerCurves(activityId: string, options?: ActivityPowerCurvesOptions): Promise<PowerCurve[]> {
-    return this.httpClient.request<PowerCurve[]>({ method: 'GET', url: `/activity/${activityId}/power-curves`, params: options as Record<string, unknown> });
+    return this.httpClient.request<PowerCurve[]>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/power-curves`, params: options as Record<string, unknown> });
   }
 
   /** Same as getActivityPowerCurves, as CSV */
   async getActivityPowerCurvesCSV(activityId: string, options?: ActivityPowerCurvesOptions): Promise<Buffer> {
-    return this.httpClient.download(`/activity/${activityId}/power-curves.csv`, { params: options as Record<string, unknown> });
+    return this.httpClient.download(`/activity/${encodeURIComponent(activityId)}/power-curves.csv`, { params: options as Record<string, unknown> });
   }
 
   // ── Athlete-level ──
 
   /** Power model used to resolve %MMP workout steps for a sport type */
-  async getMMPModel(type: string, athleteId?: string): Promise<PowerModel> {
+  async getMMPModel(type: ActivityType, athleteId?: string): Promise<PowerModel> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<PowerModel>({ method: 'GET', url: `/athlete/${id}/mmp-model`, params: { type } });
   }
@@ -1625,13 +1634,13 @@ export class AnalyticsService {
   /** Best pace over a set of distances across the activities in a date range */
   async getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<PaceCurveSet> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PaceCurveSet>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: options as unknown as Record<string, unknown> });
+    return this.httpClient.request<PaceCurveSet>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: { ...options } as Record<string, unknown> });
   }
 
   /** Same as getActivityPaceCurves, as CSV */
   async getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.download(`/athlete/${id}/activity-pace-curves.csv`, { params: options as unknown as Record<string, unknown> });
+    return this.httpClient.download(`/athlete/${id}/activity-pace-curves.csv`, { params: { ...options } as Record<string, unknown> });
   }
 }
 ```
@@ -1855,6 +1864,7 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
 - Codex round 1 on PR A (2026-09-22): `updateMessage` takes `UpdateMessageDTO` (content/answer only) with a compile-time contract; `Chat.blocked` typed; the block live test restores the original state; `getSettings` returns a map of objects.
+- Task 10 review (2026-09-22): AnalyticsService URL-encodes caller-supplied activity ids (same ruling as PR A's 9a03a39); `getMMPModel` takes `ActivityType`.
 - Task 9 (2026-09-22): the spec defines power-curves `fatigue` as a string array (normal/kj0/kj1), not a boolean, and pace-curves `type` as the full sport enum; the plan's earlier shapes were wrong and are corrected here. `ActivityType` in enums.ts lacks `Cyclocross`, which the spec's enum includes (deferred to the final review).
 - Codex round 3 on PR A (2026-09-22): `searchActivitiesFull` spreads options first so the explicit `q` wins; the edit/delete live test sends and recovers inside the try/finally and retries recovery in finally.
 - Codex round 2 on PR A (2026-09-22): all seven Phase 3 sites that interpolate a caller string into a path `encodeURIComponent` it (`deleteTombstone('victim#')` would otherwise truncate to the activity-delete route); delimiter regression tests added. Pre-existing methods remain a separate cleanup.
