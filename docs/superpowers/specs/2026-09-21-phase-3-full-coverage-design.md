@@ -128,7 +128,7 @@ existing `getActivityPowerCurves` / `getActivityHRCurves` (same reasoning that p
 | Method (`client.performance`) | Route | Returns |
 |---|---|---|
 | `getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?)` | `GET /athlete/{id}/activity-pace-curves` | `ActivityPaceCurves` |
-| `getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions & { distances: number[] }, athleteId?)` | `GET /athlete/{id}/activity-pace-curves.csv` | `Buffer` |
+| `getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions & { distances: [number, ...number[]] }, athleteId?)` | `GET /athlete/{id}/activity-pace-curves.csv` | `Buffer` |
 
 `ActivityPowerCurvesOptions`: `types?: string[]`, `fatigue?: string[]` (any of `normal`, `kj0`, `kj1`).
 `ActivityPaceCurvesOptions`: `oldest`, `newest` (required), `type?: ActivityType`,
