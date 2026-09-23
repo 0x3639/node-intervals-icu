@@ -179,3 +179,59 @@ describe.skipIf(!DESTRUCTIVE)('live (write, irreversible): deleteTombstone', () 
     await expect(liveClient().activities.deleteTombstone(process.env.INTERVALS_TOMBSTONE_ID as string)).resolves.toBeUndefined();
   });
 });
+
+describe.skipIf(!LIVE)('live: phase 3 — analytics', () => {
+  const c = () => liveClient();
+
+  it('the four histograms return arrays for the latest activity', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    for (const fn of ['getPowerHistogram', 'getHRHistogram', 'getPaceHistogram', 'getGAPHistogram'] as const) {
+      expect(Array.isArray(await c().analytics[fn](id as string)), fn).toBe(true);
+    }
+  });
+  it('getTimeAtHR returns secs arrays', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    const plot = await c().analytics.getTimeAtHR(id as string);
+    expect(Array.isArray(plot.secs)).toBe(true);
+  });
+  it('getIntervalStats works on the first interval of an activity that has one', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    const [iv] = (await c().activities.getIntervals(id as string)).icu_intervals ?? [];
+    if (iv?.start_index === undefined || iv?.end_index === undefined) ctx.skip();
+    const stats = await c().analytics.getIntervalStats(id as string, iv!.start_index as number, iv!.end_index as number);
+    expect(stats).toBeTypeOf('object');
+  });
+  it('getPowerSpikeModel responds', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    expect(await c().analytics.getPowerSpikeModel(id as string)).toBeTypeOf('object');
+  });
+  it('getActivityPowerCurves and its CSV sibling respond', async (ctx) => {
+    const id = await latestActivityId();
+    if (!id) ctx.skip();
+    expect(Array.isArray(await c().analytics.getActivityPowerCurves(id as string))).toBe(true);
+    expect((await c().analytics.getActivityPowerCurvesCSV(id as string)).length).toBeGreaterThan(0);
+  });
+  it('getMMPModel responds for Ride', async () => {
+    expect(await c().analytics.getMMPModel('Ride')).toBeTypeOf('object');
+  });
+  it('getActivityPaceCurves has the PaceCurveSet shape; CSV sibling responds', async (ctx) => {
+    const set = await c().analytics.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    expect(set).toBeTypeOf('object');
+    expect(Array.isArray(set.list) || set.list === undefined).toBe(true);
+    try {
+      const csv = await c().analytics.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run' });
+      expect(csv.length).toBeGreaterThan(0);
+    } catch (err) {
+      // LIVE: 500 — GET /athlete/{id}/activity-pace-curves.csv returns "Internal server error"
+      // on this account whenever `distances` is omitted, even though it is optional per the
+      // spec and the sibling JSON endpoint (asserted above) handles the identical call fine.
+      // Confirmed with a raw request outside the SDK; not an SDK bug, so the SDK is unchanged.
+      if ((err as { status?: number }).status !== 500) throw err;
+      ctx.skip();
+    }
+  });
+});
