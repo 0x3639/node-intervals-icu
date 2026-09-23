@@ -1797,7 +1797,9 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 Under `### Added`, insert at the top:
 
 ```markdown
-- `client.analytics` (`AnalyticsService`): `getPowerHistogram()`, `getHRHistogram()`, `getPaceHistogram()`, `getGAPHistogram()`, `getTimeAtHR()`, `getIntervalStats()`, `getPowerSpikeModel()`, `getActivityPowerCurves()` / `...CSV()`, `getMMPModel()`, `getActivityPaceCurves()` / `...CSV()`. Types `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions`.
+- `client.analytics` (`AnalyticsService`): `getPowerHistogram()`, `getHRHistogram()`, `getPaceHistogram()`, `getGAPHistogram()`, `getTimeAtHR()`, `getIntervalStats()`, `getPowerSpikeModel()`, `getActivityPowerCurves()` / `...CSV()`, `getMMPModel()`, `getActivityPaceCurves()` / `...CSV()`. Activity ids are URL-encoded in paths. Types `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions` (`fatigue` is a list of `normal`/`kj0`/`kj1`), `ActivityPaceCurvesOptions`, and `ActivityPaceCurves` (the observed `{ distances, gap, curves }` response; the spec declares no schema). The CSV pace-curves form needs `distances` (observed HTTP 500 without it).
+- `ActivityType` gains `'Cyclocross'`, which the spec's sport enum includes.
+- `tests/types/spec-conformance.test.ts` now also checks the five query-option types against `paths[...].parameters`.
 - Coverage: 149/149 spec operations; CI now runs the coverage gate in `--strict` mode.
 ```
 
