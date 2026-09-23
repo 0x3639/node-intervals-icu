@@ -50,8 +50,26 @@ title: Activities
 
 ## Examples
 
-_Added in a later task._
+### List and download
+
+List the last 30 days of activities, pick the newest with a type, and download it as a FIT file and as a GPX file with power extensions.
+
+{@includeCode ../../../examples/activities/list-and-download.ts#main}
+
+### Interval search
+
+Find activities with 3-10 minute power intervals at 95-130% intensity, and search activities by name or tag.
+
+{@includeCode ../../../examples/activities/interval-search.ts#main}
+
+### Streams and intervals
+
+For the newest typed activity in the last year, fetch its watts/heartrate streams, detected intervals, and best efforts.
+
+{@includeCode ../../../examples/activities/streams-and-intervals.ts#main}
 
 ## Behaviour notes
 
+- {@link ActivityService.downloadFitFiles} sends `ids` as a comma-joined value, and the live API returns 422 `"No activities found"` for malformed import stubs. See [API behaviour](../api-behaviour.md).
+- The analytics `power-curves` route (`GET /activity/{id}/power-curves`, {@link AnalyticsService.getCurves}) returns a 422 with an empty body when an activity cannot serve the requested streams or fatigue variants; see the [analytics service page](./analytics.md) and [API behaviour](../api-behaviour.md).
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

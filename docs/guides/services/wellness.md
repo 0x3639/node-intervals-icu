@@ -18,7 +18,19 @@ title: Wellness
 
 ## Examples
 
-_Added in a later task._
+### Last 30 days
+
+List the last 30 days of wellness records, print the most recent week, and fetch today's record, treating a 404 as "no record yet".
+
+{@includeCode ../../../examples/wellness/last-30-days.ts#main}
+
+### Update today
+
+Update today's wellness entry with a weight, then read it back.
+
+CI never runs this example; running it by hand changes the authenticated account.
+
+{@includeCode ../../../examples/wellness/update-today.ts#main}
 
 ## Behaviour notes
 

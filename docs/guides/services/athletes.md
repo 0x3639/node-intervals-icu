@@ -23,8 +23,20 @@ title: Athletes
 
 ## Examples
 
-_Added in a later task._
+### Summary, connections and device settings
+
+Pull the 90-day fitness/fatigue/form summary, list which devices and apps are connected, and read the desktop UI settings.
+
+{@includeCode ../../../examples/athletes/summary-and-connections.ts#main}
+
+### Coached athletes
+
+List the athletes the API key's owner follows or coaches, then fetch one other athlete's profile.
+
+{@includeCode ../../../examples/athletes/coached-athletes.ts#main}
 
 ## Behaviour notes
 
+- {@link AthleteService.listAthletes} requires API-key authentication; it is not available to OAuth app tokens. See [API behaviour](../api-behaviour.md).
+- {@link AthleteService.disconnectApp} is irreversible from the API, and the SDK never calls it in its own live tests.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

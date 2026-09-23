@@ -28,8 +28,27 @@ title: Events
 
 ## Examples
 
-_Added in a later task._
+### Calendar week
+
+List planned workouts and races in the next 7 days, then list every tag that has been applied to a calendar event.
+
+{@includeCode ../../../examples/events/calendar-week.ts#main}
+
+### Create and mark done
+
+Create a NOTE event for today, mark it done, then delete it.
+
+CI never runs this example; running it by hand changes the authenticated account.
+
+{@includeCode ../../../examples/events/create-and-mark-done.ts#main}
+
+### Fitness model events
+
+List the events that influence the fitness (CTL/ATL) calculation, then download the next month of planned workouts as a zip of files.
+
+{@includeCode ../../../examples/events/fitness-model-events.ts#main}
 
 ## Behaviour notes
 
+- {@link EventService.downloadWorkoutsZip}'s `ext` query value has no leading dot (the API expects `zwo`, `mrc`, `erg` or `fit`), unlike the `{ext}` path suffix on {@link EventService.downloadWorkout}. See [API behaviour](../api-behaviour.md).
 - See [API behaviour](../api-behaviour.md) for the cross-service list.
