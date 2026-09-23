@@ -1811,7 +1811,7 @@ Add a row to the service table after **Performance**:
 | **Analytics** | `client.analytics` | `getPowerHistogram`, `getHRHistogram`, `getPaceHistogram`, `getGAPHistogram`, `getTimeAtHR`, `getIntervalStats`, `getPowerSpikeModel`, `getActivityPowerCurves`, `getActivityPowerCurvesCSV`, `getMMPModel`, `getActivityPaceCurves`, `getActivityPaceCurvesCSV` |
 ```
 
-Line 9 (intro blockquote): change `139 of 149 spec operations covered` to `all 149 spec operations covered`. Line 17: change `15 services, 100+ methods` to `16 services, 130+ methods` and append `, analytics` to that line's service list. Line 195 (comparison table): change `15 services, 100+ endpoints` to `16 services, 149 endpoints`.
+Line 9 (intro blockquote): change `139 of 149 spec operations covered` to `all 149 spec operations covered`. Line 17: change `15 services, 100+ methods` to `16 services, 130+ methods` and append `, analytics` to that line's service list. Line 195 (comparison table): change `15 services, 100+ endpoints` to `16 services, 149 endpoints`. Line 13: change `**100+ typed methods** across 15 service groups.` to `**130+ typed methods** across 16 service groups.`. Line 200: change `15 service groups including routes, gear, weather, custom items, performance, and search` to `16 service groups including routes, gear, weather, custom items, performance, analytics, and search`.
 
 - [ ] **Step 3: Example**
 
