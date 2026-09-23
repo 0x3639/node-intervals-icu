@@ -72,7 +72,8 @@ page has: a two-sentence description of the service's scope; a table of its
 methods with `{@link}` to the reference; two to four examples embedded with
 `{@includeCode}`; a "Behaviour notes" list linking to `api-behaviour.md`
 rows where relevant. Mutating examples (chats, shared events, deletes) carry
-a one-line note that they are not run against real accounts.
+a one-line note: CI never runs any example, and running a mutating example by
+hand changes the authenticated account.
 
 ### Examples (`examples/`)
 
