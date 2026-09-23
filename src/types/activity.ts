@@ -542,3 +542,26 @@ export interface ActivitiesAroundOptions {
   route_id?: number;
   limit?: number;
 }
+
+/** One bar of a power / HR / pace / GAP histogram (GET /activity/{id}/*-histogram) */
+export interface Bucket {
+  /** Bucket lower bound (watts, bpm, or seconds per km depending on the histogram) */
+  start?: number;
+  /** Elapsed seconds in the bucket */
+  secs?: number;
+  /** Moving seconds in the bucket */
+  movingSecs?: number;
+  watts?: number;
+  hr?: number;
+  cadence?: number;
+}
+
+/** Time-at-heart-rate distribution (GET /activity/{id}/time-at-hr); spec schema name `Plot` */
+export interface TimeAtHRPlot {
+  max_bpm?: number;
+  min_bpm?: number;
+  /** Seconds spent at each bpm from min_bpm upward */
+  secs?: number[];
+  /** Cumulative seconds at or above each bpm */
+  cumulative_secs?: number[];
+}

@@ -70,6 +70,8 @@ export type {
   UploadActivityOptions,
   IntervalSearchOptions,
   ActivitiesAroundOptions,
+  Bucket,
+  TimeAtHRPlot,
   Interval,
   IntervalGroup,
   IntervalsDTO,
@@ -204,6 +206,8 @@ export type {
   ActivityHRCurve,
   ActivityHRCurvePayload,
   PaceDistancesDTO,
+  ActivityPowerCurvesOptions,
+  ActivityPaceCurvesOptions,
 } from './performance.js';
 
 // Fitness

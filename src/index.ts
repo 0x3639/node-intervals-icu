@@ -52,7 +52,7 @@ export type {
 
   // Activity
   Activity, ActivityInput, ActivitySearchResult, UploadActivityOptions,
-  IntervalSearchOptions, ActivitiesAroundOptions,
+  IntervalSearchOptions, ActivitiesAroundOptions, Bucket, TimeAtHRPlot,
   Interval, IntervalGroup, IntervalsDTO, ActivityStream, UpdateStreamsResult,
   ActivityId, UploadResponse, ZoneInfo, ZoneSet, ZoneTime, HRRecovery,
   IcuAchievement, IgnorePart, Attachment, Effort, BestEfforts,
@@ -100,6 +100,7 @@ export type {
   HRCurve, HRCurveSet, PowerHRCurve,
   ActivityPowerCurve, ActivityPowerCurvePayload,
   ActivityHRCurve, ActivityHRCurvePayload, PaceDistancesDTO,
+  ActivityPowerCurvesOptions, ActivityPaceCurvesOptions,
 
   // Fitness
   CategorySummary, SummaryWithCats,

@@ -1,7 +1,7 @@
 /**
  * Performance curve types from the Intervals.icu API
  */
-import type { DataCurveType, PaceModelType } from './enums.js';
+import type { ActivityType, DataCurveType, PaceModelType } from './enums.js';
 import type { Activity } from './activity.js';
 import type { ActivityFilter } from './athlete.js';
 
@@ -195,4 +195,29 @@ export interface ActivityHRCurvePayload {
 export interface PaceDistancesDTO {
   distances?: number[];
   defaults?: number[];
+}
+
+/** Query for GET /activity/{id}/power-curves{ext} */
+export interface ActivityPowerCurvesOptions {
+  /** Curve types (streams) to include, e.g. ['power', 'pace']; default is watts */
+  types?: string[];
+  /** Comma-separated normal/kj0/kj1 selection; the spec models it as a string array, not a boolean */
+  fatigue?: string[];
+}
+
+/**
+ * Query for GET /athlete/{id}/activity-pace-curves{ext}. The spec's `filters` param (an
+ * array of ActivityFilter objects) is omitted until its query-string encoding is verified live.
+ */
+export interface ActivityPaceCurvesOptions {
+  /** Oldest local date, ISO-8601 */
+  oldest: string;
+  /** Newest local date, ISO-8601 */
+  newest: string;
+  /** Sport type; the spec enumerates the full activity-type list, so this reuses the shared union */
+  type?: ActivityType;
+  /** Distances in metres */
+  distances?: number[];
+  /** Use grade-adjusted pace */
+  gap?: boolean;
 }
