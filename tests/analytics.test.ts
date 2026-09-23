@@ -76,10 +76,22 @@ describe('AnalyticsService', () => {
     expect(seen[1].params).toEqual({ type: 'Run' });
   });
 
-  it('encodes delimiters in the activity id so the route suffix is preserved', async () => {
-    await client.analytics.getPowerHistogram('victim#?/%');
-    expect(seen[0].url).toBe('/activity/victim%23%3F%2F%25/power-histogram');
-    await client.analytics.getCurvesCSV('a#1');
-    expect(seen[1].url).toBe('/activity/a%231/power-curves.csv');
+  it.each([
+    ['getPowerHistogram', '/activity/victim%23%3F%2F%25/power-histogram'],
+    ['getHRHistogram', '/activity/victim%23%3F%2F%25/hr-histogram'],
+    ['getPaceHistogram', '/activity/victim%23%3F%2F%25/pace-histogram'],
+    ['getGAPHistogram', '/activity/victim%23%3F%2F%25/gap-histogram'],
+    ['getTimeAtHR', '/activity/victim%23%3F%2F%25/time-at-hr'],
+    ['getPowerSpikeModel', '/activity/victim%23%3F%2F%25/power-spike-model'],
+    ['getCurves', '/activity/victim%23%3F%2F%25/power-curves'],
+    ['getCurvesCSV', '/activity/victim%23%3F%2F%25/power-curves.csv'],
+  ] as const)('%s encodes delimiters in the activity id', async (method, url) => {
+    await (client.analytics as any)[method]('victim#?/%');
+    expect(seen[0].url).toBe(url);
+  });
+
+  it('getIntervalStats encodes delimiters in the activity id', async () => {
+    await client.analytics.getIntervalStats('victim#?/%', 1, 2);
+    expect(seen[0].url).toBe('/activity/victim%23%3F%2F%25/interval-stats');
   });
 });

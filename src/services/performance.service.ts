@@ -91,8 +91,13 @@ export class PerformanceService {
   /**
    * Same as getActivityPaceCurves, as CSV. Observed live (2026-09-22): this form returns HTTP 500
    * unless `distances` is supplied (the JSON form accepts the omission), so `distances` is required here.
+   * At least one distance is required: axios drops an empty array from the query string, which
+   * reproduces the 500.
    */
-  async getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions & { distances: number[] }, athleteId?: string): Promise<Buffer> {
+  async getActivityPaceCurvesCSV(
+    options: ActivityPaceCurvesOptions & { distances: [number, ...number[]] },
+    athleteId?: string,
+  ): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.download(`/athlete/${id}/activity-pace-curves.csv`, { params: { ...options } as Record<string, unknown> });
   }

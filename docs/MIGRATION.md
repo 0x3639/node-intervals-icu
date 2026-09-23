@@ -24,6 +24,7 @@ This guide covers all breaking changes when upgrading from v2.x to v3.x. Every c
 | `client.routes.getSimilarities(routeId)` — returned a list | `client.routes.getSimilarity(routeId, otherRouteId)` — returns a single `RouteSimilarity` |
 | `client.activities.downloadFitFiles()` — sent GET (405) | `client.activities.downloadFitFiles()` — now sends POST |
 | `client.activities.updateStreamsCSV()` — sent POST (405) | `client.activities.updateStreamsCSV()` — now sends PUT |
+| `PowerModel` fields `cp`, `w_prime`, `p_max`, `ftp_watts`, `ftp_secs`, `r2` and its `[key: string]: unknown` index signature; `PowerModelType = string` | `PowerModel` now has the API's actual fields `type`, `criticalPower`, `wPrime`, `pMax`, `inputPointIndexes`, `ftp` (the old names were never populated) and `PowerModelType` is the union `'MS_2P' \| 'MORTON_3P' \| 'FFT_CURVES' \| 'ECP'`. Read `criticalPower` instead of `cp`, etc.; there is no index signature, so cast if you must read an undocumented field. |
 
 Note: `client.activities.getPowerVsHR(activityId)` is unrelated and unchanged — it's a per-activity endpoint that was always spec-valid, distinct from the removed `client.performance.getPowerVsHR()`.
 

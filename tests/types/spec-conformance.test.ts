@@ -130,4 +130,12 @@ describe('Phase 3 hand-written types match the vendored spec (names, optionality
     const enumValues = spec.paths['/api/v1/athlete/{id}/mmp-model'].get.parameters.find((p: any) => p.name === 'type').schema.enum.slice().sort();
     expect(members).toEqual(enumValues);
   });
+
+  it('PowerModelType union equals the spec PowerModel.type enum', () => {
+    const src = readFileSync(new URL('../../src/types/enums.ts', import.meta.url), 'utf8');
+    const m = /export type PowerModelType =([\s\S]*?);/.exec(src);
+    expect(m, 'PowerModelType not found').toBeTruthy();
+    const members = [...m![1].matchAll(/'([^']+)'/g)].map((x) => x[1]).sort();
+    expect(members).toEqual(spec.components.schemas.PowerModel.properties.type.enum.slice().sort());
+  });
 });
