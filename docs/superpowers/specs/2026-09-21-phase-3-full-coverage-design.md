@@ -122,8 +122,8 @@ defaultAthleteId)` like every other service, wired as `client.analytics` in
 | `getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?)` | `GET /athlete/{id}/activity-pace-curves` | `PaceCurveSet` |
 | `getActivityPaceCurvesCSV(options, athleteId?)` | `GET /athlete/{id}/activity-pace-curves.csv` | `Buffer` |
 
-`ActivityPowerCurvesOptions`: `types?: string[]`, `fatigue?: boolean`.
-`ActivityPaceCurvesOptions`: `oldest`, `newest` (required), `type?`,
+`ActivityPowerCurvesOptions`: `types?: string[]`, `fatigue?: string[]` (any of `normal`, `kj0`, `kj1`).
+`ActivityPaceCurvesOptions`: `oldest`, `newest` (required), `type?: ActivityType`,
 `distances?: number[]`, `gap?: boolean`. `filters` is omitted (see Decisions).
 
 Array params serialize as repeated keys via the Phase 2 `paramsSerializer`.

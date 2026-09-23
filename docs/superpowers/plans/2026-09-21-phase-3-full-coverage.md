@@ -1337,7 +1337,7 @@ and these cases inside the describe (the PR A option types were hand-verified wh
   });
 
   it('ActivityPaceCurvesOptions matches the activity-pace-curves query parameters minus filters', () => {
-    expect(interfaceMembers('performance.ts', 'ActivityPaceCurvesOptions')).toEqual(paramMembers('/athlete/{id}/activity-pace-curves{ext}', 'get', { omit: ['filters'] }));
+    expect(interfaceMembers('performance.ts', 'ActivityPaceCurvesOptions')).toEqual(paramMembers('/athlete/{id}/activity-pace-curves{ext}', 'get', { omit: ['filters'], overrides: { type: 'ActivityType' } }));
   });
 ```
 
@@ -1382,10 +1382,10 @@ Append to `src/types/performance.ts`:
 ```ts
 /** Query for GET /activity/{id}/power-curves{ext} */
 export interface ActivityPowerCurvesOptions {
-  /** Curve types to include, e.g. ['power', 'pace'] */
+  /** Streams required, e.g. ['watts', 'pace'] (default watts) */
   types?: string[];
-  /** Include fatigue-adjusted curves */
-  fatigue?: boolean;
+  /** Which curves to return: any of 'normal', 'kj0', 'kj1' (normal and/or fatigued) */
+  fatigue?: string[];
 }
 
 /**
@@ -1397,7 +1397,8 @@ export interface ActivityPaceCurvesOptions {
   oldest: string;
   /** Newest local date, ISO-8601 */
   newest: string;
-  type?: string;
+  /** Sport; the spec enumerates the full ActivityType list here */
+  type?: ActivityType;
   /** Distances in metres */
   distances?: number[];
   /** Use grade-adjusted pace */
@@ -1494,10 +1495,10 @@ describe('AnalyticsService', () => {
   });
 
   it('getActivityPowerCurves passes types and fatigue; CSV sibling downloads .csv', async () => {
-    await client.analytics.getActivityPowerCurves('a1', { types: ['power', 'pace'], fatigue: true });
+    await client.analytics.getActivityPowerCurves('a1', { types: ['watts', 'pace'], fatigue: ['normal', 'kj0'] });
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/activity/a1/power-curves');
-    expect(seen[0].params).toEqual({ types: ['power', 'pace'], fatigue: true });
+    expect(seen[0].params).toEqual({ types: ['watts', 'pace'], fatigue: ['normal', 'kj0'] });
     const csv = await client.analytics.getActivityPowerCurvesCSV('a1', { types: ['power'] });
     expect(seen[1].method).toBe('GET');
     expect(seen[1].url).toBe('/activity/a1/power-curves.csv');
@@ -1854,6 +1855,7 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
 - Codex round 1 on PR A (2026-09-22): `updateMessage` takes `UpdateMessageDTO` (content/answer only) with a compile-time contract; `Chat.blocked` typed; the block live test restores the original state; `getSettings` returns a map of objects.
+- Task 9 (2026-09-22): the spec defines power-curves `fatigue` as a string array (normal/kj0/kj1), not a boolean, and pace-curves `type` as the full sport enum; the plan's earlier shapes were wrong and are corrected here. `ActivityType` in enums.ts lacks `Cyclocross`, which the spec's enum includes (deferred to the final review).
 - Codex round 3 on PR A (2026-09-22): `searchActivitiesFull` spreads options first so the explicit `q` wins; the edit/delete live test sends and recovers inside the try/finally and retries recovery in finally.
 - Codex round 2 on PR A (2026-09-22): all seven Phase 3 sites that interpolate a caller string into a path `encodeURIComponent` it (`deleteTombstone('victim#')` would otherwise truncate to the activity-delete route); delimiter regression tests added. Pre-existing methods remain a separate cleanup.
 - CodeRabbit on PR A (2026-09-22): the edit/delete write test recovers the sent message by unique content and always deletes in `finally` when the ids are known.
