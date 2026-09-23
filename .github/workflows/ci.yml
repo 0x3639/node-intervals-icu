@@ -43,5 +43,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: API coverage vs vendored spec (strict: every spec op must be covered)
+      - name: "API coverage vs vendored spec (strict: every spec op must be covered)"
         run: node scripts/coverage.mjs --strict
