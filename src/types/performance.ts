@@ -221,3 +221,18 @@ export interface ActivityPaceCurvesOptions {
   /** Use grade-adjusted pace */
   gap?: boolean;
 }
+
+/**
+ * Response of GET /athlete/{id}/activity-pace-curves. The spec declares no schema; this is the
+ * shape observed live (2026-09-22): the requested distances, the gap flag, and one entry per
+ * curve. `curves` was empty for every sport on the test account, so its element shape is not
+ * yet modelled.
+ */
+export interface ActivityPaceCurves {
+  /** Distances in metres, echoed from the request */
+  distances?: number[];
+  /** Whether gradient-adjusted pace was used */
+  gap?: boolean;
+  /** One entry per pace curve; element shape not yet observed */
+  curves?: unknown[];
+}

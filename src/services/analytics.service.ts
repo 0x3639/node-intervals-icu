@@ -1,6 +1,6 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
-  Bucket, TimeAtHRPlot, Interval, PowerModel, PowerCurve, PaceCurveSet,
+  Bucket, TimeAtHRPlot, Interval, PowerModel, PowerCurve, ActivityPaceCurves,
   ActivityPowerCurvesOptions, ActivityPaceCurvesOptions, ActivityType,
 } from '../types/index.js';
 
@@ -81,13 +81,13 @@ export class AnalyticsService {
     return this.httpClient.request<PowerModel>({ method: 'GET', url: `/athlete/${id}/mmp-model`, params: { type } });
   }
 
-  /** Best pace over a set of distances across the activities in a date range */
-  async getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<PaceCurveSet> {
+  /** Best pace over a set of distances across the activities in a date range. Returns { distances, gap, curves } (no spec schema; shape observed live). */
+  async getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<ActivityPaceCurves> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PaceCurveSet>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: { ...options } as Record<string, unknown> });
+    return this.httpClient.request<ActivityPaceCurves>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: { ...options } as Record<string, unknown> });
   }
 
-  /** Same as getActivityPaceCurves, as CSV */
+  /** Same as getActivityPaceCurves, as CSV. Observed live (2026-09-22): the CSV form returns HTTP 500 unless `distances` is supplied, while the JSON form accepts the omission. */
   async getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.download(`/athlete/${id}/activity-pace-curves.csv`, { params: { ...options } as Record<string, unknown> });

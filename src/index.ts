@@ -101,7 +101,7 @@ export type {
   HRCurve, HRCurveSet, PowerHRCurve,
   ActivityPowerCurve, ActivityPowerCurvePayload,
   ActivityHRCurve, ActivityHRCurvePayload, PaceDistancesDTO,
-  ActivityPowerCurvesOptions, ActivityPaceCurvesOptions,
+  ActivityPowerCurvesOptions, ActivityPaceCurvesOptions, ActivityPaceCurves,
 
   // Fitness
   CategorySummary, SummaryWithCats,

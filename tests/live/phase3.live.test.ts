@@ -218,20 +218,15 @@ describe.skipIf(!LIVE)('live: phase 3 — analytics', () => {
   it('getMMPModel responds for Ride', async () => {
     expect(await c().analytics.getMMPModel('Ride')).toBeTypeOf('object');
   });
-  it('getActivityPaceCurves has the PaceCurveSet shape; CSV sibling responds', async (ctx) => {
-    const set = await c().analytics.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
-    expect(set).toBeTypeOf('object');
-    expect(Array.isArray(set.list) || set.list === undefined).toBe(true);
-    try {
-      const csv = await c().analytics.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run' });
-      expect(csv.length).toBeGreaterThan(0);
-    } catch (err) {
-      // LIVE: 500 — GET /athlete/{id}/activity-pace-curves.csv returns "Internal server error"
-      // on this account whenever `distances` is omitted, even though it is optional per the
-      // spec and the sibling JSON endpoint (asserted above) handles the identical call fine.
-      // Confirmed with a raw request outside the SDK; not an SDK bug, so the SDK is unchanged.
-      if ((err as { status?: number }).status !== 500) throw err;
-      ctx.skip();
-    }
+  it('getActivityPaceCurves returns { distances, gap, curves }', async () => {
+    const r = await c().analytics.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    expect(Array.isArray(r.distances)).toBe(true);
+    expect(typeof r.gap).toBe('boolean');
+    expect(Array.isArray(r.curves)).toBe(true);
+  });
+  // LIVE: the CSV form returns 500 without `distances` (JSON form does not); always pass distances here.
+  it('getActivityPaceCurvesCSV responds when distances are supplied', async () => {
+    const csv = await c().analytics.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    expect(csv.length).toBeGreaterThan(0);
   });
 });

@@ -208,6 +208,7 @@ export type {
   PaceDistancesDTO,
   ActivityPowerCurvesOptions,
   ActivityPaceCurvesOptions,
+  ActivityPaceCurves,
 } from './performance.js';
 
 // Fitness
