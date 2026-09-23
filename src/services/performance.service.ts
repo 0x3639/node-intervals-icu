@@ -3,19 +3,8 @@ import type {
   PowerCurveSet, PaceCurveSet, HRCurveSet, PowerHRCurve,
   ActivityPowerCurvePayload, ActivityHRCurvePayload,
   ActivityPaceCurvesOptions, ActivityPaceCurves,
-  ActivityType,
+  ActivityType, CurveOptions,
 } from '../types/index.js';
-
-interface CurveOptions {
-  /** Oldest date (ISO-8601) */
-  oldest?: string;
-  /** Newest date (ISO-8601) */
-  newest?: string;
-  /** Curve IDs to include */
-  id?: string[];
-  /** Include sub-max curves */
-  subMaxEfforts?: boolean;
-}
 
 /**
  * Service for athlete-level performance curves (power, pace, HR)

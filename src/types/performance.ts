@@ -78,6 +78,18 @@ export interface PowerCurve {
   compound_score_5m?: number;
 }
 
+/** Query for the athlete-level curve routes (power-curves, pace-curves, hr-curves) */
+export interface CurveOptions {
+  /** Oldest date (ISO-8601) */
+  oldest?: string;
+  /** Newest date (ISO-8601) */
+  newest?: string;
+  /** Curve IDs to include */
+  id?: string[];
+  /** Include sub-max curves */
+  subMaxEfforts?: boolean;
+}
+
 /** Power curve set response */
 export interface PowerCurveSet {
   list?: PowerCurve[];

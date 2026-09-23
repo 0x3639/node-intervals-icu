@@ -1,0 +1,21 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "@0x3639/intervals-icu",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.json",
+  "out": "docs-dist/latest",
+  "readme": "README.md",
+  "projectDocuments": [],
+  "excludeExternals": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "requiredToBeDocumented": ["Class", "Interface", "Method", "TypeAlias", "Enum", "Function"],
+  "validation": { "notExported": true, "invalidLink": true, "notDocumented": true },
+  "treatWarningsAsErrors": true,
+  "navigationLinks": { "GitHub": "https://github.com/0x3639/node-intervals-icu" },
+  "categorizeByGroup": true,
+  "sort": ["kind", "alphabetical"],
+  "sortEntryPoints": false,
+  "githubPages": true,
+  "cleanOutputDir": true
+}

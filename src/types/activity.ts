@@ -422,6 +422,7 @@ export interface IcuSegment {
 
 // ── Map data ──
 
+/** Map bounds and route polyline for an activity (GET /activity/{id}/map) */
 export interface MapData {
   bounds?: number[][];
   latlngs?: number[][];
@@ -431,6 +432,7 @@ export interface MapData {
 
 // ── Activity weather ──
 
+/** Weather observation at a point in time during an activity */
 export interface WeatherTime {
   start_secs?: number;
   end_secs?: number;
@@ -449,12 +451,14 @@ export interface WeatherTime {
   weather_code?: number;
 }
 
+/** Weather sample tied to a location along the activity */
 export interface WeatherPoint {
   latitude?: number;
   longitude?: number;
   times?: WeatherTime[];
 }
 
+/** The observation closest to the activity's start */
 export interface WeatherClosest {
   start_secs?: number;
   p1_index?: number;
@@ -462,6 +466,7 @@ export interface WeatherClosest {
   p3_index?: number;
 }
 
+/** Weather attached to an activity, as returned inside Activity */
 export interface ActivityWeather {
   points?: WeatherPoint[];
   closest_points?: WeatherClosest[];
