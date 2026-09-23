@@ -105,7 +105,8 @@ Total: 8 + 4 + 5 + 3 + 3 + 2 + 1 = 26 methods covering 25 spec operations
 
 `src/services/analytics.service.ts`, constructed with `(httpClient,
 defaultAthleteId)` like every other service, wired as `client.analytics` in
-`src/client.ts`, exported from `src/index.ts`.
+`src/client.ts`, exported from `src/index.ts`. Ten methods on `analytics`; the
+two athlete-level pace-curve methods below sit on `performance`.
 
 | Method | Route | Returns |
 |---|---|---|
@@ -115,12 +116,19 @@ defaultAthleteId)` like every other service, wired as `client.analytics` in
 | `getGAPHistogram(activityId)` | `GET /activity/{id}/gap-histogram` | `Bucket[]` |
 | `getTimeAtHR(activityId)` | `GET /activity/{id}/time-at-hr` | `TimeAtHRPlot` |
 | `getIntervalStats(activityId, startIndex, endIndex)` | `GET /activity/{id}/interval-stats` | `Interval` |
-| `getPowerSpikeModel(activityId)` | `GET /activity/{id}/power-spike-model` | `PowerModel` |
-| `getActivityPowerCurves(activityId, options?: ActivityPowerCurvesOptions)` | `GET /activity/{id}/power-curves` | `PowerCurve[]` |
-| `getActivityPowerCurvesCSV(activityId, options?)` | `GET /activity/{id}/power-curves.csv` | `Buffer` |
+| `getPowerSpikeModel(activityId)` | `GET /activity/{id}/power-spike-model` | `PowerModel` (spec field names `type`, `criticalPower`, `wPrime`, `pMax`, `inputPointIndexes`, `ftp`, confirmed live) |
+| `getCurves(activityId, options?: ActivityPowerCurvesOptions)` | `GET /activity/{id}/power-curves` | `PowerCurve[]` |
+| `getCurvesCSV(activityId, options?)` | `GET /activity/{id}/power-curves.csv` | `Buffer` |
 | `getMMPModel(type: ActivityType, athleteId?)` | `GET /athlete/{id}/mmp-model` | `PowerModel` |
+
+The two athlete-level pace-curve methods live on `PerformanceService`, beside its
+existing `getActivityPowerCurves` / `getActivityHRCurves` (same reasoning that put
+`fitness-model-events` on `EventService`), so no method name is shared across services:
+
+| Method (`client.performance`) | Route | Returns |
+|---|---|---|
 | `getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?)` | `GET /athlete/{id}/activity-pace-curves` | `ActivityPaceCurves` |
-| `getActivityPaceCurvesCSV(options, athleteId?)` | `GET /athlete/{id}/activity-pace-curves.csv` | `Buffer` |
+| `getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions & { distances: number[] }, athleteId?)` | `GET /athlete/{id}/activity-pace-curves.csv` | `Buffer` |
 
 `ActivityPowerCurvesOptions`: `types?: string[]`, `fatigue?: string[]` (any of `normal`, `kj0`, `kj1`).
 `ActivityPaceCurvesOptions`: `oldest`, `newest` (required), `type?: ActivityType`,
