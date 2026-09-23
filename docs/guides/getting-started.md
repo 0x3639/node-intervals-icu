@@ -42,4 +42,5 @@ The `athleteId` passed to individual methods defaults to `'0'`, which the API re
 ## Where next
 
 - [Services](./services.md) — every service, with a method table and examples.
-- Authentication and Errors and retries guides are added by follow-up tasks in this same guide set.
+- [Authentication](./authentication.md) — API keys vs. OAuth tokens, and acting for another athlete.
+- [Errors and retries](./errors-and-retries.md) — the error type, what is retried, and rate limits.
