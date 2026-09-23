@@ -210,11 +210,12 @@ describe.skipIf(!LIVE)('live: phase 3 — analytics and activity pace curves', (
     const model = await c().analytics.getPowerSpikeModel(id as string);
     expect(Object.keys(model)).toContain('criticalPower');
   });
+  // LIVE: the API returns 422 for stream or fatigue values the activity cannot serve (observed: hr, pace, kj0, kj1 on a ride); watts + normal bind both array params on the wire.
   it('getCurves and its CSV sibling respond', async (ctx) => {
     const id = await latestActivityId();
     if (!id) ctx.skip();
-    expect(Array.isArray(await c().analytics.getCurves(id as string, { fatigue: ['normal', 'kj0'] }))).toBe(true);
-    expect((await c().analytics.getCurvesCSV(id as string)).length).toBeGreaterThan(0);
+    expect(Array.isArray(await c().analytics.getCurves(id as string, { types: ['watts'], fatigue: ['normal'] }))).toBe(true);
+    expect((await c().analytics.getCurvesCSV(id as string, { types: ['watts'] })).length).toBeGreaterThan(0);
   });
   it('getMMPModel responds for Ride', async () => {
     const model = await c().analytics.getMMPModel('Ride');

@@ -63,7 +63,11 @@ export class AnalyticsService {
     return this.httpClient.request<PowerModel>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/power-spike-model` });
   }
 
-  /** Curves (watts, pace, hr ... per `types`) for one activity, optionally with fatigued variants */
+  /**
+   * Curves (watts, pace, hr ... per `types`) for one activity, optionally with fatigued variants.
+   * Observed live (2026-09-22): the API returns HTTP 422 when a requested stream or fatigue variant
+   * is not available for the activity (e.g. hr on a ride without heart rate, kj0/kj1 without fatigue data).
+   */
   async getCurves(activityId: string, options?: ActivityPowerCurvesOptions): Promise<PowerCurve[]> {
     return this.httpClient.request<PowerCurve[]>({ method: 'GET', url: `/activity/${encodeURIComponent(activityId)}/power-curves`, params: options as Record<string, unknown> });
   }
