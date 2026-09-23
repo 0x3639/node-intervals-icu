@@ -119,7 +119,7 @@ defaultAthleteId)` like every other service, wired as `client.analytics` in
 | `getActivityPowerCurves(activityId, options?: ActivityPowerCurvesOptions)` | `GET /activity/{id}/power-curves` | `PowerCurve[]` |
 | `getActivityPowerCurvesCSV(activityId, options?)` | `GET /activity/{id}/power-curves.csv` | `Buffer` |
 | `getMMPModel(type: ActivityType, athleteId?)` | `GET /athlete/{id}/mmp-model` | `PowerModel` |
-| `getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?)` | `GET /athlete/{id}/activity-pace-curves` | `PaceCurveSet` |
+| `getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?)` | `GET /athlete/{id}/activity-pace-curves` | `ActivityPaceCurves` |
 | `getActivityPaceCurvesCSV(options, athleteId?)` | `GET /athlete/{id}/activity-pace-curves.csv` | `Buffer` |
 
 `ActivityPowerCurvesOptions`: `types?: string[]`, `fatigue?: string[]` (any of `normal`, `kj0`, `kj1`).
@@ -128,10 +128,10 @@ defaultAthleteId)` like every other service, wired as `client.analytics` in
 
 Array params serialize as repeated keys via the Phase 2 `paramsSerializer`.
 
-The spec declares no response schema for `activity-pace-curves{ext}`. It is
-typed `PaceCurveSet`, the type of the sibling athlete-level `pace-curves`
-route served by the same handler family; the live test asserts the response
-has that shape.
+The spec declares no response schema for `activity-pace-curves{ext}`. The live
+response (2026-09-22) is `{ distances, gap, curves }`, typed `ActivityPaceCurves`
+with `curves: unknown[]` until an element is observed. The CSV form returns 500
+unless `distances` is supplied; the live test always passes distances.
 
 Existing activity-level methods on `ActivityService` (`getPowerCurve`,
 `getPaceCurve`, `getHRCurve`, `getBestEfforts`, `getPowerVsHR`,

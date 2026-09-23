@@ -1406,7 +1406,26 @@ export interface ActivityPaceCurvesOptions {
 }
 ```
 
-Exports: add `Bucket,` and `TimeAtHRPlot,` to the `// Activity` block and `ActivityPowerCurvesOptions,` and `ActivityPaceCurvesOptions,` to the `// Performance` block in both `src/types/index.ts` and `src/index.ts`.
+Also append to `src/types/performance.ts`:
+
+```ts
+/**
+ * Response of GET /athlete/{id}/activity-pace-curves. The spec declares no schema; this is the
+ * shape observed live (2026-09-22): the requested distances, the gap flag, and one entry per
+ * curve. `curves` was empty for every sport on the test account, so its element shape is not
+ * yet modelled.
+ */
+export interface ActivityPaceCurves {
+  /** Distances in metres, echoed from the request */
+  distances?: number[];
+  /** Whether gradient-adjusted pace was used */
+  gap?: boolean;
+  /** One entry per pace curve; element shape not yet observed */
+  curves?: unknown[];
+}
+```
+
+Exports: add `Bucket,` and `TimeAtHRPlot,` to the `// Activity` block and `ActivityPowerCurvesOptions,`, `ActivityPaceCurvesOptions,` and `ActivityPaceCurves,` to the `// Performance` block in both `src/types/index.ts` and `src/index.ts`.
 
 - [ ] **Step 4: Verify**
 
@@ -1550,7 +1569,7 @@ Create `src/services/analytics.service.ts`:
 ```ts
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
-  Bucket, TimeAtHRPlot, Interval, PowerModel, PowerCurve, PaceCurveSet,
+  Bucket, TimeAtHRPlot, Interval, PowerModel, PowerCurve, ActivityPaceCurves,
   ActivityPowerCurvesOptions, ActivityPaceCurvesOptions, ActivityType,
 } from '../types/index.js';
 
@@ -1631,13 +1650,13 @@ export class AnalyticsService {
     return this.httpClient.request<PowerModel>({ method: 'GET', url: `/athlete/${id}/mmp-model`, params: { type } });
   }
 
-  /** Best pace over a set of distances across the activities in a date range */
-  async getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<PaceCurveSet> {
+  /** Best pace over a set of distances across the activities in a date range. Returns { distances, gap, curves } (no spec schema; shape observed live). */
+  async getActivityPaceCurves(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<ActivityPaceCurves> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PaceCurveSet>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: { ...options } as Record<string, unknown> });
+    return this.httpClient.request<ActivityPaceCurves>({ method: 'GET', url: `/athlete/${id}/activity-pace-curves`, params: { ...options } as Record<string, unknown> });
   }
 
-  /** Same as getActivityPaceCurves, as CSV */
+  /** Same as getActivityPaceCurves, as CSV. Observed live (2026-09-22): the CSV form returns HTTP 500 unless `distances` is supplied, while the JSON form accepts the omission. */
   async getActivityPaceCurvesCSV(options: ActivityPaceCurvesOptions, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.download(`/athlete/${id}/activity-pace-curves.csv`, { params: { ...options } as Record<string, unknown> });
@@ -1720,11 +1739,15 @@ describe.skipIf(!LIVE)('live: phase 3 — analytics', () => {
   it('getMMPModel responds for Ride', async () => {
     expect(await c().analytics.getMMPModel('Ride')).toBeTypeOf('object');
   });
-  it('getActivityPaceCurves has the PaceCurveSet shape; CSV sibling responds', async () => {
-    const set = await c().analytics.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
-    expect(set).toBeTypeOf('object');
-    expect(Array.isArray(set.list) || set.list === undefined).toBe(true);
-    const csv = await c().analytics.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run' });
+  it('getActivityPaceCurves returns { distances, gap, curves }', async () => {
+    const r = await c().analytics.getActivityPaceCurves({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
+    expect(Array.isArray(r.distances)).toBe(true);
+    expect(typeof r.gap).toBe('boolean');
+    expect(Array.isArray(r.curves)).toBe(true);
+  });
+  // LIVE: the CSV form returns 500 without `distances` (JSON form does not); always pass distances here.
+  it('getActivityPaceCurvesCSV responds when distances are supplied', async () => {
+    const csv = await c().analytics.getActivityPaceCurvesCSV({ oldest: yearAgo(), newest: today(), type: 'Run', distances: [1000, 5000] });
     expect(csv.length).toBeGreaterThan(0);
   });
 });
@@ -1751,7 +1774,7 @@ CI runs `node scripts/coverage.mjs --strict`: every spec operation must be calle
 - [ ] **Step 3: Typecheck and run live (user-run if no key)**
 
 Run: `npm run typecheck` (must exit 0 before continuing), then `set -a && . ./.env && set +a && npm run test:live`
-Expected: analytics cases pass or skip; no failures. If the pace-curves shape assertion fails, report the actual shape in the task report; do not change the type without the user's decision.
+Expected: analytics cases pass or skip; no failures. The pace-curves shape was settled live on 2026-09-22 (`{ distances, gap, curves }`, typed `ActivityPaceCurves`).
 
 - [ ] **Step 4: Commit**
 
@@ -1864,6 +1887,7 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
 - Codex round 1 on PR A (2026-09-22): `updateMessage` takes `UpdateMessageDTO` (content/answer only) with a compile-time contract; `Chat.blocked` typed; the block live test restores the original state; `getSettings` returns a map of objects.
+- Task 11 live run (2026-09-22): `activity-pace-curves` JSON returns `{ distances, gap, curves }` (typed `ActivityPaceCurves`; `curves` element shape unobserved) and its CSV form returns 500 unless `distances` is supplied; live cases and docs updated.
 - Task 10 review (2026-09-22): AnalyticsService URL-encodes caller-supplied activity ids (same ruling as PR A's 9a03a39); `getMMPModel` takes `ActivityType`.
 - Task 9 (2026-09-22): the spec defines power-curves `fatigue` as a string array (normal/kj0/kj1), not a boolean, and pace-curves `type` as the full sport enum; the plan's earlier shapes were wrong and are corrected here. `ActivityType` in enums.ts lacks `Cyclocross`, which the spec's enum includes (deferred to the final review).
 - Codex round 3 on PR A (2026-09-22): `searchActivitiesFull` spreads options first so the explicit `q` wins; the edit/delete live test sends and recovers inside the try/finally and retries recovery in finally.
