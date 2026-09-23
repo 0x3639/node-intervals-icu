@@ -32,4 +32,4 @@ _Added in a later task._
 
 ## Behaviour notes
 
-- None recorded for this service.
+- See [API behaviour](../api-behaviour.md) for the cross-service list.

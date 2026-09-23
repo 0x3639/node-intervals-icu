@@ -41,6 +41,10 @@ The `athleteId` passed to individual methods defaults to `'0'`, which the API re
 
 ## Where next
 
-- [Services](./services.md) — every service, with a method table and examples.
 - [Authentication](./authentication.md) — API keys vs. OAuth tokens, and acting for another athlete.
 - [Errors and retries](./errors-and-retries.md) — the error type, what is retried, and rate limits.
+- [Dates, pagination and arrays](./dates-pagination-and-arrays.md) — date formats, paging through results, and array parameter encoding.
+- [Files: FIT, GPX, CSV and zip](./files.md) — downloading and uploading files, and converting workouts.
+- [API behaviour](./api-behaviour.md) — where the live API differs from the spec, and from the SDK's types.
+- [Migrating to v3](./migrating-to-v3.md) — breaking changes from v2.x and v1.x.
+- [Services](./services.md) — every service, with a method table and examples.

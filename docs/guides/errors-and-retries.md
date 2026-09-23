@@ -27,7 +27,7 @@ Both return `undefined` until at least one request has completed.
 
 ## Errors the live API returns for well-formed calls
 
-A few routes return an error status from the live API even when the SDK's request is well-formed, because the response depends on the specific data in the account being queried. See the API behaviour page for details on each:
+A few routes return an error status from the live API even when the SDK's request is well-formed, because the response depends on the specific data in the account being queried. See [API behaviour](./api-behaviour.md) for details on each:
 
 - `GET /activity/{id}/power-curves` returns `422` when the requested stream or fatigue variant is not available for that activity (for example `hr` on an activity with no heart-rate data, or `kj0`/`kj1` without fatigue data).
 - `GET /athlete/{id}/activity-pace-curves.csv` returns `500` when called without a `distances` parameter (the JSON form of the same route accepts the omission).

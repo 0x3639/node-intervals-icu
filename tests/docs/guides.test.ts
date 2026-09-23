@@ -76,7 +76,12 @@ describe('documentation guides', () => {
       for (const [, target] of text.matchAll(/\{@includeCode ([^}#\s]+)(?:#\w+)?\}/g)) {
         if (!existsSync(resolve(join(ROOT, dirname(g)), target))) problems.push(`${g} -> ${target}`);
       }
-      if (/```ts|```typescript/.test(text)) problems.push(`${g}: contains a fenced TypeScript block; use {@includeCode}`);
+      // migrating-to-v3.md is a historical before/after reference: its snippets compare
+      // removed and renamed methods (v1 -> v2 -> v3) that cannot compile against the
+      // current SDK by design, so it is exempt from the {@includeCode}-only rule.
+      if (!g.endsWith('/migrating-to-v3.md') && /```ts|```typescript/.test(text)) {
+        problems.push(`${g}: contains a fenced TypeScript block; use {@includeCode}`);
+      }
     }
     expect(problems).toEqual([]);
   });

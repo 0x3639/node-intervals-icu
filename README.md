@@ -177,7 +177,7 @@ For apps that authenticate on behalf of other users, use the [Intervals.icu OAut
 
 ## Migrating from v1.x
 
-See the full [Migration Guide](./docs/MIGRATION.md) for a complete list of removed methods and before/after examples.
+See the full [Migration Guide](./docs/guides/migrating-to-v3.md) for a complete list of removed methods and before/after examples.
 
 Key changes:
 

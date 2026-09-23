@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/MIGRATION.md` for the full migration guide.
+Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/guides/migrating-to-v3.md` for the full migration guide.
 
 ### Removed
 - `client.fitness` (`getFitness`, `getSummaries`): the routes never existed. Use `client.athletes.getSummary()`.
@@ -74,7 +74,7 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - Numeric activity ID backward-compat shim (`client.getActivity(12345)`) — activity IDs are strictly `string` now
 
 ### Added
-- [Migration Guide](./docs/MIGRATION.md) with full table of removed methods and before/after examples
+- [Migration Guide](./docs/guides/migrating-to-v3.md) with full table of removed methods and before/after examples
 
 ## [2.0.0] - 2025-03-03
 

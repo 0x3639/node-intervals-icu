@@ -20,4 +20,4 @@ _Added in a later task._
 
 ## Behaviour notes
 
-- The `create`, `update` and `delete` routes are undocumented in the OpenAPI spec but verified to work; a later guide (API behaviour) will record the cross-service list of these gaps.
+- The `create`, `update` and `delete` routes are undocumented in the OpenAPI spec but verified to work. See [API behaviour](../api-behaviour.md) for the cross-service list.
