@@ -100,3 +100,49 @@ describe('IntervalsClient - Athlete', () => {
     });
   });
 });
+
+describe('AthleteService — Phase 3 additions', () => {
+  let client: IntervalsClient;
+  let seen: any[] = [];
+  beforeEach(() => {
+    seen = [];
+    setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return {}; });
+    client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+  });
+
+  it('listAthletes hits /athletes and maps extIdPrefix to ext_id_prefix', async () => {
+    await client.athletes.listAthletes({ extIdPrefix: 'strava' });
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athletes');
+    expect(seen[0].params).toEqual({ ext_id_prefix: 'strava' });
+  });
+
+  it('listAthletes without options sends no params', async () => {
+    await client.athletes.listAthletes();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].params).toBeUndefined();
+  });
+
+  it('getConnections hits /athlete/{id}/connections', async () => {
+    await client.athletes.getConnections();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/connections');
+  });
+
+  it('getSettings puts the device class in the path', async () => {
+    await client.athletes.getSettings('desktop');
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/settings/desktop');
+  });
+
+  it('disconnectApp sends DELETE /disconnect-app', async () => {
+    await client.athletes.disconnectApp();
+    expect(seen[0].method).toBe('DELETE');
+    expect(seen[0].url).toBe('/disconnect-app');
+  });
+
+  it('getSettings encodes the device class segment', async () => {
+    await client.athletes.getSettings('desk top#');
+    expect(seen[0].url).toBe('/athlete/i1/settings/desk%20top%23');
+  });
+});

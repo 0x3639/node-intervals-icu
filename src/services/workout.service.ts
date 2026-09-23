@@ -72,4 +72,10 @@ export class WorkoutService {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.download(`/athlete/${id}/download-workout${format}`, { method: 'POST', data: workout });
   }
+
+  /** Every tag that has been applied to workouts in the athlete's library */
+  async listWorkoutTags(athleteId?: string): Promise<string[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<string[]>({ method: 'GET', url: `/athlete/${id}/workout-tags` });
+  }
 }

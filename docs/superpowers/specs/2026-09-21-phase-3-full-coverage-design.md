@@ -35,7 +35,7 @@ Method names follow each service's existing style. Optional trailing
 | Method | Route | Returns |
 |---|---|---|
 | `getActivities(ids: string[], options?: { intervals?: boolean })` | `GET /athlete/{athleteId}/activities/{ids}` — ids comma-joined in the path | `Activity[]` |
-| `listActivitiesAround(activityId, options?: { routeId?, limit? })` | `GET /athlete/{id}/activities-around` | `Activity[]` |
+| `listActivitiesAround(activityId, options?: { route_id?, limit? })` | `GET /athlete/{id}/activities-around` | `Activity[]` |
 | `searchActivitiesFull(q, options?: { limit? })` | `GET /athlete/{id}/activities/search-full` | `Activity[]` |
 | `searchIntervals(options: IntervalSearchOptions)` | `GET /athlete/{id}/activities/interval-search` | `Activity[]` |
 | `listActivityTags()` | `GET /athlete/{id}/activity-tags` | `string[]` |
@@ -44,7 +44,7 @@ Method names follow each service's existing style. Optional trailing
 | `deleteTombstone(activityId)` | `DELETE /activity/{id}/tombstone` | `void` |
 
 `IntervalSearchOptions`: `minSecs`, `maxSecs`, `minIntensity`, `maxIntensity`
-(required), `type?`, `minReps?`, `maxReps?`, `limit?`.
+(required), `type?: 'AUTO' | 'POWER' | 'HR' | 'PACE'`, `minReps?`, `maxReps?`, `limit?`.
 
 ### `client.athletes` (4)
 
@@ -52,7 +52,7 @@ Method names follow each service's existing style. Optional trailing
 |---|---|---|
 | `listAthletes(options?: { extIdPrefix?: string })` | `GET /athletes` (`ext_id_prefix`) | `AthleteWithTags[]` |
 | `getConnections()` | `GET /athlete/{id}/connections` | `AthleteConnections` |
-| `getSettings(deviceClass: 'phone' \| 'tablet' \| 'desktop' \| string)` | `GET /athlete/{id}/settings/{deviceClass}` | `Record<string, unknown>` |
+| `getSettings(deviceClass: 'phone' \| 'tablet' \| 'desktop' \| string)` | `GET /athlete/{id}/settings/{deviceClass}` | `Record<string, Record<string, unknown>>` |
 | `disconnectApp()` | `DELETE /disconnect-app` | `void` |
 
 ### `client.chats` (5)
@@ -62,7 +62,7 @@ Method names follow each service's existing style. Optional trailing
 | `getChat(chatId)` | `GET /chats/{id}` | `Chat` |
 | `listGroups()` | `GET /athlete/{id}/groups` | `Chat[]` |
 | `blockChat(chatId, on: boolean)` | `PUT /chats/{id}/block?on=` | `Chat` |
-| `updateMessage(chatId, msgId, message: Partial<Message>)` | `PUT /chats/{id}/messages/{msgId}` | `Record<string, unknown>` |
+| `updateMessage(chatId, msgId, message: UpdateMessageDTO)` | `PUT /chats/{id}/messages/{msgId}` | `Record<string, unknown>` |
 | `deleteMessage(chatId, msgId)` | `DELETE /chats/{id}/messages/{msgId}` | `Record<string, unknown>` |
 
 ### `client.events` (3)
@@ -75,6 +75,7 @@ Method names follow each service's existing style. Optional trailing
 
 `WorkoutsZipOptions`: `ext: WorkoutFormat`, `oldest`, `newest` (required),
 `powerRange?`, `hrRange?`, `paceRange?`, `locale?`.
+The `ext` query value is sent without the leading dot (spec: "zwo, mrc, erg or fit").
 
 ### `client.gear` (3)
 
@@ -148,6 +149,8 @@ New, hand-written, in the existing files:
 - `src/types/athlete.ts`: `AthleteConnections` (`id: string` plus the 20
   spec-listed `*_connected: boolean` flags, written out), `AthleteWithTags =
   Athlete & { icu_tags?: string[]; icu_notes?: string }`.
+- `src/types/chat.ts`: `UpdateMessageDTO` (`content?`, `answer?`: the only fields the
+  API updates) and `Chat.blocked?: string` (spec date-time).
 - `src/types/event.ts`: `WorkoutsZipOptions`.
 - `src/types/performance.ts`: `ActivityPowerCurvesOptions`,
   `ActivityPaceCurvesOptions`.
@@ -165,8 +168,11 @@ it extracts the interface body from the source file with a regex over
 `^\s+(\w+)\??:` lines and compares the property-name set with
 `components.schemas.<Name>.properties` in `spec/openapi.json`. Any name
 present on one side only fails. `AthleteWithTags` is checked as
-`Athlete`'s names plus `icu_tags`/`icu_notes`. Only these four are covered;
-older types are out of scope.
+`Athlete`'s names plus `icu_tags`/`icu_notes`. From PR B the same file also
+checks the five query-option types against `paths[...].parameters` (name,
+required-ness, type; `ext` is allowed to be the shared `WorkoutFormat` union and
+method-argument parameters such as `activity_id` are omitted). Older types are
+out of scope.
 
 ## Testing
 

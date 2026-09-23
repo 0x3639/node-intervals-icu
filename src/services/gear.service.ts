@@ -1,5 +1,5 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
-import type { Gear, GearReminder } from '../types/index.js';
+import type { Gear, GearReminder, GearStats } from '../types/index.js';
 
 /**
  * Service for gear and equipment management
@@ -50,5 +50,25 @@ export class GearService {
   async deleteReminder(gearId: string, reminderId: number, athleteId?: string): Promise<void> {
     const id = athleteId || this.defaultAthleteId;
     await this.httpClient.request<void>({ method: 'DELETE', url: `/athlete/${id}/gear/${gearId}/reminder/${reminderId}` });
+  }
+
+  // ── Phase 3 ──
+
+  /** All of the athlete's gear */
+  async list(athleteId?: string): Promise<Gear[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Gear[]>({ method: 'GET', url: `/athlete/${id}/gear` });
+  }
+
+  /** All of the athlete's gear as CSV */
+  async downloadCSV(athleteId?: string): Promise<Buffer> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.download(`/athlete/${id}/gear.csv`);
+  }
+
+  /** Recalculate distance / time / activity totals for one item of gear */
+  async calc(gearId: string, athleteId?: string): Promise<GearStats> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<GearStats>({ method: 'GET', url: `/athlete/${id}/gear/${encodeURIComponent(gearId)}/calc` });
   }
 }

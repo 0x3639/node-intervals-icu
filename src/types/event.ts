@@ -2,7 +2,7 @@
  * Event / Calendar types from the Intervals.icu API
  */
 import type { ActivityType, EventCategory } from './enums.js';
-import type { WorkoutDoc } from './workout.js';
+import type { WorkoutDoc, WorkoutFormat } from './workout.js';
 
 /**
  * Calendar event (planned workout, note, race, etc.)
@@ -76,4 +76,18 @@ export interface ApplyPlanDTO {
   start_date_local?: string;
   folder_id?: number;
   extra_workouts?: any[];
+}
+
+/** Query for GET /athlete/{id}/workouts.zip */
+export interface WorkoutsZipOptions {
+  /** File format for every workout in the zip */
+  ext: WorkoutFormat;
+  /** Oldest local date, ISO-8601 (inclusive) */
+  oldest: string;
+  /** Newest local date, ISO-8601 (inclusive) */
+  newest: string;
+  powerRange?: number;
+  hrRange?: number;
+  paceRange?: number;
+  locale?: string;
 }

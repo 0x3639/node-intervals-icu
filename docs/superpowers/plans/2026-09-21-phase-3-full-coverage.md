@@ -247,7 +247,8 @@ export interface IntervalSearchOptions {
   minIntensity: number;
   /** Maximum interval intensity (% of threshold) */
   maxIntensity: number;
-  type?: ActivityType | string;
+  /** Interval-detection source; the spec enumerates exactly these four values */
+  type?: 'AUTO' | 'POWER' | 'HR' | 'PACE';
   minReps?: number;
   maxReps?: number;
   limit?: number;
@@ -255,13 +256,13 @@ export interface IntervalSearchOptions {
 
 /** Query for GET /athlete/{id}/activities-around (the activity id itself is a method argument) */
 export interface ActivitiesAroundOptions {
-  /** Restrict to activities on this route */
-  routeId?: number;
+  /** Restrict to activities on this route (wire name, like ListActivitiesOptions.route_id) */
+  route_id?: number;
   limit?: number;
 }
 ```
 
-(`ActivityType` is already imported at the top of `activity.ts`.)
+(`IntervalSearchOptions.type` is a literal union, so no `ActivityType` import is needed for these two interfaces.)
 
 Append to `src/types/event.ts`:
 
@@ -311,7 +312,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `IntervalSearchOptions`, `ActivitiesAroundOptions` from Task 1.
-- Produces: `getActivities(ids: string[], options?: { intervals?: boolean }, athleteId?): Promise<Activity[]>`; `listActivitiesAround(activityId: string, options?: ActivitiesAroundOptions, athleteId?): Promise<Activity[]>`; `searchActivitiesFull(q: string, options?: { limit?: number }, athleteId?): Promise<Activity[]>`; `searchIntervals(options: IntervalSearchOptions, athleteId?): Promise<Activity[]>`; `listActivityTags(athleteId?): Promise<string[]>`; `downloadActivitiesCSV(athleteId?): Promise<Buffer>`; `downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer>`; `deleteTombstone(activityId: string): Promise<void>`.
+- Produces: `getActivities(ids: string[], options?: { intervals?: boolean }, athleteId?): Promise<Activity[]>`; `listActivitiesAround(activityId: string, options?: ActivitiesAroundOptions, athleteId?): Promise<Activity[]>` (options spread straight into params, keys are wire names); `searchActivitiesFull(q: string, options?: { limit?: number }, athleteId?): Promise<Activity[]>`; `searchIntervals(options: IntervalSearchOptions, athleteId?): Promise<Activity[]>`; `listActivityTags(athleteId?): Promise<string[]>`; `downloadActivitiesCSV(athleteId?): Promise<Buffer>`; `downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer>`; `deleteTombstone(activityId: string): Promise<void>`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -338,7 +339,7 @@ describe('ActivityService — Phase 3 additions', () => {
   });
 
   it('listActivitiesAround sends activity_id, route_id and limit', async () => {
-    await client.activities.listActivitiesAround('a1', { routeId: 7, limit: 5 });
+    await client.activities.listActivitiesAround('a1', { route_id: 7, limit: 5 });
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activities-around');
     expect(seen[0].params).toEqual({ activity_id: 'a1', route_id: 7, limit: 5 });
@@ -352,7 +353,7 @@ describe('ActivityService — Phase 3 additions', () => {
   });
 
   it('searchIntervals passes the criteria through as query params', async () => {
-    const criteria = { minSecs: 60, maxSecs: 300, minIntensity: 90, maxIntensity: 120, type: 'Ride', minReps: 3 };
+    const criteria = { minSecs: 60, maxSecs: 300, minIntensity: 90, maxIntensity: 120, type: 'POWER' as const, minReps: 3 };
     await client.activities.searchIntervals(criteria);
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/activities/interval-search');
@@ -412,7 +413,7 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<Activity[]>({
       method: 'GET',
-      url: `/athlete/${id}/activities/${ids.join(',')}`,
+      url: `/athlete/${id}/activities/${ids.map(encodeURIComponent).join(',')}`,
       params: options as Record<string, unknown>,
     });
   }
@@ -420,10 +421,11 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
   /** Activities before and after another activity, closest first; optionally only those on a route. */
   async listActivitiesAround(activityId: string, options?: ActivitiesAroundOptions, athleteId?: string): Promise<Activity[]> {
     const id = athleteId || this.defaultAthleteId;
-    const params: Record<string, unknown> = { activity_id: activityId };
-    if (options?.routeId !== undefined) params.route_id = options.routeId;
-    if (options?.limit !== undefined) params.limit = options.limit;
-    return this.httpClient.request<Activity[]>({ method: 'GET', url: `/athlete/${id}/activities-around`, params });
+    return this.httpClient.request<Activity[]>({
+      method: 'GET',
+      url: `/athlete/${id}/activities-around`,
+      params: { ...options, activity_id: activityId } as Record<string, unknown>, // id last: options cannot override it
+    });
   }
 
   /** Search by name or tag and return full Activity objects (search.searchActivities returns summaries). */
@@ -432,7 +434,7 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
     return this.httpClient.request<Activity[]>({
       method: 'GET',
       url: `/athlete/${id}/activities/search-full`,
-      params: { q, ...options } as Record<string, unknown>,
+      params: { ...options, q } as Record<string, unknown>, // q last: options cannot override it
     });
   }
 
@@ -460,12 +462,15 @@ In `src/services/activity.service.ts`, add `IntervalSearchOptions, ActivitiesAro
 
   /** The activity as a GPX file, optionally with power and heart-rate extensions */
   async downloadGPX(activityId: string, options?: { power?: boolean; hr?: boolean }): Promise<Buffer> {
-    return this.httpClient.download(`/activity/${activityId}/gpx-file`, { params: options as Record<string, unknown> });
+    return this.httpClient.download(`/activity/${encodeURIComponent(activityId)}/gpx-file`, { params: options as Record<string, unknown> });
   }
 
-  /** Remove the tombstone left by a deleted activity so the same file can be re-uploaded */
+  /**
+   * Remove the tombstone left by a deleted activity so the same file can be re-uploaded.
+   * The id is URL-encoded: this route is destructive, and an unencoded delimiter (e.g. a trailing "#") would turn it into DELETE /activity/{id}.
+   */
   async deleteTombstone(activityId: string): Promise<void> {
-    await this.httpClient.request<void>({ method: 'DELETE', url: `/activity/${activityId}/tombstone` });
+    await this.httpClient.request<void>({ method: 'DELETE', url: `/activity/${encodeURIComponent(activityId)}/tombstone` });
   }
 ```
 
@@ -493,7 +498,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `AthleteConnections`, `AthleteWithTags` from Task 1.
-- Produces: `listAthletes(options?: { extIdPrefix?: string }): Promise<AthleteWithTags[]>`; `getConnections(athleteId?): Promise<AthleteConnections>`; `getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?): Promise<Record<string, unknown>>`; `disconnectApp(): Promise<void>`.
+- Produces: `listAthletes(options?: { extIdPrefix?: string }): Promise<AthleteWithTags[]>`; `getConnections(athleteId?): Promise<AthleteConnections>`; `getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?): Promise<Record<string, Record<string, unknown>>>`; `disconnectApp(): Promise<void>`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -554,7 +559,7 @@ In `src/services/athlete.service.ts` add `AthleteConnections, AthleteWithTags,` 
 ```ts
   // ── Phase 3 ──
 
-  /** Athletes the caller follows or coaches, including the caller. */
+  /** Athletes the caller follows or coaches, including the caller. Requires API-key authentication (not available to OAuth app tokens). */
   async listAthletes(options?: { extIdPrefix?: string }): Promise<AthleteWithTags[]> {
     const params = options?.extIdPrefix !== undefined ? { ext_id_prefix: options.extIdPrefix } : undefined;
     return this.httpClient.request<AthleteWithTags[]>({ method: 'GET', url: '/athletes', params });
@@ -566,10 +571,10 @@ In `src/services/athlete.service.ts` add `AthleteConnections, AthleteWithTags,` 
     return this.httpClient.request<AthleteConnections>({ method: 'GET', url: `/athlete/${id}/connections` });
   }
 
-  /** UI settings for a device class. The spec types the response as an open object map. */
-  async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, unknown>> {
+  /** UI settings for a device class: a map of setting groups, each an open object (spec: object of objects). */
+  async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, Record<string, unknown>>> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<Record<string, unknown>>({ method: 'GET', url: `/athlete/${id}/settings/${deviceClass}` });
+    return this.httpClient.request<Record<string, Record<string, unknown>>>({ method: 'GET', url: `/athlete/${id}/settings/${encodeURIComponent(deviceClass)}` });
   }
 
   /**
@@ -604,7 +609,7 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 - Test: `tests/chat.test.ts` (append)
 
 **Interfaces:**
-- Produces: `getChat(chatId: number): Promise<Chat>`; `listGroups(athleteId?): Promise<Chat[]>`; `blockChat(chatId: number, on: boolean): Promise<Chat>`; `updateMessage(chatId: number, messageId: number, message: Partial<Message>): Promise<Record<string, unknown>>`; `deleteMessage(chatId: number, messageId: number): Promise<Record<string, unknown>>`.
+- Produces: `getChat(chatId: number): Promise<Chat>`; `listGroups(athleteId?): Promise<Chat[]>`; `blockChat(chatId: number, on: boolean): Promise<Chat>`; `updateMessage(chatId: number, messageId: number, message: UpdateMessageDTO): Promise<Record<string, unknown>>` (`UpdateMessageDTO = { content?: string; answer?: string }`, the only fields the API updates); `deleteMessage(chatId: number, messageId: number): Promise<Record<string, unknown>>`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -682,8 +687,8 @@ Append inside the `ChatService` class in `src/services/chat.service.ts`:
     return this.httpClient.request<Chat>({ method: 'PUT', url: `/chats/${chatId}/block`, params: { on } });
   }
 
-  /** Edit a message. The API returns an untyped object. */
-  async updateMessage(chatId: number, messageId: number, message: Partial<Message>): Promise<Record<string, unknown>> {
+  /** Edit a message's content or answer (the only fields the API updates). Returns an untyped object. */
+  async updateMessage(chatId: number, messageId: number, message: UpdateMessageDTO): Promise<Record<string, unknown>> {
     return this.httpClient.request<Record<string, unknown>>({ method: 'PUT', url: `/chats/${chatId}/messages/${messageId}`, data: message });
   }
 
@@ -693,7 +698,7 @@ Append inside the `ChatService` class in `src/services/chat.service.ts`:
   }
 ```
 
-(`Chat` and `Message` are already imported.)
+(`Chat` and `Message` are already imported; add `UpdateMessageDTO` to that import. Define it in `src/types/chat.ts` as `export interface UpdateMessageDTO { content?: string; answer?: string; }` with a doc comment quoting the spec, export it from both barrels, and add `tests/types/update-message.types.ts` with accepted `{content}`, `{answer}` cases and `@ts-expect-error` cases for `athlete_id`, `seen`, `id`. Also add `blocked?: string;` (ISO-8601, set while the other athlete is blocked) to `interface Chat`.)
 
 - [ ] **Step 4: Verify**
 
@@ -750,11 +755,11 @@ describe('EventService — Phase 3 additions', () => {
     expect(seen[0].url).toBe('/athlete/i1/fitness-model-events');
   });
 
-  it('downloadWorkoutsZip downloads /workouts.zip with ext and date range as params', async () => {
+  it('downloadWorkoutsZip downloads /workouts.zip with a dot-less ext and the date range as params', async () => {
     const out = await client.events.downloadWorkoutsZip({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
     expect(seen[0].method).toBe('GET');
     expect(seen[0].url).toBe('/athlete/i1/workouts.zip');
-    expect(seen[0].params).toEqual({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
+    expect(seen[0].params).toEqual({ ext: 'zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
     expect(seen[0].responseType).toBe('arraybuffer');
     expect(Buffer.isBuffer(out)).toBe(true);
   });
@@ -800,10 +805,15 @@ Expected: FAIL.
     return this.httpClient.request<Event[]>({ method: 'GET', url: `/athlete/${id}/fitness-model-events` });
   }
 
-  /** Calendar workouts in a date range as a zip of files in the requested format */
+  /**
+   * Calendar workouts in a date range as a zip of files in the requested format.
+   * The API's `ext` query value has no leading dot (spec: "zwo, mrc, erg or fit"),
+   * unlike the `{ext}` path suffix routes, so the dot in WorkoutFormat is stripped here.
+   */
   async downloadWorkoutsZip(options: WorkoutsZipOptions, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.download(`/athlete/${id}/workouts.zip`, { params: options as unknown as Record<string, unknown> });
+    const params = { ...options, ext: options.ext.replace(/^\./, '') } as Record<string, unknown>;
+    return this.httpClient.download(`/athlete/${id}/workouts.zip`, { params });
   }
 ```
 
@@ -934,7 +944,7 @@ Expected: FAIL.
   /** Recalculate distance / time / activity totals for one item of gear */
   async calc(gearId: string, athleteId?: string): Promise<GearStats> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<GearStats>({ method: 'GET', url: `/athlete/${id}/gear/${gearId}/calc` });
+    return this.httpClient.request<GearStats>({ method: 'GET', url: `/athlete/${id}/gear/${encodeURIComponent(gearId)}/calc` });
   }
 ```
 
@@ -946,13 +956,13 @@ Expected: FAIL.
   /** Activities whose type falls under these sport settings */
   async listMatchingActivities(settingsId: number | string, athleteId?: string): Promise<ActivitySearchResult[]> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<ActivitySearchResult[]>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/matching-activities` });
+    return this.httpClient.request<ActivitySearchResult[]>({ method: 'GET', url: `/athlete/${id}/sport-settings/${encodeURIComponent(String(settingsId))}/matching-activities` });
   }
 
   /** Pace-curve distances and best-effort defaults for the sport */
   async getPaceDistances(settingsId: number | string, athleteId?: string): Promise<PaceDistancesDTO> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PaceDistancesDTO>({ method: 'GET', url: `/athlete/${id}/sport-settings/${settingsId}/pace_distances` });
+    return this.httpClient.request<PaceDistancesDTO>({ method: 'GET', url: `/athlete/${id}/sport-settings/${encodeURIComponent(String(settingsId))}/pace_distances` });
   }
 ```
 
@@ -976,7 +986,6 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>"
 
 **Files:**
 - Create: `tests/live/phase3.live.test.ts`
-- Modify: `src/types/chat.ts` (add `chat_id` to `Message`)
 - Modify: `spec/coverage-baseline.json` (regenerated)
 
 **Interfaces:**
@@ -1092,32 +1101,64 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
 
   // Every write below restores state in a `finally` so a failed assertion or a thrown
   // request cannot leave the account blocked or with a stray message.
-  it('blockChat toggles a private chat on and back off', async (ctx) => {
-    const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && x.id);
+  it('blockChat toggles a private chat and restores its original state', async (ctx) => {
+    const chat = (await c().chats.listChats()).find((x) => x.type === 'PRIVATE' && typeof x.id === 'number');
     if (!chat) ctx.skip();
     const chatId = chat!.id as number;
+    // Restore whatever the chat was before, so an already-blocked chat stays blocked.
+    const wasBlocked = Boolean(chat!.blocked);
+    let restored: Chat | undefined;
     try {
-      const blocked = await c().chats.blockChat(chatId, true);
-      expect(blocked.id).toBe(chatId);
+      const toggled = await c().chats.blockChat(chatId, !wasBlocked);
+      expect(toggled.id).toBe(chatId);
     } finally {
-      const unblocked = await c().chats.blockChat(chatId, false);
-      expect(unblocked.id).toBe(chatId);
+      restored = await c().chats.blockChat(chatId, wasBlocked);
     }
+    expect(restored.id).toBe(chatId);
   });
 
   it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {
-    const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content: 'phase 3 live test', type: 'TEXT' });
-    const chatId = sent.message?.chat_id ?? sent.new_chat?.id;
-    const msgId = sent.message?.id ?? sent.id;
-    // Fail, do not skip: a message now exists and the ids are needed to delete it.
-    expect(chatId, `send response lacks a chat id: ${JSON.stringify(sent)}`).toBeTypeOf('number');
-    expect(msgId, `send response lacks a message id: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+    const content = `phase 3 live test ${Date.now()}`;
+    const edited = `${content} (edited)`;
+    let chatId: number | undefined;
+    let msgId: number | undefined;
+    // Find the message by its unique content (original or edited) across the caller's chats.
+    const recover = async () => {
+      for (const chat of await c().chats.listChats()) {
+        if (typeof chat.id !== 'number') continue;
+        const hit = (await c().chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content || m.content === edited);
+        if (typeof hit?.id === 'number') {
+          chatId = chat.id;
+          msgId = hit.id;
+          return;
+        }
+      }
+    };
     try {
-      await c().chats.updateMessage(chatId as number, msgId as number, { content: 'phase 3 live test (edited)' });
+      const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content, type: 'TEXT' });
+      // `chat_id` is not in the vendored Message schema; read it defensively from the raw
+      // response and fall back to the new chat's id. Verified only when LIVE_WRITE runs.
+      chatId = (sent.message as { chat_id?: number } | undefined)?.chat_id ?? sent.new_chat?.id;
+      msgId = sent.message?.id ?? sent.id;
+      if (typeof chatId !== 'number' || typeof msgId !== 'number') await recover();
+      expect(chatId, `could not determine the chat id of the sent message: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+      expect(msgId, `could not determine the message id of the sent message: ${JSON.stringify(sent)}`).toBeTypeOf('number');
+      await c().chats.updateMessage(chatId as number, msgId as number, { content: edited });
       const after = await c().chats.listMessages(chatId as number, { limit: 20 });
-      expect(after.find((m) => m.id === msgId)?.content).toBe('phase 3 live test (edited)');
+      expect(after.find((m) => m.id === msgId)?.content).toBe(edited);
     } finally {
-      await c().chats.deleteMessage(chatId as number, msgId as number);
+      // The send may have been accepted even if its response was lost or recovery threw:
+      // try recovery once more, then delete whenever the ids are known.
+      if (typeof chatId !== 'number' || typeof msgId !== 'number') {
+        try {
+          await recover();
+        } catch {
+          // Nothing more can be done here; the failing assertion above carries the response body.
+        }
+      }
+      if (typeof chatId === 'number' && typeof msgId === 'number') {
+        await c().chats.deleteMessage(chatId, msgId);
+      }
     }
   });
 
@@ -1134,7 +1175,7 @@ describe.skipIf(!DESTRUCTIVE)('live (write, irreversible): deleteTombstone', () 
 });
 ```
 
-`Message` in `src/types/chat.ts` has no `chat_id` field today; add `chat_id?: number;` directly after `id?: number;` in that interface (the live payload carries it, and the write test above reads it).
+`Message` in `src/types/chat.ts` has no `chat_id` field and must not gain one: the vendored spec does not declare it. The write test above reads it from the raw response via a local cast (`(sent.message as { chat_id?: number } | undefined)?.chat_id`) and falls back to `sent.new_chat?.id`.
 
 - [ ] **Step 2: Typecheck the live file and rewrite the baseline**
 
@@ -1149,7 +1190,7 @@ Expected: every read-only case passes or is reported skipped; no failures. With 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add tests/live/phase3.live.test.ts spec/coverage-baseline.json src/types/chat.ts
+git add tests/live/phase3.live.test.ts spec/coverage-baseline.json
 git commit -m "test(live): Phase 3 read-only and write-gated cases; baseline 139 covered
 
 Co-Authored-By: Claude <model> <noreply@anthropic.com>"
@@ -1253,10 +1294,59 @@ Append inside the `describe` in `tests/types/spec-conformance.test.ts`:
   });
 ```
 
+Also add, in the same file, a helper that reads a route's query parameters and cases for the five query-option types (three from PR A, two from this PR). Place `paramMembers` next to `schemaMembers`:
+
+```ts
+/**
+ * Query parameters of one spec operation as Members. `overrides` names members whose
+ * hand-written type deliberately differs from the schema's primitive (e.g. a shared union
+ * type used across the SDK), and `omit` drops parameters that are method arguments rather
+ * than option-object members.
+ */
+function paramMembers(path: string, verb: string, opts: { overrides?: Record<string, string>; omit?: string[] } = {}): Member[] {
+  const op = spec.paths[`/api/v1${path}`]?.[verb];
+  if (!op) throw new Error(`${verb.toUpperCase()} ${path} not in spec/openapi.json`);
+  return (op.parameters ?? [])
+    .filter((p: any) => p.in === 'query' && !(opts.omit ?? []).includes(p.name))
+    .map((p: any) => ({
+      name: p.name,
+      optional: !p.required,
+      type: opts.overrides?.[p.name] ?? (p.schema?.enum ? p.schema.enum.map((v: string) => `'${v}'`).join(' | ') : tsType(p.schema ?? {})),
+    }))
+    .sort((a: Member, b: Member) => a.name.localeCompare(b.name));
+}
+```
+
+and these cases inside the describe (the PR A option types were hand-verified when they landed; this pins them):
+
+```ts
+  it('IntervalSearchOptions matches the interval-search query parameters', () => {
+    expect(interfaceMembers('activity.ts', 'IntervalSearchOptions')).toEqual(paramMembers('/athlete/{id}/activities/interval-search', 'get'));
+  });
+
+  it('ActivitiesAroundOptions matches the activities-around query parameters minus activity_id', () => {
+    expect(interfaceMembers('activity.ts', 'ActivitiesAroundOptions')).toEqual(paramMembers('/athlete/{id}/activities-around', 'get', { omit: ['activity_id'] }));
+  });
+
+  it('WorkoutsZipOptions matches the workouts.zip query parameters (ext is the shared WorkoutFormat union)', () => {
+    expect(interfaceMembers('event.ts', 'WorkoutsZipOptions')).toEqual(paramMembers('/athlete/{id}/workouts.zip', 'get', { overrides: { ext: 'WorkoutFormat' } }));
+  });
+
+  it('ActivityPowerCurvesOptions matches the activity power-curves query parameters', () => {
+    expect(interfaceMembers('performance.ts', 'ActivityPowerCurvesOptions')).toEqual(paramMembers('/activity/{id}/power-curves{ext}', 'get'));
+  });
+
+  it('ActivityPaceCurvesOptions matches the activity-pace-curves query parameters minus filters', () => {
+    expect(interfaceMembers('performance.ts', 'ActivityPaceCurvesOptions')).toEqual(paramMembers('/athlete/{id}/activity-pace-curves{ext}', 'get', { omit: ['filters'] }));
+  });
+```
+
+If a case fails because the spec declares a parameter type this mapping does not model (for example `types` as an array of strings maps to `string[]`, which is what the interface declares), fix the mapping in `tsType`, not the interface, unless the interface is genuinely wrong. Also update the file's docstring to say the test covers schema-backed types AND query-option types.
+
 - [ ] **Step 2: Run to verify failure**
 
 Run: `npx vitest run tests/types/spec-conformance.test.ts`
-Expected: the two new cases FAIL (`interface Bucket not found`).
+Expected: the `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions` and `ActivityPaceCurvesOptions` cases FAIL (`interface ... not found`); the three PR A option-type cases PASS already.
 
 - [ ] **Step 3: Add the types**
 
@@ -1320,7 +1410,7 @@ Exports: add `Bucket,` and `TimeAtHRPlot,` to the `// Activity` block and `Activ
 - [ ] **Step 4: Verify**
 
 Run: `npx vitest run tests/types/spec-conformance.test.ts && npm run typecheck`
-Expected: 4 tests PASS; typecheck clean.
+Expected: 9 tests PASS; typecheck clean.
 
 - [ ] **Step 5: Commit**
 
@@ -1763,4 +1853,11 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Spec coverage: every row of the spec's PR A and PR B tables maps to a task (see the route-to-task map). Spec sections Types, Testing, Coverage gate and CI, Documentation per PR, and Versions are implemented by Tasks 1/9, 7/11, 11, 8/12, 8/12 respectively.
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
+- Codex round 1 on PR A (2026-09-22): `updateMessage` takes `UpdateMessageDTO` (content/answer only) with a compile-time contract; `Chat.blocked` typed; the block live test restores the original state; `getSettings` returns a map of objects.
+- Codex round 3 on PR A (2026-09-22): `searchActivitiesFull` spreads options first so the explicit `q` wins; the edit/delete live test sends and recovers inside the try/finally and retries recovery in finally.
+- Codex round 2 on PR A (2026-09-22): all seven Phase 3 sites that interpolate a caller string into a path `encodeURIComponent` it (`deleteTombstone('victim#')` would otherwise truncate to the activity-delete route); delimiter regression tests added. Pre-existing methods remain a separate cleanup.
+- CodeRabbit on PR A (2026-09-22): the edit/delete write test recovers the sent message by unique content and always deletes in `finally` when the ids are known.
+- Final review of PR A (2026-09-22): `Message.chat_id` removed from the public type (not in the vendored spec; the live write test reads it via a local cast). Query-parameter conformance checks for the option types were added to Task 9 rather than PR A.
+- Task 5 review (2026-09-22): the workouts.zip `ext` query value is dot-less per the spec description; `downloadWorkoutsZip` strips the leading dot from `WorkoutFormat`. Task 7's live test confirms.
+- Task 1 review (2026-09-22) corrected two plan defects: `ActivitiesAroundOptions.route_id` (wire name, was `routeId`) and `IntervalSearchOptions.type` as the spec's `'AUTO' | 'POWER' | 'HR' | 'PACE'` enum (was `ActivityType | string`). Task 2 spreads options into params accordingly.
 - File-content checks resolved while writing the plan (2026-09-21, main at 8f5d966): `ActivityType` import in `activity.ts` (Task 1 states the action), `Message` lacks `chat_id` (Task 7 adds it), `IntervalsDTO.icu_intervals` is the interval list (Task 11 uses it).

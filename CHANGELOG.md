@@ -29,6 +29,13 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - `IHttpClient.download(url, options)` replaces `download(url, params)`: query params go in `options.params` (object or `URLSearchParams`), `options.method` may be `POST`, `options.data` is a JSON body. `upload()` accepts `method`. Breaking only for custom `IHttpClient` implementations.
 
 ### Added
+- Activities: `getActivities(ids)`, `listActivitiesAround()`, `searchActivitiesFull()`, `searchIntervals()`, `listActivityTags()`, `downloadActivitiesCSV()`, `downloadGPX()`, `deleteTombstone()`.
+- Athletes: `listAthletes()`, `getConnections()`, `getSettings(deviceClass)`, `disconnectApp()`.
+- Chats: `getChat()`, `listGroups()`, `blockChat()`, `updateMessage()`, `deleteMessage()`.
+- Events: `listEventTags()`, `listFitnessModelEvents()`, `downloadWorkoutsZip()`. Workouts: `listWorkoutTags()`.
+- Gear: `list()`, `downloadCSV()`, `calc()`. Sport settings: `listMatchingActivities()`, `getPaceDistances()`.
+- Types: `AthleteConnections`, `AthleteWithTags`, `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`; `tests/types/spec-conformance.test.ts` checks new hand-written types against the vendored spec. Also `UpdateMessageDTO` (body for `chats.updateMessage()`) and `Chat.blocked`.
+- Phase 3 methods URL-encode caller-supplied path segments (activity, gear and sport-settings ids, device class), so a delimiter in an id cannot change the route; `deleteTombstone` in particular can no longer be turned into an activity delete.
 - `client.athletes.getSummary()`, `client.events.downloadWorkout(eventId, format)`, `client.workouts.convertWorkout()` / `convertWorkoutForAthlete()`.
 - `WorkoutConversionInput` and `WorkoutDoc` (exported from the package entrypoint): the body type for `convertWorkout()` / `convertWorkoutForAthlete()`; `name`, `description`, `type` and a non-null object `workout_doc` are required as a conservative contract: live probes showed a body with all four converts and a body without `workout_doc` returns HTTP 500 (fields were not probed individually; see AUDIT.md). `Event.workout_doc` is now typed `WorkoutDoc` instead of `any`.
 - `npm run typecheck:tests` (part of `typecheck`): compile-time contract tests under `tests/types/` and the live suite are typechecked in CI.

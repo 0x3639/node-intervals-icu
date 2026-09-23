@@ -189,3 +189,37 @@ describe('IntervalsClient - Events', () => {
     });
   });
 });
+
+describe('EventService — Phase 3 additions', () => {
+  let client: IntervalsClient;
+  let seen: any[] = [];
+  beforeEach(() => {
+    seen = [];
+    setupAxiosMock(mockedAxios, async (config: any) => {
+      seen.push(config);
+      return config.responseType === 'arraybuffer' ? Buffer.from('PK') : [];
+    });
+    client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+  });
+
+  it('listEventTags hits /athlete/{id}/event-tags', async () => {
+    await client.events.listEventTags();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/event-tags');
+  });
+
+  it('listFitnessModelEvents hits /athlete/{id}/fitness-model-events', async () => {
+    await client.events.listFitnessModelEvents();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/fitness-model-events');
+  });
+
+  it('downloadWorkoutsZip downloads /workouts.zip with a dot-less ext and the date range as params', async () => {
+    const out = await client.events.downloadWorkoutsZip({ ext: '.zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/workouts.zip');
+    expect(seen[0].params).toEqual({ ext: 'zwo', oldest: '2026-01-01', newest: '2026-02-01', locale: 'en' });
+    expect(seen[0].responseType).toBe('arraybuffer');
+    expect(Buffer.isBuffer(out)).toBe(true);
+  });
+});

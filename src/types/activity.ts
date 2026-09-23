@@ -518,3 +518,27 @@ export interface ActivityMini {
   type?: string;
   name?: string;
 }
+
+/** Query for GET /athlete/{id}/activities/interval-search */
+export interface IntervalSearchOptions {
+  /** Minimum interval duration in seconds */
+  minSecs: number;
+  /** Maximum interval duration in seconds */
+  maxSecs: number;
+  /** Minimum interval intensity (% of threshold) */
+  minIntensity: number;
+  /** Maximum interval intensity (% of threshold) */
+  maxIntensity: number;
+  /** Interval-detection source; the spec enumerates exactly these four values */
+  type?: 'AUTO' | 'POWER' | 'HR' | 'PACE';
+  minReps?: number;
+  maxReps?: number;
+  limit?: number;
+}
+
+/** Query for GET /athlete/{id}/activities-around (the activity id itself is a method argument) */
+export interface ActivitiesAroundOptions {
+  /** Restrict to activities on this route (wire name, like ListActivitiesOptions.route_id) */
+  route_id?: number;
+  limit?: number;
+}

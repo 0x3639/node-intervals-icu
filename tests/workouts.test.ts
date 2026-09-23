@@ -158,3 +158,14 @@ describe('IntervalsClient - Workouts', () => {
     });
   });
 });
+
+describe('WorkoutService — Phase 3 additions', () => {
+  it('listWorkoutTags hits /athlete/{id}/workout-tags', async () => {
+    const seen: any[] = [];
+    setupAxiosMock(mockedAxios, async (config: any) => { seen.push(config); return []; });
+    const c = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+    await c.workouts.listWorkoutTags();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/workout-tags');
+  });
+});

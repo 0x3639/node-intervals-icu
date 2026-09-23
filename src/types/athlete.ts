@@ -280,3 +280,38 @@ export interface AthleteProfile {
   sharedFolders?: Folder[];
   customItems?: CustomItem[];
 }
+
+/**
+ * Devices and platform apps the athlete has connected (GET /athlete/{id}/connections).
+ * One boolean per integration; the list mirrors the vendored spec exactly and is checked
+ * by tests/types/spec-conformance.test.ts.
+ */
+export interface AthleteConnections {
+  id?: string;
+  garmin_health_connected?: boolean;
+  garmin_training_connected?: boolean;
+  polar_connected?: boolean;
+  suunto_connected?: boolean;
+  coros_connected?: boolean;
+  concept2_connected?: boolean;
+  zepp_connected?: boolean;
+  huawei_connected?: boolean;
+  wahoo_connected?: boolean;
+  zwift_connected?: boolean;
+  oura_connected?: boolean;
+  whoop_connected?: boolean;
+  strava_connected?: boolean;
+  dropbox_connected?: boolean;
+  hammerhead_connected?: boolean;
+  tp_virtual_connected?: boolean;
+  rouvy_connected?: boolean;
+  mywhoosh_connected?: boolean;
+  biketerra_connected?: boolean;
+  tymewear_connected?: boolean;
+}
+
+/** An athlete as returned by GET /athletes: the profile plus the caller's tags and notes for them. */
+export type AthleteWithTags = Athlete & {
+  icu_notes?: string;
+  icu_tags?: string[];
+};

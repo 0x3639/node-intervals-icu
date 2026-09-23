@@ -77,3 +77,41 @@ describe('IntervalsClient - Gear', () => {
     await expect(client.gear.deleteReminder('g100', 1)).resolves.toBeUndefined();
   });
 });
+
+describe('GearService — Phase 3 additions', () => {
+  let client: IntervalsClient;
+  let seen: any[] = [];
+  beforeEach(() => {
+    seen = [];
+    setupAxiosMock(mockedAxios, async (config: any) => {
+      seen.push(config);
+      return config.responseType === 'arraybuffer' ? Buffer.from('id,name') : [];
+    });
+    client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+  });
+
+  it('list hits /athlete/{id}/gear', async () => {
+    await client.gear.list();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/gear');
+  });
+
+  it('downloadCSV downloads /athlete/{id}/gear.csv', async () => {
+    const out = await client.gear.downloadCSV();
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/gear.csv');
+    expect(seen[0].responseType).toBe('arraybuffer');
+    expect(out.toString()).toBe('id,name');
+  });
+
+  it('calc hits /athlete/{id}/gear/{gearId}/calc', async () => {
+    await client.gear.calc('b123');
+    expect(seen[0].method).toBe('GET');
+    expect(seen[0].url).toBe('/athlete/i1/gear/b123/calc');
+  });
+
+  it('calc encodes the gear id segment', async () => {
+    await client.gear.calc('b#1');
+    expect(seen[0].url).toBe('/athlete/i1/gear/b%231/calc');
+  });
+});

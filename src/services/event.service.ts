@@ -1,7 +1,7 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   Event, EventInput, ListEventsOptions, DeleteEventsRangeOptions, DeleteEventOptions,
-  DoomedEvent, DeleteEventsResponse, DuplicateEventsDTO, ApplyPlanDTO, WorkoutFormat,
+  DoomedEvent, DeleteEventsResponse, DuplicateEventsDTO, ApplyPlanDTO, WorkoutFormat, WorkoutsZipOptions,
 } from '../types/index.js';
 
 /**
@@ -93,5 +93,30 @@ export class EventService {
   async downloadWorkout(eventId: number, format: WorkoutFormat, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.download(`/athlete/${id}/events/${eventId}/download${format}`);
+  }
+
+  // ── Phase 3 ──
+
+  /** Every tag that has been applied to events on the athlete's calendar */
+  async listEventTags(athleteId?: string): Promise<string[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<string[]>({ method: 'GET', url: `/athlete/${id}/event-tags` });
+  }
+
+  /** Events that influence the fitness (CTL/ATL) calculation, in ascending date order */
+  async listFitnessModelEvents(athleteId?: string): Promise<Event[]> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Event[]>({ method: 'GET', url: `/athlete/${id}/fitness-model-events` });
+  }
+
+  /**
+   * Calendar workouts in a date range as a zip of files in the requested format.
+   * The API's `ext` query value has no leading dot (spec: "zwo, mrc, erg or fit"),
+   * unlike the `{ext}` path suffix routes, so the dot in WorkoutFormat is stripped here.
+   */
+  async downloadWorkoutsZip(options: WorkoutsZipOptions, athleteId?: string): Promise<Buffer> {
+    const id = athleteId || this.defaultAthleteId;
+    const params = { ...options, ext: options.ext.replace(/^\./, '') } as Record<string, unknown>;
+    return this.httpClient.download(`/athlete/${id}/workouts.zip`, { params });
   }
 }

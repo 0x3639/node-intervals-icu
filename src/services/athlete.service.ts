@@ -1,7 +1,7 @@
 import type { IHttpClient } from '../core/http-client.interface.js';
 import type {
   Athlete, AthleteUpdateDTO, AthleteTrainingPlan, AthleteTrainingPlanUpdate,
-  AthleteProfile, SummaryWithCats,
+  AthleteProfile, SummaryWithCats, AthleteConnections, AthleteWithTags,
 } from '../types/index.js';
 
 /**
@@ -55,5 +55,33 @@ export class AthleteService {
   async getSummary(options?: { start?: string; end?: string; tags?: string[] }, athleteId?: string): Promise<SummaryWithCats[]> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.request<SummaryWithCats[]>({ method: 'GET', url: `/athlete/${id}/athlete-summary`, params: options as Record<string, unknown> });
+  }
+
+  // ── Phase 3 ──
+
+  /** Athletes the caller follows or coaches, including the caller. Requires API-key authentication (not available to OAuth app tokens). */
+  async listAthletes(options?: { extIdPrefix?: string }): Promise<AthleteWithTags[]> {
+    const params = options?.extIdPrefix !== undefined ? { ext_id_prefix: options.extIdPrefix } : undefined;
+    return this.httpClient.request<AthleteWithTags[]>({ method: 'GET', url: '/athletes', params });
+  }
+
+  /** Which devices and platform apps the athlete has connected */
+  async getConnections(athleteId?: string): Promise<AthleteConnections> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<AthleteConnections>({ method: 'GET', url: `/athlete/${id}/connections` });
+  }
+
+  /** UI settings for a device class: a map of setting groups, each an open object (spec: object of objects). */
+  async getSettings(deviceClass: 'phone' | 'tablet' | 'desktop' | string, athleteId?: string): Promise<Record<string, Record<string, unknown>>> {
+    const id = athleteId || this.defaultAthleteId;
+    return this.httpClient.request<Record<string, Record<string, unknown>>>({ method: 'GET', url: `/athlete/${id}/settings/${encodeURIComponent(deviceClass)}` });
+  }
+
+  /**
+   * Disconnect the OAuth app that owns the current access token from the athlete's account.
+   * Irreversible from the API; the SDK never calls this in its live tests.
+   */
+  async disconnectApp(): Promise<void> {
+    await this.httpClient.request<void>({ method: 'DELETE', url: '/disconnect-app' });
   }
 }

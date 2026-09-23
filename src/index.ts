@@ -47,11 +47,12 @@ export type {
 
   // Athlete
   Athlete, AthleteUpdateDTO, AthleteTrainingPlan, AthleteTrainingPlanUpdate,
-  AthleteSearchResult, AthleteProfile, StravaGear, ActivityFilter,
+  AthleteSearchResult, AthleteProfile, AthleteConnections, AthleteWithTags, StravaGear, ActivityFilter,
   CoachTick, AthleteTrainingAvailability, TypeSettings,
 
   // Activity
   Activity, ActivityInput, ActivitySearchResult, UploadActivityOptions,
+  IntervalSearchOptions, ActivitiesAroundOptions,
   Interval, IntervalGroup, IntervalsDTO, ActivityStream, UpdateStreamsResult,
   ActivityId, UploadResponse, ZoneInfo, ZoneSet, ZoneTime, HRRecovery,
   IcuAchievement, IgnorePart, Attachment, Effort, BestEfforts,
@@ -61,7 +62,7 @@ export type {
 
   // Event
   Event, EventEx, EventInput, DoomedEvent, DeleteEventsResponse,
-  DuplicateEventsDTO, ApplyPlanDTO,
+  DuplicateEventsDTO, ApplyPlanDTO, WorkoutsZipOptions,
 
   // Wellness
   Wellness, WellnessInput,
@@ -79,7 +80,7 @@ export type {
   Gear, GearReminder, GearStats,
 
   // Chat
-  Chat, ChatMember, Message, NewMessage, NewActivityMsg, SendResponse, NewMsg,
+  Chat, ChatMember, Message, UpdateMessageDTO, NewMessage, NewActivityMsg, SendResponse, NewMsg,
 
   // Weather
   Forecast, WeatherDTO, WeatherConfig,

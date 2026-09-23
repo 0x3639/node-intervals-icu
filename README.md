@@ -6,11 +6,11 @@
 [![license](https://img.shields.io/npm/l/%400x3639%2Fintervals-icu)](./LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
-> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — 114 of 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
+> Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — 139 of 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
-**100+ typed methods** across 15 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~21 KB minified.
+**100+ typed methods** across 15 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~25 KB minified.
 
 ## Features
 
@@ -21,7 +21,7 @@ The most comprehensive TypeScript client for the [Intervals.icu](https://interva
 - **Auto-retry with backoff + jitter** — configurable retries for 429/5xx, respects `Retry-After` header
 - **Rate limit tracking** — `getRateLimitRemaining()` / `getRateLimitReset()` from response headers
 - **Dual output** — ESM + CJS, tree-shakeable
-- **Minimal footprint** — single runtime dependency, ~21 KB minified
+- **Minimal footprint** — single runtime dependency, ~25 KB minified
 
 ## Installation
 
@@ -114,15 +114,15 @@ interface IntervalsConfig {
 
 | Service | Accessor | Key Methods |
 |---------|----------|-------------|
-| **Athletes** | `client.athletes` | `getAthlete`, `updateAthlete`, `getTrainingPlan`, `updateTrainingPlan`, `getProfile`, `getSummary` |
-| **Activities** | `client.activities` | `listActivities`, `getActivity`, `updateActivity`, `deleteActivity`, `uploadActivity`, `getStreams`, `getIntervals`, `getWeatherSummary`, `getPowerCurve`, `listMessages` |
-| **Events** | `client.events` | `listEvents`, `getEvent`, `createEvent`, `updateEvent`, `deleteEvent`, `createEventsBulk`, `markEventAsDone`, `duplicateEvents`, `downloadWorkout` |
+| **Athletes** | `client.athletes` | `getAthlete`, `updateAthlete`, `getTrainingPlan`, `updateTrainingPlan`, `getProfile`, `getSummary`, `listAthletes`, `getConnections`, `getSettings`, `disconnectApp` |
+| **Activities** | `client.activities` | `listActivities`, `getActivity`, `updateActivity`, `deleteActivity`, `uploadActivity`, `getStreams`, `getIntervals`, `getWeatherSummary`, `getPowerCurve`, `listMessages`, `getActivities`, `listActivitiesAround`, `searchActivitiesFull`, `searchIntervals`, `listActivityTags`, `downloadActivitiesCSV`, `downloadGPX`, `deleteTombstone` |
+| **Events** | `client.events` | `listEvents`, `getEvent`, `createEvent`, `updateEvent`, `deleteEvent`, `createEventsBulk`, `markEventAsDone`, `duplicateEvents`, `downloadWorkout`, `listEventTags`, `listFitnessModelEvents`, `downloadWorkoutsZip` |
 | **Wellness** | `client.wellness` | `listWellness`, `getWellnessByDate`, `createWellness`, `updateWellness`, `updateWellnessBulk` |
-| **Workouts** | `client.workouts` | `listWorkouts`, `getWorkout`, `createWorkout`, `updateWorkout`, `deleteWorkout`, `createWorkoutsBulk`, `duplicateWorkouts`, `convertWorkout` |
-| **Sport Settings** | `client.sportSettings` | `list`, `get`, `create`, `update`, `delete`, `applyToActivities` |
+| **Workouts** | `client.workouts` | `listWorkouts`, `getWorkout`, `createWorkout`, `updateWorkout`, `deleteWorkout`, `createWorkoutsBulk`, `duplicateWorkouts`, `convertWorkout`, `listWorkoutTags` |
+| **Sport Settings** | `client.sportSettings` | `list`, `get`, `create`, `update`, `delete`, `applyToActivities`, `listMatchingActivities`, `getPaceDistances` |
 | **Folders** | `client.folders` | `list`, `create`, `update`, `delete`, `getSharedWith`, `importWorkout`, `applyPlanChanges` |
-| **Gear** | `client.gear` | `create`, `update`, `delete`, `replace`, `createReminder`, `deleteReminder` |
-| **Chats** | `client.chats` | `listChats`, `listMessages`, `sendMessage`, `markSeen` |
+| **Gear** | `client.gear` | `list`, `downloadCSV`, `calc`, `create`, `update`, `delete`, `replace`, `createReminder`, `updateReminder`, `deleteReminder` |
+| **Chats** | `client.chats` | `listChats`, `listMessages`, `sendMessage`, `markSeen`, `getChat`, `listGroups`, `blockChat`, `updateMessage`, `deleteMessage` |
 | **Weather** | `client.weather` | `getForecast`, `getWeatherConfig`, `updateWeatherConfig` |
 | **Routes** | `client.routes` | `list`, `get`, `update`, `getSimilarity` |
 | **Custom Items** | `client.customItems` | `list`, `get`, `create`, `update`, `delete`, `reorder`, `uploadImage` |
