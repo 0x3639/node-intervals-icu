@@ -75,6 +75,13 @@ describe('AnalyticsService', () => {
     expect(seen[1].url).toBe('/athlete/other/mmp-model');
   });
 
+  it('encodes delimiters in the activity id so the route suffix is preserved', async () => {
+    await client.analytics.getPowerHistogram('victim#?/%');
+    expect(seen[0].url).toBe('/activity/victim%23%3F%2F%25/power-histogram');
+    await client.analytics.getActivityPowerCurvesCSV('a#1');
+    expect(seen[1].url).toBe('/activity/a%231/power-curves.csv');
+  });
+
   it('getActivityPaceCurves passes the date range and distances; CSV sibling downloads .csv', async () => {
     const opts = { oldest: '2026-01-01', newest: '2026-03-01', type: 'Run', distances: [1000, 5000], gap: true };
     await client.analytics.getActivityPaceCurves(opts);
