@@ -10,7 +10,7 @@
 
 The most comprehensive TypeScript client for the [Intervals.icu](https://intervals.icu) API — the training platform used by cyclists, runners, triathletes, and coaches worldwide.
 
-**100+ typed methods** across 15 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~25 KB minified.
+**130+ typed methods** across 16 service groups. Dual auth (API key + OAuth), file uploads, auto-retry with jitter, and rate-limit tracking. One dependency (`axios`), ~25 KB minified.
 
 ## Features
 
@@ -197,7 +197,7 @@ The TypeScript/Node.js ecosystem has a few Intervals.icu API clients worth knowi
 | **@kuranov/intervals-client** | `@kuranov/intervals-client` | ky + Valibot runtime validation | 6 resources (~64 endpoints) | `Result<T, E>` — never throws |
 
 **When to use `@0x3639/intervals-icu` (this library):**
-- You need the broadest API coverage (15 service groups including routes, gear, weather, custom items, performance, and search)
+- You need the broadest API coverage (16 service groups including routes, gear, weather, custom items, performance, analytics, and search)
 - You prefer familiar `try/catch` error handling
 - You're comfortable tracking an actively-developed fork (see [AUDIT.md](./AUDIT.md) for known gaps and CHANGELOG for breaking changes)
 
