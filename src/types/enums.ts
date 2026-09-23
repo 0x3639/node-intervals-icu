@@ -9,6 +9,7 @@ export type ActivityType =
   | 'EBikeRide' | 'EMountainBikeRide' | 'Elliptical' | 'Golf' | 'GravelRide'
   | 'TrackRide' | 'Handcycle' | 'HighIntensityIntervalTraining' | 'Hockey'
   | 'IceSkate' | 'InlineSkate' | 'Kayaking' | 'Kitesurf' | 'MountainBikeRide'
+  | 'Cyclocross'
   | 'NordicSki' | 'OpenWaterSwim' | 'Padel' | 'Pilates' | 'Pickleball'
   | 'Racquetball' | 'Rugby' | 'RockClimbing' | 'RollerSki' | 'Rowing'
   | 'Sail' | 'Skateboard' | 'Snowboard' | 'Snowshoe' | 'Soccer' | 'Squash'

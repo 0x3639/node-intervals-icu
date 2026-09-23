@@ -27,6 +27,7 @@ export { CustomItemService } from './services/custom-item.service.js';
 export { SharedEventService } from './services/shared-event.service.js';
 export { PerformanceService } from './services/performance.service.js';
 export { SearchService } from './services/search.service.js';
+export { AnalyticsService } from './services/analytics.service.js';
 
 // Core (for advanced usage)
 export type { IHttpClient, HttpRequestConfig, UploadConfig, DownloadOptions } from './core/http-client.interface.js';
