@@ -1761,7 +1761,7 @@ Expected: 149 covered / 0 missing / 0 phantom, exit 0.
 In `.github/workflows/ci.yml` change the coverage step to:
 
 ```yaml
-      - name: API coverage vs vendored spec (strict: every spec op must be covered)
+      - name: "API coverage vs vendored spec (strict: every spec op must be covered)"
         run: node scripts/coverage.mjs --strict
 ```
 
@@ -1889,6 +1889,7 @@ Then: whole-branch review, CodeRabbit, Codex Daybreak xHigh rounds (ceiling five
 - Deviation from the spec noted: the spec says unit tests "live in the existing per-service test files"; this plan does exactly that by appending a self-contained `describe` to each file, with `tests/analytics.test.ts` new for the new service.
 - Type consistency checked: `IntervalSearchOptions`, `ActivitiesAroundOptions`, `WorkoutsZipOptions`, `AthleteConnections`, `AthleteWithTags` (Task 1) are the names used in Tasks 2, 3, 5; `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions`, `ActivityPaceCurvesOptions` (Task 9) are the names used in Task 10. Method names in Tasks 2–6 and 10 match the spec tables and the README rows in Tasks 8 and 12.
 - Codex round 1 on PR A (2026-09-22): `updateMessage` takes `UpdateMessageDTO` (content/answer only) with a compile-time contract; `Chat.blocked` typed; the block live test restores the original state; `getSettings` returns a map of objects.
+- CodeRabbit on PR B (2026-09-22): the strict CI step name must be quoted; the unquoted `strict: ` broke YAML parsing and the workflow never started.
 - Final review of PR B (2026-09-22): the athlete-level `getActivityPaceCurves` / `...CSV` moved to `PerformanceService` (beside `getActivityPowerCurves` / `getActivityHRCurves`) and the analytics activity-scoped curve methods were renamed `getCurves` / `getCurvesCSV`, so no method name is shared across services; the CSV pace form requires `distances` at the type level. `PowerModel` was rewritten to the spec's field names (confirmed live on both model routes; the old `cp`/`w_prime`/`p_max` were never returned) with a conformance case, and the conformance test pins the `ActivityType` union to the spec enum. The Task 10/11/12 snippets above predate this and are superseded by the fix-wave commit on the branch.
 - Task 11 live run (2026-09-22): `activity-pace-curves` JSON returns `{ distances, gap, curves }` (typed `ActivityPaceCurves`; `curves` element shape unobserved) and its CSV form returns 500 unless `distances` is supplied; live cases and docs updated.
 - Task 10 review (2026-09-22): AnalyticsService URL-encodes caller-supplied activity ids (same ruling as PR A's 9a03a39); `getMMPModel` takes `ActivityType`.
