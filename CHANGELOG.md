@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release candidate. Everything below is the 3.0.0 series relative to `intervals-icu` v2.2.1.
 
+Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/guides/migrating-to-v3.md` for the full migration guide.
+
 ### Security
 - Every GitHub Actions workflow pins its actions to a full commit SHA (the major tag is kept as a comment).
 
@@ -19,8 +21,6 @@ Release candidate. Everything below is the 3.0.0 series relative to `intervals-i
 
 ### Tests
 - Live read-only cases for the athlete-level curve routes (`getPowerCurves`, `getPaceCurves`, `getHRCurves`), which no earlier live run had exercised.
-
-Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/guides/migrating-to-v3.md` for the full migration guide.
 
 ### Removed
 - `client.fitness` (`getFitness`, `getSummaries`): the routes never existed. Use `client.athletes.getSummary()`.

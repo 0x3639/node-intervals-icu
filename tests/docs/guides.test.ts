@@ -208,22 +208,35 @@ describe('documentation guides', () => {
   });
   it('a window labelled "N days" spans N inclusive dates', () => {
     // Both bounds are inclusive (dates guide), so "last 7 days" is today and the 6 days
-    // before it, not 7 days before it. Every offset applied next to an "N days" label
-    // must therefore be N - 1.
-    const LABEL = /\b(\d+) days\b/gi;
-    const OFFSETS = [/\.getDate\(\)\s*[-+]\s*(\d+)\)/g, /shiftDays\([^,]+,\s*-?(\d+)\)/g];
+    // before it, not 7 days before it. Every offset applied in a file that labels its
+    // window "N days" / "N-day" must therefore be N - 1.
+    const LABEL = /\b(\d+)[ -]days?\b/gi;
+    const OFFSETS = [/\.getDate\(\)\s*[-+]\s*(\d+)\)/g, /shiftDays\((?:[^()]|\([^()]*\))+,\s*-?(\d+)\)/g];
     const problems: string[] = [];
+    const checked: string[] = [];
     for (const file of exampleFiles()) {
       const text = read(file);
       const labels = new Set([...text.matchAll(LABEL)].map((m) => Number(m[1])));
-      if (labels.size === 0) continue;
-      for (const re of OFFSETS) {
-        for (const m of text.matchAll(re)) {
-          const offset = Number(m[1]);
-          if (!labels.has(offset + 1)) problems.push(`${file}: offset ${offset} next to label(s) ${[...labels].join('/')} days`);
-        }
+      const offsets = OFFSETS.flatMap((re) => [...text.matchAll(re)].map((m) => Number(m[1])));
+      if (labels.size === 0 || offsets.length === 0) continue;
+      checked.push(file);
+      for (const offset of offsets) {
+        if (!labels.has(offset + 1)) problems.push(`${file}: offset ${offset} next to label(s) ${[...labels].join('/')} days`);
       }
     }
     expect(problems).toEqual([]);
+    // Pin the set: a relabelled window or an offset helper these regexes do not know would
+    // otherwise drop out of the check silently.
+    expect(checked.sort()).toEqual([
+      'examples/activities/list-and-download.ts',
+      'examples/athletes/summary-and-connections.ts',
+      'examples/events/calendar-week.ts',
+      'examples/events/fitness-model-events.ts',
+      'examples/guides/array-params.ts',
+      'examples/guides/coach-athlete-id.ts',
+      'examples/guides/date-windows.ts',
+      'examples/guides/getting-started.ts',
+      'examples/wellness/last-30-days.ts',
+    ]);
   });
 });

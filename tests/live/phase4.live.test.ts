@@ -15,7 +15,7 @@ describe.skipIf(!LIVE)('live: phase 4 — athlete-level curves', () => {
     expect(Array.isArray(set.list)).toBe(true);
   });
 
-  it('getPowerCurves accepts subMaxEfforts and a power model type', async () => {
+  it('getPowerCurves does not reject subMaxEfforts or pmType', async () => {
     const set = await c().performance.getPowerCurves({ type: 'Ride', curves: ['42d'], subMaxEfforts: 1, pmType: 'MORTON_3P' });
     expect(Array.isArray(set.list)).toBe(true);
   });
