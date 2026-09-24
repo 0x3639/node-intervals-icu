@@ -9,9 +9,13 @@ A local calendar date string in `YYYY-MM-DD` form works on every date-range para
 
 A few parameters accept more than a bare date. `spec/openapi.json` marks `start` and `end` on `GET /athlete/{id}/athlete-summary{ext}` — the route behind {@link AthleteService.getSummary}, in both its JSON and `.csv` forms — as "Local date and optional time (ISO-8601)", so those also take a local date-time such as `2026-09-24T06:00:00`. They are the only parameters the spec describes that way; every other date-range parameter is documented as a plain local date.
 
-What never works is `toISOString()` output. Its `Z` suffix makes it a UTC instant rather than a local date, which is a different thing from what these routes expect; slice a `YYYY-MM-DD` out of a local-formatted date instead. Building both ends of a window from a single `Date` avoids a window that silently shifts if the two bounds are computed a moment apart (for example across midnight):
+What never works is `toISOString()` output. Its `Z` suffix makes it a UTC instant rather than a local date, which is a different thing from what these routes expect; slice a `YYYY-MM-DD` out of a local-formatted date instead. Building both ends of a window from a single `Date` avoids a window that silently shifts if the two bounds are computed a moment apart (for example across midnight).
+
+The example below is the canonical form: it resolves the athlete first and formats the newer bound in `me.timezone`, then steps the older bound back in whole calendar days rather than in hours, so the window does not move when the range spans a daylight-saving change. Both helpers live in `examples/_shared/local-date.ts` and are covered by unit tests.
 
 {@includeCode ../../examples/guides/date-windows.ts#main}
+
+The read-only service examples elsewhere in these guides format their windows in the machine's own zone instead, without the extra round trip to resolve the athlete: a read window that is off by a day at one end returns a day more or a day less of data, which is harmless. Resolve the athlete's zone when the exact day matters — writing a wellness record, or placing a calendar event.
 
 ## Paging
 

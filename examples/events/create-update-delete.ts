@@ -16,6 +16,7 @@
  *   npx tsx examples/events/create-update-delete.ts
  */
 import { IntervalsClient } from '../../src/index.js';
+import { localDateIn } from '../_shared/local-date.js';
 
 const apiKey = process.env.INTERVALS_API_KEY;
 if (!apiKey) {
@@ -29,13 +30,8 @@ const client = new IntervalsClient({ apiKey, maxRetries: 0 });
 
 // The API keys calendar events by the athlete's local date, not the machine's. A machine
 // in a different time zone (or a CI runner on UTC) would otherwise create the event on the
-// wrong day. the calendar fields are assembled as YYYY-MM-DD in a fixed order (a Node build with limited ICU data can format `en-CA` differently); an undefined timeZone means the machine's own
-// zone, which is the right fallback when the athlete has not set one.
-const localDateIn = (date: Date, timeZone?: string): string => {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
-  const field = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
-  return `${field('year')}-${field('month')}-${field('day')}`;
-};
+// wrong day, so the date is formatted in the athlete's zone (see
+// examples/_shared/local-date.ts).
 
 const me = await client.athletes.getAthlete();
 const today = localDateIn(new Date(), me.timezone);

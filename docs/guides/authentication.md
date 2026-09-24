@@ -27,12 +27,17 @@ The SDK does not implement the OAuth authorization flow itself (there is no meth
 
 {@includeCode ../../examples/guides/oauth-client.ts#main}
 
-## Which routes need an API key
+## Routes that are scoped to one credential
 
-Most routes accept either credential, but a few are scoped to the API key's owner and are not available to OAuth app tokens:
+Most routes accept either credential. Two are scoped to the credential itself rather than to an athlete, and each works with only one of them.
 
-- {@link AthleteService.listAthletes} — lists the athletes the API key's owner follows or coaches. Requires API-key authentication.
-- {@link AthleteService.disconnectApp} — revokes the OAuth app that owns the current access token. It is never called by the SDK's own tests, since running it would disconnect the live test credentials.
+### API key only
+
+- {@link AthleteService.listAthletes} — lists the athletes the API key's owner follows or coaches. It answers for the key's owner, so there is nothing for an OAuth app token to resolve it against.
+
+### OAuth token only
+
+- {@link AthleteService.disconnectApp} — disconnects the athlete from the app that owns the current bearer token. There is no app behind an API key, so the call is meaningless with one. It is irreversible, and the SDK's own tests never call it, since running it would disconnect the live test credentials.
 
 ## Acting for another athlete
 

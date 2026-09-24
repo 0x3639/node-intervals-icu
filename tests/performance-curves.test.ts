@@ -80,7 +80,13 @@ describe('PerformanceService — athlete-level curves, serialized query strings'
     client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
     realAxios = ((await vi.importActual('axios')) as typeof import('axios')).default;
   });
-  const uri = () => realAxios.getUri({ url: seen[0].url, params: seen[0].params, paramsSerializer: { indexes: null } });
+  // Serialize with the paramsSerializer the client passed to axios.create(), not a copy of
+  // it: if the SDK ever drops that setting, axios falls back to bracketed array keys and
+  // these expectations fail.
+  const uri = () => {
+    const created = mockedAxios.create.mock.calls[0][0];
+    return realAxios.getUri({ url: seen[0].url, params: seen[0].params, paramsSerializer: created.paramsSerializer });
+  };
 
   it('power curves: curves repeat as plain keys, scalars pass through', async () => {
     await client.performance.getPowerCurves({ type: 'Ride', curves: ['1y', '42d-kj1'], subMaxEfforts: 1, pmType: 'MORTON_3P' });

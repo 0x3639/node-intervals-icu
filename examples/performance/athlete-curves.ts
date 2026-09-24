@@ -7,6 +7,7 @@
  *   npx tsx examples/performance/athlete-curves.ts
  */
 import { IntervalsClient } from '../../src/index.js';
+import { localDateIn } from '../_shared/local-date.js';
 
 const apiKey = process.env.INTERVALS_API_KEY;
 if (!apiKey) {
@@ -32,14 +33,8 @@ console.log(`HR curves: ${hrCurves.list?.length ?? 0}`);
 
 // getPowerHRCurve is the exception: it takes an explicit start/end date range. The API
 // keys dates by the athlete's local date, not the machine's, so the bounds are formatted
-// in the athlete's time zone ('en-CA' formats as YYYY-MM-DD; an undefined timeZone falls
-// back to the machine's own zone, which is the right fallback when none is set).
+// in the athlete's time zone (see examples/_shared/local-date.ts).
 const me = await client.athletes.getAthlete();
-const localDateIn = (date: Date, timeZone?: string): string => {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
-  const field = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
-  return `${field('year')}-${field('month')}-${field('day')}`;
-};
 const now = new Date(); // one timestamp for both bounds
 const yearAgo = new Date(now);
 yearAgo.setFullYear(yearAgo.getFullYear() - 1);

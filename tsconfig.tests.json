@@ -5,5 +5,5 @@
     "rootDir": ".",
     "baseUrl": "."
   },
-  "include": ["tests/types/*.ts", "tests/live/*.ts", "src/**/*"]
+  "include": ["tests/types/*.ts", "tests/live/*.ts", "tests/examples/*.ts", "src/**/*"]
 }

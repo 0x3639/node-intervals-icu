@@ -1,12 +1,14 @@
 /**
- * Compute a local-date window and list activities, workout events and wellness
- * records within it.
+ * Compute a local-date window in the athlete's own time zone and list activities,
+ * workout events and wellness records within it. Does not change the account: every
+ * call is a read.
  *
  * Run:
  *   export INTERVALS_API_KEY="your-api-key"
  *   npx tsx examples/guides/date-windows.ts
  */
 import { IntervalsClient } from '../../src/index.js';
+import { localDateIn, shiftDays } from '../_shared/local-date.js';
 
 const apiKey = process.env.INTERVALS_API_KEY;
 if (!apiKey) {
@@ -17,16 +19,14 @@ if (!apiKey) {
 // #region main
 const client = new IntervalsClient({ apiKey });
 
-const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const daysBefore = (d: Date, days: number) => {
-  const copy = new Date(d);
-  copy.setDate(copy.getDate() - days);
-  return copy;
-};
-
+// The API reads `oldest`/`newest` in the athlete's own time zone, so resolve the athlete
+// first and format the bounds in `me.timezone`. Both ends come from one timestamp, so the
+// window cannot shift if the two are computed a moment apart (for example across midnight),
+// and the older bound is stepped back in calendar days rather than in hours.
+const me = await client.athletes.getAthlete();
 const now = new Date(); // one timestamp for both bounds
-const newest = localDate(now);
-const oldest = localDate(daysBefore(now, 30));
+const newest = localDateIn(now, me.timezone);
+const oldest = shiftDays(newest, -30);
 
 const activities = await client.activities.listActivities({ oldest, newest });
 const events = await client.events.listEvents({ oldest, newest, category: ['WORKOUT'] });

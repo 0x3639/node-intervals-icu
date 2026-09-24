@@ -35,16 +35,28 @@ function guideFiles(): string[] {
   return out;
 }
 
+/**
+ * Runnable examples only. `examples/_shared/` holds helper modules, not examples: they
+ * carry no run header, no env guard and no client, so the per-example checks below
+ * (retries, markers, orphan warning) do not apply to them. They have their own test.
+ */
 function exampleFiles(): string[] {
   const out: string[] = [];
   const walk = (d: string) => {
     for (const e of readdirSync(join(ROOT, d), { withFileTypes: true })) {
-      if (e.isDirectory()) walk(`${d}/${e.name}`);
+      if (e.isDirectory()) { if (e.name !== '_shared') walk(`${d}/${e.name}`); }
       else if (e.name.endsWith('.ts')) out.push(`${d}/${e.name}`);
     }
   };
   walk('examples');
   return out;
+}
+
+/** The helper modules under `examples/_shared/`. */
+function sharedFiles(): string[] {
+  return readdirSync(join(ROOT, 'examples/_shared'))
+    .filter((f) => f.endsWith('.ts'))
+    .map((f) => `examples/_shared/${f}`);
 }
 
 describe('documentation guides', () => {
@@ -137,6 +149,32 @@ describe('documentation guides', () => {
       'examples/wellness/update-today.ts',
       'examples/workouts/create-in-folder.ts',
     ]);
+  });
+
+  it('every shared example helper is side-effect free', () => {
+    // Helpers are imported by several examples (and by a unit test), so importing one must
+    // do nothing: no environment read, no client construction, no top-level await.
+    const files = sharedFiles();
+    expect(files.length).toBeGreaterThan(0);
+    const problems: string[] = [];
+    for (const f of files) {
+      const text = read(f);
+      for (const needle of ['process.env', 'new IntervalsClient']) {
+        if (text.includes(needle)) problems.push(`${f} contains ${needle}`);
+      }
+      // Top-level statements sit at zero indentation in these files; an `await` inside a
+      // function body is indented and is not a module side effect.
+      if (/^(?:(?:const|let|var)\s[^=]*=\s*)?await\b/m.test(text)) problems.push(`${f} has a top-level await`);
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('no example imports from src/types; the barrel is the public surface', () => {
+    // Readers copy these imports, and `src/types/index.js` is not what the package exports.
+    const problems = [...exampleFiles(), ...sharedFiles()].filter((f) =>
+      [...read(f).matchAll(/from '([^']+)'/g)].some((m) => m[1].includes('src/types')),
+    );
+    expect(problems).toEqual([]);
   });
 
   it('the download example writes its file privately and refuses to overwrite', () => {

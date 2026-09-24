@@ -9,7 +9,7 @@
  *   npx tsx examples/workouts/library-and-convert.ts
  */
 import { IntervalsClient } from '../../src/index.js';
-import type { Event, Workout, WorkoutConversionInput } from '../../src/types/index.js';
+import type { Event, Workout, WorkoutConversionInput } from '../../src/index.js';
 
 const apiKey = process.env.INTERVALS_API_KEY;
 if (!apiKey) {

@@ -62,6 +62,7 @@ if (typeof chatId !== 'number' || typeof msgId !== 'number') {
 
 if (typeof chatId !== 'number' || typeof msgId !== 'number') {
   console.log('Could not determine the chat id or message id of the sent message');
+  console.log(`The message is still there, with content "${content}" — delete it by hand from the Intervals.icu chat`);
 } else {
   console.log(`Sent message id=${msgId} in chat=${chatId}`);
 
