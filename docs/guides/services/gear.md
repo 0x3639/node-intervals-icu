@@ -22,7 +22,19 @@ title: Gear
 
 ## Examples
 
-_Added in a later task._
+### List and calculate
+
+List the athlete's gear, recalculate totals for the first item, then download all gear as CSV.
+
+{@includeCode ../../../examples/gear/list-and-calc.ts#main}
+
+### Reminders
+
+Create a maintenance reminder on the athlete's first gear item, then delete it.
+
+CI never runs this example; running it by hand changes the authenticated account.
+
+{@includeCode ../../../examples/gear/reminders.ts#main}
 
 ## Behaviour notes
 

@@ -21,7 +21,17 @@ title: Sport settings
 
 ## Examples
 
-_Added in a later task._
+### Thresholds
+
+List the athlete's sport settings and print each one's activity types and key thresholds (FTP, threshold pace, threshold heart rate).
+
+{@includeCode ../../../examples/sport-settings/thresholds.ts#main}
+
+### Matching activities and pace distances
+
+Take the athlete's first sport settings entry, count activities that match it, then print its pace-curve distances and best-effort defaults.
+
+{@includeCode ../../../examples/sport-settings/matching-and-pace.ts#main}
 
 ## Behaviour notes
 

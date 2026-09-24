@@ -22,8 +22,21 @@ title: Workouts
 
 ## Examples
 
-_Added in a later task._
+### Library and convert
+
+List the athlete's workout library and every tag applied to library workouts, then convert the first convertible workout to Zwift's .zwo format, falling back to a calendar workout event if the library has none.
+
+{@includeCode ../../../examples/workouts/library-and-convert.ts#main}
+
+### Create in folder
+
+Create a workout in the athlete's first library folder, read it back, then delete it.
+
+CI never runs this example; running it by hand changes the authenticated account.
+
+{@includeCode ../../../examples/workouts/create-in-folder.ts#main}
 
 ## Behaviour notes
 
+- {@link WorkoutService.convertWorkout}'s `WorkoutConversionInput` requires `name`, `description`, `type` and `workout_doc`; a body missing `workout_doc` returns HTTP 500. See [API behaviour](../api-behaviour.md).
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

@@ -21,7 +21,11 @@ title: Folders
 
 ## Examples
 
-_Added in a later task._
+### List and share
+
+List the athlete's folders and plans, then get who the first folder is shared with.
+
+{@includeCode ../../../examples/folders/list-and-share.ts#main}
 
 ## Behaviour notes
 
