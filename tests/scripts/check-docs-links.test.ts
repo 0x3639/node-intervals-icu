@@ -52,17 +52,28 @@ describe('check-docs-links', () => {
     expect(findBrokenLinks(dir)).toEqual([]);
   });
 
-  it('resolves root-absolute links against the docs root, percent-encoding included', () => {
+  it('reports root-absolute links even when the file exists: the site is served under a sub-path', () => {
     const dir = fixture({
       'assets/main.js': '//',
-      'assets/a b.css': 'body{}',
       'documents/Guide.html': [
         '<script src="/assets/main.js"></script>',
-        '<link rel="stylesheet" href="/assets/a%20b.css">',
         '<a href="/assets/missing.js">dead</a>',
+        '<a href="../assets/main.js">ok</a>',
       ].join('\n'),
     });
-    expect(findBrokenLinks(dir)).toEqual([{ file: 'documents/Guide.html', href: '/assets/missing.js' }]);
+    expect(findBrokenLinks(dir).sort((a, b) => a.href.localeCompare(b.href))).toEqual([
+      { file: 'documents/Guide.html', href: '/assets/main.js' },
+      { file: 'documents/Guide.html', href: '/assets/missing.js' },
+    ]);
+  });
+
+  it('reports links that resolve outside the docs directory even when the target exists', () => {
+    const dir = fixture({
+      'outside.html': 'exists on disk, never published',
+      'site/index.html': '<a href="../outside.html">escapes</a><a href="documents/Guide.html">ok</a>',
+      'site/documents/Guide.html': 'ok',
+    });
+    expect(findBrokenLinks(join(dir, 'site'))).toEqual([{ file: 'index.html', href: '../outside.html' }]);
   });
 
   it('decodes percent-encoded relative targets and tolerates a literal percent sign', () => {

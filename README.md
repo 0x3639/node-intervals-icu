@@ -22,6 +22,10 @@ npm install @0x3639/intervals-icu
 
 ## Quick start
 
+```bash
+export INTERVALS_API_KEY=your-api-key   # Settings → Developer settings on intervals.icu
+```
+
 ```typescript
 import { IntervalsClient } from '@0x3639/intervals-icu';
 

@@ -36,6 +36,6 @@ Most routes accept either credential, but a few are scoped to the API key's owne
 
 ## Acting for another athlete
 
-Every athlete-scoped service method takes an optional trailing `athleteId` parameter. When omitted, the client falls back to the `athleteId` passed to its constructor (which itself defaults to `'0'`, resolved by the API to the authenticated athlete). Passing an explicit id lets one authenticated client act on behalf of a different athlete, such as a coach acting for an athlete they coach:
+Every athlete-scoped service method takes an optional trailing `athleteId` parameter. When omitted, the client falls back to the `athleteId` passed to its constructor (which itself defaults to `'0'`, resolved by the API to the authenticated athlete). One route rejects the `'0'` alias: `GET /athlete/{id}/activity-pace-curves` (and its CSV variant) answers 403 unless a real athlete id is passed, so give {@link PerformanceService.getActivityPaceCurves} an explicit `athleteId` (see [API behaviour](./api-behaviour.md)). Passing an explicit id lets one authenticated client act on behalf of a different athlete, such as a coach acting for an athlete they coach:
 
 {@includeCode ../../examples/guides/coach-athlete-id.ts#main}

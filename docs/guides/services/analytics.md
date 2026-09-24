@@ -3,7 +3,7 @@ title: Analytics
 ---
 # Analytics
 
-`client.analytics` computes per-activity histograms (power, heart rate, pace, GAP), time-at-heart-rate, interval statistics and power models, plus an athlete-level power-vs-heart-rate model used to resolve %MMP workout steps. Activity ids are URL-encoded before use; the older single-curve activity methods remain on {@link ActivityService}.
+`client.analytics` computes per-activity histograms (power, heart rate, pace, GAP), time-at-heart-rate, interval statistics and power models, plus an athlete-level mean-maximal power (MMP) model used to resolve %MMP workout steps. Activity ids are URL-encoded before use; the older single-curve activity methods remain on {@link ActivityService}.
 
 ## Methods
 
