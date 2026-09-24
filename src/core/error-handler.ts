@@ -42,16 +42,25 @@ function decodeBody(data: unknown): unknown {
   }
 }
 
+/**
+ * A candidate explanation, trimmed; empty, whitespace-only and HTML values (a gateway's
+ * 502/504 error page, sometimes wrapped in a JSON field) are noise in a message and are
+ * dropped — `details` still carries them.
+ */
+function usableText(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed && !trimmed.startsWith('<') ? trimmed : undefined;
+}
+
 /** The human-readable part of an error body: `error` or `message` of an object, or a short non-HTML text body. */
 function extractServerText(body: unknown): string | undefined {
   let text: string | undefined;
   if (typeof body === 'string') {
-    const trimmed = body.trim();
-    // An HTML error page (gateway 502/504s) is noise in a message; it stays in `details`.
-    if (trimmed && !trimmed.startsWith('<')) text = trimmed;
+    text = usableText(body);
   } else if (body && typeof body === 'object') {
     const { error, message } = body as { error?: unknown; message?: unknown };
-    text = [error, message].find((v): v is string => typeof v === 'string' && v.length > 0);
+    text = usableText(error) ?? usableText(message);
   }
   if (!text) return undefined;
   // Slice by code point so a surrogate pair is never split.

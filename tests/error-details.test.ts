@@ -106,6 +106,10 @@ describe('IntervalsAPIError.details — edge cases', () => {
   it('ignores whitespace-only and non-string fields, and falls back to `message`', () => {
     expect(handler.handleError(axiosError(400, { error: 7, message: 'm' }), tracker).message).toBe('Request failed with status code 400: m');
     expect(handler.handleError(axiosError(400, { error: '', message: '' }), tracker).message).toBe('Request failed with status code 400');
+    expect(handler.handleError(axiosError(400, { error: '   ', message: '\n' }), tracker).message).toBe('Request failed with status code 400');
+    expect(handler.handleError(axiosError(400, { error: '  padded  ' }), tracker).message).toBe('Request failed with status code 400: padded');
+    // an HTML page wrapped in a JSON field is dropped just like a bare HTML body
+    expect(handler.handleError(axiosError(502, { error: '<html>502</html>', message: 'upstream down' }), tracker).message).toBe('Request failed with status code 502: upstream down');
     expect(handler.handleError(axiosError(400, '   '), tracker).message).toBe('Request failed with status code 400');
   });
 
