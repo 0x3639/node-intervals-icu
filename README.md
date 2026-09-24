@@ -60,6 +60,7 @@ console.log(`${activities.length} activities in January`);
 - [Getting started](https://0x3639.github.io/node-intervals-icu/latest/documents/Getting_started.html)
 - [Authentication](https://0x3639.github.io/node-intervals-icu/latest/documents/Authentication.html)
 - [Errors and retries](https://0x3639.github.io/node-intervals-icu/latest/documents/Errors_and_retries.html)
+- [Dates, pagination and arrays](https://0x3639.github.io/node-intervals-icu/latest/documents/Dates,_pagination_and_arrays.html)
 - [Files: FIT, GPX, CSV and zip](https://0x3639.github.io/node-intervals-icu/latest/documents/Files__FIT,_GPX,_CSV_and_zip.html)
 - [API behaviour](https://0x3639.github.io/node-intervals-icu/latest/documents/API_behaviour.html)
 - [Migrating to v3](https://0x3639.github.io/node-intervals-icu/latest/documents/Migrating_to_v3.html)
