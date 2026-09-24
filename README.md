@@ -1,9 +1,8 @@
 # @0x3639/intervals-icu
 
 <a href="https://paladini.io/harness-score/guide/maturity-model#l1-%C2%B7-documented" title="Harness Score — AI coding harness maturity"><img alt="Harness Score L1 (Documented): measures AI-assisted development harness maturity with harness-score" src="https://paladini.github.io/harness-score/maturity/badge-l1.svg" height="20"></a>
-[![npm version](https://img.shields.io/npm/v/%400x3639%2Fintervals-icu)](https://www.npmjs.com/package/@0x3639/intervals-icu)
-[![npm downloads](https://img.shields.io/npm/dm/%400x3639%2Fintervals-icu)](https://www.npmjs.com/package/@0x3639/intervals-icu)
-[![license](https://img.shields.io/npm/l/%400x3639%2Fintervals-icu)](https://github.com/0x3639/node-intervals-icu/blob/main/LICENSE)
+[![version](https://img.shields.io/github/v/tag/0x3639/node-intervals-icu?include_prereleases&sort=semver&label=version)](https://github.com/0x3639/node-intervals-icu/tags)
+[![license](https://img.shields.io/github/license/0x3639/node-intervals-icu)](https://github.com/0x3639/node-intervals-icu/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](https://www.typescriptlang.org/)
 
 > Maintained fork of [paladini/node-intervals-icu](https://github.com/paladini/node-intervals-icu) with a vendored spec snapshot and CI-enforced coverage — all 149 spec operations covered, 0 phantom routes; 3 verified-but-undocumented routes allowlisted (see [spec/undocumented-routes.json](./spec/undocumented-routes.json) and [AUDIT.md](./AUDIT.md)). See [CHANGELOG](./CHANGELOG.md) for what changed in v3.
