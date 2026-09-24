@@ -38,6 +38,8 @@ export interface APIError {
   code?: string;
   /** Seconds to wait before retrying, from the Retry-After response header */
   retryAfter?: number;
+  /** The response body the API sent with the error, when there was one (e.g. `{ status: 422, error: 'Cannot send message to self' }`) */
+  details?: unknown;
 }
 
 /**

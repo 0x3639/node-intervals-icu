@@ -19,5 +19,6 @@ The SDK is checked against a vendored OpenAPI snapshot, `spec/openapi.json`. Whe
 | `PowerModel` responses (`mmp-model`, `power-spike-model`) | Schema fields `type`, `criticalPower`, `wPrime`, `pMax`, `inputPointIndexes`, `ftp` | Confirmed | The type matches the spec since 3.0.0-beta.1 | 2026-09-22 (`tests/live/phase3.live.test.ts`) |
 | `GET /athletes` | — | Requires API-key authentication | Documented on {@link AthleteService.listAthletes} | 2026-09-22 (`tests/live/phase3.live.test.ts`) |
 | `ActivityType` enum | Includes `Cyclocross` | — | Added to the SDK union | 2026-09-22 (`spec/openapi.json`) |
+| `POST /chats/send-message` | `to_athlete_id` is any athlete id | `422 {"error":"Cannot send message to self"}` when it is the caller's own id | Passed through; the error text is on `IntervalsAPIError.details` and in `message`; the live test and the example need a consenting recipient | 2026-09-24 (curl probe, `tests/live/phase3.live.test.ts`) |
 
 This table is maintained from two sources: `AUDIT.md` at the repository root records the Phase 1/2 live-probe verdicts (2026-09-21) for routes disputed at the time of the initial spec vendoring, and the read-only suites under `tests/live/` re-run a subset of these checks against the live API whenever they are run with credentials. When a probe result changes, update both the relevant test and this table.

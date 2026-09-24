@@ -1,7 +1,9 @@
 /**
- * Send a message to the authenticated athlete, edit its content, then delete
- * it. This writes to the account: it creates and removes a real chat
- * message. The message is deleted in a finally block so a failed step does
+ * Send a message to another athlete, edit its content, then delete it. The
+ * API rejects a message to yourself (422 "Cannot send message to self"), so the
+ * recipient comes from INTERVALS_CHAT_TO_ATHLETE_ID and must be someone who
+ * agreed to receive one test message. This writes to the account: it creates
+ * and removes a real chat message. The message is deleted in a finally block so a failed step does
  * not leave it behind.
  *
  * If the create call itself fails after the server committed it, nothing is cleaned
@@ -13,6 +15,7 @@
  *
  * Run:
  *   export INTERVALS_API_KEY="your-api-key"
+ *   export INTERVALS_CHAT_TO_ATHLETE_ID="i12345"   # the consenting recipient
  *   npx tsx examples/chats/send-edit-delete.ts
  */
 import { IntervalsClient } from '../../src/index.js';
@@ -22,20 +25,20 @@ if (!apiKey) {
   console.error('Set INTERVALS_API_KEY first');
   process.exit(1);
 }
+const recipient = process.env.INTERVALS_CHAT_TO_ATHLETE_ID;
+if (!recipient) {
+  console.error('Set INTERVALS_CHAT_TO_ATHLETE_ID to an athlete who agreed to receive a test message; the API rejects messages to yourself.');
+  process.exit(1);
+}
 
 // #region main
 // maxRetries: 0 — a create that committed before a 5xx would be repeated by a retry, and only the last response's id would be cleaned up.
 const client = new IntervalsClient({ apiKey, maxRetries: 0 });
 
-const me = await client.athletes.getAthlete();
-if (!me.id) {
-  console.error('Could not resolve the authenticated athlete id.');
-  process.exit(1);
-}
 const content = `Created by the SDK example ${Date.now()}`;
 const edited = `${content} (edited)`;
 
-const sent = await client.chats.sendMessage({ to_athlete_id: me.id, content, type: 'TEXT' });
+const sent = await client.chats.sendMessage({ to_athlete_id: recipient, content, type: 'TEXT' });
 
 // The API's response shape for chat id varies: `chat_id` is not in the vendored Message
 // schema, so read it defensively from the raw response, then fall back to the new chat's

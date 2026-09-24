@@ -7,7 +7,7 @@ Every request that fails is rejected with an {@link IntervalsAPIError}, never a 
 
 ## The error type
 
-{@link IntervalsAPIError} extends `Error` and adds three optional fields: `status` (the HTTP status code, when a response was received), `code` (a short machine-readable string such as `'AUTH_FAILED'`, `'NOT_FOUND'`, `'RATE_LIMIT_EXCEEDED'` or `'TIMEOUT'`, set for a few well-known cases and otherwise `undefined`), and `retryAfter` (seconds to wait before retrying, parsed from the response's `Retry-After` header on a 429).
+{@link IntervalsAPIError} extends `Error` and adds four optional fields: `status` (the HTTP status code, when a response was received), `code` (a short machine-readable string such as `'AUTH_FAILED'`, `'NOT_FOUND'`, `'RATE_LIMIT_EXCEEDED'` or `'TIMEOUT'`, set for a few well-known cases and otherwise `undefined`), and `retryAfter` (seconds to wait before retrying, parsed from the response's `Retry-After` header on a 429), and `details` (the response body the API sent with the error, when there was one). Validation failures come back as `422` with a body such as `{ "status": 422, "error": "Cannot send message to self" }`; that `error` text is also appended to `message`.
 
 {@includeCode ../../examples/guides/handle-errors.ts#main}
 
