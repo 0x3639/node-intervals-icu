@@ -17,7 +17,7 @@ if (!apiKey) {
 }
 
 const eventId = Number(process.argv[2]);
-if (!Number.isFinite(eventId)) {
+if (!Number.isInteger(eventId) || eventId <= 0) {
   console.error('Usage: npx tsx examples/shared-events/get.ts <event-id>');
   process.exit(1);
 }

@@ -37,4 +37,5 @@ Fetch the athlete's ride power model, then for the newest typed activity in the 
 ## Behaviour notes
 
 - {@link AnalyticsService.getCurves} returns HTTP 422 for streams or fatigue levels the activity does not have; only `types: ['watts']` with `fatigue: ['normal']` is confirmed to succeed on the live test account.
+- {@link PowerModel} field names follow the vendored spec.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

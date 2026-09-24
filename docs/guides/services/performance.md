@@ -35,4 +35,6 @@ Best pace over a set of distances across the athlete's runs in the last year, as
 ## Behaviour notes
 
 - {@link PerformanceService.getActivityPaceCurvesCSV} requires a non-empty `distances` array; the JSON form ({@link PerformanceService.getActivityPaceCurves}) does not.
+- {@link PerformanceService.getActivityPaceCurves} and {@link PerformanceService.getActivityPaceCurvesCSV} return HTTP 403 "Access denied" for the default athlete alias `0`; the example resolves the real id with `athletes.getAthlete()` first and passes `athleteId` explicitly.
+- The element shape of `ActivityPaceCurves.curves` was not observed on the test account, so the example prints what comes back rather than any specific fields.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

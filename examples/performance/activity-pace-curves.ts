@@ -35,6 +35,8 @@ yearAgo.setFullYear(yearAgo.getFullYear() - 1);
 const newest = localDate(now);
 const oldest = localDate(yearAgo);
 
+// getActivityPaceCurvesCSV's `distances` parameter is typed as a non-empty tuple
+// ([number, ...number[]]), not a plain number[], so it is cast to match.
 const options = { oldest, newest, type: 'Run' as const, distances: [1000, 5000] as [number, ...number[]] };
 
 const curves = await client.performance.getActivityPaceCurves(options, me.id);
