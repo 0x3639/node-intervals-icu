@@ -26,7 +26,7 @@ for (const event of events.slice(0, 3)) {
 const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const now = new Date(); // one timestamp for both bounds
 const monthAhead = new Date(now);
-monthAhead.setDate(monthAhead.getDate() + 30);
+monthAhead.setDate(monthAhead.getDate() + 29);
 const oldest = localDate(now);
 const newest = localDate(monthAhead);
 

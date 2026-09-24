@@ -26,13 +26,13 @@ const client = new IntervalsClient({ apiKey });
 const me = await client.athletes.getAthlete();
 const now = new Date(); // one timestamp for both bounds
 const newest = localDateIn(now, me.timezone);
-const oldest = shiftDays(newest, -30);
+const oldest = shiftDays(newest, -29); // inclusive bounds: 29 back from today is a 30-day window
 
 const activities = await client.activities.listActivities({ oldest, newest });
 const events = await client.events.listEvents({ oldest, newest, category: ['WORKOUT'] });
 const wellness = await client.wellness.listWellness({ oldest, newest });
 
-console.log(`${oldest} to ${newest} (inclusive):`);
+console.log(`Last 30 days, ${oldest} to ${newest} (inclusive):`);
 console.log(`  ${activities.length} activities`);
 console.log(`  ${events.length} workout events`);
 console.log(`  ${wellness.length} wellness records`);

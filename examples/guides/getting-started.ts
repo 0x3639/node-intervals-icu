@@ -25,7 +25,7 @@ console.log(`Hello ${me.name ?? me.id}`);
 const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const now = new Date(); // one timestamp for both bounds
 const weekAgo = new Date(now);
-weekAgo.setDate(weekAgo.getDate() - 7);
+weekAgo.setDate(weekAgo.getDate() - 6);
 const newest = localDate(now);
 const oldest = localDate(weekAgo);
 

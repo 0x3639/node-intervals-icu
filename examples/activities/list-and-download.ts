@@ -20,7 +20,7 @@ const client = new IntervalsClient({ apiKey });
 const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const now = new Date(); // one timestamp for both bounds
 const monthAgo = new Date(now);
-monthAgo.setDate(monthAgo.getDate() - 30);
+monthAgo.setDate(monthAgo.getDate() - 29);
 const newest = localDate(now);
 const oldest = localDate(monthAgo);
 

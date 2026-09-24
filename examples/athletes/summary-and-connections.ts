@@ -21,7 +21,7 @@ const client = new IntervalsClient({ apiKey });
 const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const now = new Date(); // one timestamp for both bounds
 const quarterAgo = new Date(now);
-quarterAgo.setDate(quarterAgo.getDate() - 90);
+quarterAgo.setDate(quarterAgo.getDate() - 89);
 const end = localDate(now);
 const start = localDate(quarterAgo);
 
