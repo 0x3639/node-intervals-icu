@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0-rc.1] - 2026-09-24
+
+Release candidate. Everything below is the 3.0.0 series relative to `intervals-icu` v2.2.1.
+
+### Security
+- Every GitHub Actions workflow pins its actions to a full commit SHA (the major tag is kept as a comment).
+
+### Fixed
+- Examples labelled "last 7 days" / "last 30 days" now span exactly 7 / 30 inclusive dates; a structural test keeps labels and offsets in step.
+
+### Tests
+- Live read-only cases for the athlete-level curve routes (`getPowerCurves`, `getPaceCurves`, `getHRCurves`), which no earlier live run had exercised.
+
 Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/guides/migrating-to-v3.md` for the full migration guide.
 
 ### Removed

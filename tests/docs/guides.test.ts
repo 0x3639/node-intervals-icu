@@ -206,4 +206,24 @@ describe('documentation guides', () => {
       );
     }
   });
+  it('a window labelled "N days" spans N inclusive dates', () => {
+    // Both bounds are inclusive (dates guide), so "last 7 days" is today and the 6 days
+    // before it, not 7 days before it. Every offset applied next to an "N days" label
+    // must therefore be N - 1.
+    const LABEL = /\b(\d+) days\b/gi;
+    const OFFSETS = [/\.getDate\(\)\s*[-+]\s*(\d+)\)/g, /shiftDays\([^,]+,\s*-?(\d+)\)/g];
+    const problems: string[] = [];
+    for (const file of exampleFiles()) {
+      const text = read(file);
+      const labels = new Set([...text.matchAll(LABEL)].map((m) => Number(m[1])));
+      if (labels.size === 0) continue;
+      for (const re of OFFSETS) {
+        for (const m of text.matchAll(re)) {
+          const offset = Number(m[1]);
+          if (!labels.has(offset + 1)) problems.push(`${file}: offset ${offset} next to label(s) ${[...labels].join('/')} days`);
+        }
+      }
+    }
+    expect(problems).toEqual([]);
+  });
 });

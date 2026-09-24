@@ -26,7 +26,7 @@ const client = new IntervalsClient({ apiKey });
 const me = await client.athletes.getAthlete();
 const now = new Date(); // one timestamp for both bounds
 const newest = localDateIn(now, me.timezone);
-const oldest = shiftDays(newest, -30);
+const oldest = shiftDays(newest, -29); // inclusive bounds: an offset of 29 gives a 30 days window
 
 const activities = await client.activities.listActivities({ oldest, newest });
 const events = await client.events.listEvents({ oldest, newest, category: ['WORKOUT'] });
