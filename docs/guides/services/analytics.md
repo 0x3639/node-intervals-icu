@@ -22,8 +22,19 @@ title: Analytics
 
 ## Examples
 
-_Added in a later task._
+### Histograms
+
+For the newest typed activity in the last year, fetch its power histogram, HR histogram and time-at-heart-rate plot. The API returns HTTP 422 when a requested stream is not available for the activity; each call is wrapped separately so one missing stream does not stop the others.
+
+{@includeCode ../../../examples/analytics/histograms.ts#main}
+
+### Models and curves
+
+Fetch the athlete's ride power model, then for the newest typed activity in the last year: its power spike model, its watts curve (normal fatigue only), and interval stats for its first detected interval, if any. {@link AnalyticsService.getMMPModel} field names ({@link PowerModel}) follow the spec's `PowerModel` schema.
+
+{@includeCode ../../../examples/analytics/models-and-curves.ts#main}
 
 ## Behaviour notes
 
+- {@link AnalyticsService.getCurves} returns HTTP 422 for streams or fatigue levels the activity does not have; only `types: ['watts']` with `fatigue: ['normal']` is confirmed to succeed on the live test account.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

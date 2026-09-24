@@ -20,8 +20,19 @@ title: Performance
 
 ## Examples
 
-_Added in a later task._
+### Athlete-level curves
+
+Fetch the athlete's power, pace and HR curves for the last year, and the power-vs-heart-rate curve over the same range. `type` is not in the {@link CurveOptions} interface, but the live API requires it for {@link PerformanceService.getPowerCurves} (power-curves); {@link PerformanceService.getPaceCurves} and {@link PerformanceService.getHRCurves} work without it.
+
+{@includeCode ../../../examples/performance/athlete-curves.ts#main}
+
+### Activity pace curves
+
+Best pace over a set of distances across the athlete's runs in the last year, as JSON and as CSV. `distances` is required for the CSV form: the API returns HTTP 500 without it, while the JSON form accepts the omission. The element shape of `ActivityPaceCurves.curves` is unobserved on the live account (it was empty for every sport tried), so the example prints what comes back rather than any specific fields. This route also does not accept the SDK's default "current athlete" alias (athlete id `0`); the example resolves a real athlete id first.
+
+{@includeCode ../../../examples/performance/activity-pace-curves.ts#main}
 
 ## Behaviour notes
 
+- {@link PerformanceService.getActivityPaceCurvesCSV} requires a non-empty `distances` array; the JSON form ({@link PerformanceService.getActivityPaceCurves}) does not.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

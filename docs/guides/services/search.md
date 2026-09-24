@@ -13,7 +13,11 @@ title: Search
 
 ## Examples
 
-_Added in a later task._
+### Search
+
+Search the athlete's activities for the free-text query `"tempo"` and print the results.
+
+{@includeCode ../../../examples/search/search.ts#main}
 
 ## Behaviour notes
 

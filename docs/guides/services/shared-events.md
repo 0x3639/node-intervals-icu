@@ -16,7 +16,11 @@ title: Shared events
 
 ## Examples
 
-_Added in a later task._
+### Get
+
+Get a shared event by id, given on the command line, in a try/catch that prints the error status on failure. The test account has no known shared event id, so a 404 is the expected outcome.
+
+{@includeCode ../../../examples/shared-events/get.ts#main}
 
 ## Behaviour notes
 
