@@ -21,8 +21,21 @@ title: Chats
 
 ## Examples
 
-_Added in a later task._
+### List and read
+
+List the athlete's chats and groups, then read one chat's details and its most recent messages.
+
+{@includeCode ../../../examples/chats/list-and-read.ts#main}
+
+### Send, edit and delete
+
+Send a message to the authenticated athlete, edit its content, then delete it.
+
+CI never runs this example; running it by hand changes the authenticated account.
+
+{@includeCode ../../../examples/chats/send-edit-delete.ts#main}
 
 ## Behaviour notes
 
+- {@link ChatService.blockChat}, {@link ChatService.updateMessage} and {@link ChatService.deleteMessage} mutate the account. {@link ChatService.updateMessage} accepts only `content` and `answer` ({@link UpdateMessageDTO}); the SDK's live tests restore state.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

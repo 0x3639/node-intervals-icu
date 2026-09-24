@@ -19,7 +19,13 @@ title: Custom items
 
 ## Examples
 
-_Added in a later task._
+### List and reorder
+
+List the athlete's custom items, then reorder them into their current order — a no-op that exercises the route.
+
+CI never runs this example; running it by hand writes to the authenticated account (harmlessly, since the order does not change).
+
+{@includeCode ../../../examples/custom-items/list-and-reorder.ts#main}
 
 ## Behaviour notes
 

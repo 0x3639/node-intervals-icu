@@ -15,7 +15,11 @@ title: Weather
 
 ## Examples
 
-_Added in a later task._
+### Forecast and config
+
+Fetch the athlete's weather forecast and print the first entry's fields, then fetch the weather configuration used to generate it.
+
+{@includeCode ../../../examples/weather/forecast-and-config.ts#main}
 
 ## Behaviour notes
 
