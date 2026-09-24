@@ -29,10 +29,13 @@ const client = new IntervalsClient({ apiKey, maxRetries: 0 });
 
 // The API keys wellness records by the athlete's local date, not the machine's. A machine
 // in a different time zone (or a CI runner on UTC) would otherwise read one day's record
-// and write another's. `en-CA` formats as YYYY-MM-DD; an undefined timeZone means the
+// and write another's. the calendar fields are assembled as YYYY-MM-DD in a fixed order (a Node build with limited ICU data can format `en-CA` differently); an undefined timeZone means the
 // machine's own zone, which is the right fallback when the athlete has not set one.
-const localDateIn = (date: Date, timeZone?: string): string =>
-  new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+const localDateIn = (date: Date, timeZone?: string): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  const field = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${field('year')}-${field('month')}-${field('day')}`;
+};
 
 const me = await client.athletes.getAthlete();
 const today = localDateIn(new Date(), me.timezone);

@@ -36,14 +36,15 @@ export class FolderService {
 
   /**
    * Update the plan's workouts dated between `oldest` and `newest`. The API currently
-   * changes only `hide_from_athlete`.
+   * changes only `hide_from_athlete`, so the body is typed to that one field; widen it
+   * when the route accepts more.
    *
    * `range.oldest` and `range.newest` are the plan day numbers the spec declares (int32),
    * not calendar dates: a plan's workouts are placed by `day` relative to the plan start.
    */
   async updatePlanWorkouts(
     folderId: number,
-    data: Partial<Workout>,
+    data: { hide_from_athlete: boolean },
     range: { oldest: number; newest: number },
     athleteId?: string,
   ): Promise<Workout[]> {

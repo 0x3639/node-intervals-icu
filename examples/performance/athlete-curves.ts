@@ -35,8 +35,11 @@ console.log(`HR curves: ${hrCurves.list?.length ?? 0}`);
 // in the athlete's time zone ('en-CA' formats as YYYY-MM-DD; an undefined timeZone falls
 // back to the machine's own zone, which is the right fallback when none is set).
 const me = await client.athletes.getAthlete();
-const localDateIn = (date: Date, timeZone?: string): string =>
-  new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+const localDateIn = (date: Date, timeZone?: string): string => {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(date);
+  const field = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  return `${field('year')}-${field('month')}-${field('day')}`;
+};
 const now = new Date(); // one timestamp for both bounds
 const yearAgo = new Date(now);
 yearAgo.setFullYear(yearAgo.getFullYear() - 1);

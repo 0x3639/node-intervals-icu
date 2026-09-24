@@ -29,6 +29,6 @@ List the athlete's folders and plans, then get who the first folder is shared wi
 
 ## Behaviour notes
 
-- {@link FolderService.updatePlanWorkouts} takes one workout body, not a list, and requires the `oldest`/`newest` query pair; the spec declares both as int32 plan day numbers, not dates. Per the spec, only `hide_from_athlete` is applied.
+- {@link FolderService.updatePlanWorkouts} takes a single `{ hide_from_athlete }` body, not a list of workouts, and requires the `oldest`/`newest` query pair; the spec declares both as int32 plan day numbers, not dates. Per the spec, only `hide_from_athlete` is applied.
 - {@link FolderService.applyPlanChanges} updates only workouts dated today or in the future; earlier calendar entries are left as they are.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

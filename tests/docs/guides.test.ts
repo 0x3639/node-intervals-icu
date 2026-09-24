@@ -147,4 +147,25 @@ describe('documentation guides', () => {
       expect(text, `download-files.ts lacks ${needle}`).toContain(needle);
     }
   });
+  it('every creating example carries a timestamped marker and the orphan warning', () => {
+    // Retries are off, so a create that the server committed before answering 5xx is not
+    // repeated; but the example then throws before it learns the id, and nothing is cleaned
+    // up. The marker in the resource name is what lets a reader find and delete it by hand,
+    // and the header must say so.
+    const creating = [
+      'examples/chats/send-edit-delete.ts',
+      'examples/events/create-update-delete.ts',
+      'examples/gear/reminders.ts',
+      'examples/guides/upload-activity.ts',
+      'examples/workouts/create-in-folder.ts',
+    ];
+    for (const file of creating) {
+      const text = read(file);
+      expect(text, `${file} names the resource with a Date.now() marker`).toMatch(/by the SDK example \$\{Date\.now\(\)\}/);
+      // The sentence wraps across comment lines, so match it with the line prefix allowed.
+      expect(text, `${file} warns about the orphan case in its header`).toMatch(
+        /If the create call itself fails after the server committed it, nothing is cleaned\s*(?:\*\s*)?up/,
+      );
+    }
+  });
 });

@@ -26,15 +26,14 @@ describe('PerformanceService — athlete-level curves', () => {
     expect(seen[0].params).toEqual(opts);
   });
 
-  it('getPowerCurves accepts the full option set (newest, now, includeRanks, pmType, filters)', async () => {
+  it('getPowerCurves accepts the full option set (newest, now, includeRanks, pmType)', async () => {
     const opts = {
       type: 'Run' as const,
       curves: ['s0', 'all-kj1'],
       newest: '2026-09-24',
       now: '2026-09-24',
       includeRanks: true,
-      pmType: 'MS_2P',
-      filters: [{ field: 'type', op: 'in', value: 'Run' }],
+      pmType: 'MS_2P' as const,
     };
     await client.performance.getPowerCurves(opts, 'other');
     expect(seen[0].url).toBe('/athlete/other/power-curves');
@@ -62,5 +61,39 @@ describe('PerformanceService — athlete-level curves', () => {
     await client.performance.getHRCurves();
     expect(seen[0].params).toEqual({});
     expect(seen[1].params).toEqual({});
+  });
+});
+
+describe('PerformanceService — athlete-level curves, serialized query strings', () => {
+  // The request-shape cases above look at `params` before axios serializes them. These
+  // cases run the real axios serializer (the one the client configures) over the captured
+  // config, so a change to the wire encoding of arrays is caught here.
+  let client: IntervalsClient;
+  let seen: any[] = [];
+  let realAxios: typeof import('axios').default;
+  beforeEach(async () => {
+    seen = [];
+    setupAxiosMock(mockedAxios, async (config: any) => {
+      seen.push(config);
+      return {};
+    });
+    client = new IntervalsClient({ apiKey: 'k', athleteId: 'i1' });
+    realAxios = ((await vi.importActual('axios')) as typeof import('axios')).default;
+  });
+  const uri = () => realAxios.getUri({ url: seen[0].url, params: seen[0].params, paramsSerializer: { indexes: null } });
+
+  it('power curves: curves repeat as plain keys, scalars pass through', async () => {
+    await client.performance.getPowerCurves({ type: 'Ride', curves: ['1y', '42d-kj1'], subMaxEfforts: 1, pmType: 'MORTON_3P' });
+    expect(uri()).toBe('/athlete/i1/power-curves?type=Ride&curves=1y&curves=42d-kj1&subMaxEfforts=1&pmType=MORTON_3P');
+  });
+
+  it('pace curves: gap and CS model serialize as scalars', async () => {
+    await client.performance.getPaceCurves({ curves: ['s0'], gap: true, pmType: 'CS' });
+    expect(uri()).toBe('/athlete/i1/pace-curves?curves=s0&gap=true&pmType=CS');
+  });
+
+  it('hr curves: newest and curves', async () => {
+    await client.performance.getHRCurves({ newest: '2026-09-24', curves: ['all'] });
+    expect(uri()).toBe('/athlete/i1/hr-curves?newest=2026-09-24&curves=all');
   });
 });

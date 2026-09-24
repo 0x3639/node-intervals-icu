@@ -9,9 +9,11 @@ on:
 permissions:
   contents: read
 
-# One docs run per ref. A superseded PR run is cancelled, since only the tip of a pull
-# request is worth building; runs on main are never cancelled, so every pushed commit is
-# built. Ordering is handled by the deploy job below, not here.
+# One docs run per ref. A running build is never cancelled on main; a superseded PR run is.
+# GitHub keeps at most one pending run per group and replaces it with the newest, so a
+# burst of pushes to main skips the intermediate commits: the newest commit is always built,
+# which is all the site needs. The deploy job below queues FIFO and deploys only while its
+# commit is still main's head, so an older build can never overwrite a newer one.
 concurrency:
   group: docs-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
