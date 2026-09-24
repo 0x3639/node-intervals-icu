@@ -4,6 +4,10 @@
  * message. The message is deleted in a finally block so a failed step does
  * not leave it behind.
  *
+ * If the create call itself fails after the server committed it, nothing is cleaned
+ * up: search the account for `Created by the SDK example` (or `Uploaded by the SDK
+ * example`) and delete it by hand.
+ *
  * CI never runs this example. Running it by hand changes the authenticated
  * account (briefly).
  *

@@ -31,7 +31,7 @@ List the athlete's chats and groups, then read one chat's details and its most r
 
 Send a message to the authenticated athlete, edit its content, then delete it.
 
-CI never runs this example; running it by hand changes the authenticated account.
+CI never runs this example; running it by hand changes the authenticated account. If the create call itself fails after the server committed it, nothing is cleaned up: search the account for `Created by the SDK example` (or `Uploaded by the SDK example`) and delete it by hand.
 
 {@includeCode ../../../examples/chats/send-edit-delete.ts#main}
 

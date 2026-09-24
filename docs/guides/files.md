@@ -35,7 +35,7 @@ Uploads take a `Buffer | Blob | Uint8Array` plus a filename, and are sent as `mu
 - {@link FolderService.importWorkout} — creates a library workout from a file, in a given folder.
 - {@link CustomItemService.uploadImage} — attaches an image to a custom item.
 
-CI never runs this example; running it by hand changes the authenticated account: it uploads a real activity and deletes it again in a `finally` block. If the upload response carries no activity id, the activity stays on the account and has to be deleted by hand.
+CI never runs this example; running it by hand changes the authenticated account: it uploads a real activity and deletes it again in a `finally` block. If the upload response carries no activity id, the activity stays on the account and has to be deleted by hand. If the create call itself fails after the server committed it, nothing is cleaned up: search the account for `Created by the SDK example` (or `Uploaded by the SDK example`) and delete it by hand.
 
 {@includeCode ../../examples/guides/upload-activity.ts#main}
 

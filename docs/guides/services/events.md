@@ -38,7 +38,7 @@ List planned workouts and races in the next 7 days, then list every tag that has
 
 Create a NOTE event for today, update its description, then delete it.
 
-CI never runs this example; running it by hand changes the authenticated account.
+CI never runs this example; running it by hand changes the authenticated account. If the create call itself fails after the server committed it, nothing is cleaned up: search the account for `Created by the SDK example` (or `Uploaded by the SDK example`) and delete it by hand.
 
 {@includeCode ../../../examples/events/create-update-delete.ts#main}
 

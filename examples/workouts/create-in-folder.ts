@@ -4,6 +4,10 @@
  * library workout. The workout is deleted in a finally block so a failed
  * step does not leave it behind.
  *
+ * If the create call itself fails after the server committed it, nothing is cleaned
+ * up: search the account for `Created by the SDK example` (or `Uploaded by the SDK
+ * example`) and delete it by hand.
+ *
  * CI never runs this example. Running it by hand changes the authenticated
  * account (briefly).
  *
@@ -31,9 +35,13 @@ if (!folder || folder.id === undefined) {
 } else {
   console.log(`Using folder: ${folder.name ?? folder.id}`);
 
+  // A unique marker in the name: if the create fails after the server committed it, this
+  // is what to search the account for.
+  const marker = `Created by the SDK example ${Date.now()}`;
+
   const workout = await client.workouts.createWorkout({
     folder_id: folder.id,
-    name: 'Created by the SDK example',
+    name: marker,
     type: 'Ride',
     description: '- 20m 85%',
   });

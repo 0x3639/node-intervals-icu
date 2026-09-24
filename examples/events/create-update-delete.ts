@@ -4,6 +4,10 @@
  * calendar event. The event is deleted in a finally block so a failed step
  * does not leave it behind.
  *
+ * If the create call itself fails after the server committed it, nothing is cleaned
+ * up: search the account for `Created by the SDK example` (or `Uploaded by the SDK
+ * example`) and delete it by hand.
+ *
  * CI never runs this example. Running it by hand changes the authenticated
  * account (briefly).
  *
@@ -33,10 +37,14 @@ const localDateIn = (date: Date, timeZone?: string): string =>
 const me = await client.athletes.getAthlete();
 const today = localDateIn(new Date(), me.timezone);
 
+// A unique marker in the name: if the create fails after the server committed it, this
+// is what to search the account for.
+const marker = `Created by the SDK example ${Date.now()}`;
+
 const event = await client.events.createEvent({
   category: 'NOTE',
   start_date_local: today,
-  name: 'Created by the SDK example',
+  name: marker,
 });
 if (typeof event.id !== 'number') {
   console.error('The API did not return an id for the created event; it may need deleting by hand.');

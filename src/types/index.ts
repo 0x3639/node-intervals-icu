@@ -190,6 +190,8 @@ export type {
 // Performance
 export type {
   CurveOptions,
+  PowerCurveOptions,
+  PaceCurveOptions,
   PowerModel,
   PaceModel,
   Rank,

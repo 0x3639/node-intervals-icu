@@ -112,13 +112,39 @@ describe('documentation guides', () => {
     // The SDK retries 429/502/503/504 for every method, POST included, so a create the
     // server committed before answering a 5xx would be repeated by the retry and only the
     // last response's id would be cleaned up. Mutating examples must opt out.
-    const MUTATORS = /\.(sendMessage|createEvent|createReminder|createWorkout|uploadActivity|updateWellness|reorder|createEventsBulk|createWellness)\(/;
-    // Block comments are stripped first: a mutating call shown inside a `/* ... */` block
-    // (examples/basic-usage.ts section 8) is prose, not a write, and must not be flagged.
+    // Any `.<verb><Noun>(` call rather than a hand-kept list of method names, so a new
+    // example calling a mutating method the list never heard of is still caught.
+    // `reorder` is spelled out as well: CustomItemService.reorder() carries no noun suffix.
+    const MUTATORS = /\.(?:(?:create|update|delete|send|upload|reorder|mark)[A-Z]\w*|reorder)\(/;
+    // Block and line comments are stripped first: a mutating call shown inside a `/* ... */`
+    // block (examples/basic-usage.ts section 8) or after `//` is prose, not a write, and
+    // must not be flagged.
+    const strip = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     const gaps = exampleFiles().filter((f) => {
       const text = read(f);
-      return MUTATORS.test(text.replace(/\/\*[\s\S]*?\*\//g, '')) && !text.includes('maxRetries: 0');
+      return MUTATORS.test(strip(text)) && !text.includes('maxRetries: 0');
     });
     expect(gaps).toEqual([]);
+    // Pin the count: the regex must still match the mutating examples, so a change that
+    // stops matching anything fails here instead of silently checking nothing.
+    const mutating = exampleFiles().filter((f) => MUTATORS.test(strip(read(f))));
+    expect(mutating.sort()).toEqual([
+      'examples/chats/send-edit-delete.ts',
+      'examples/custom-items/list-and-reorder.ts',
+      'examples/events/create-update-delete.ts',
+      'examples/gear/reminders.ts',
+      'examples/guides/upload-activity.ts',
+      'examples/wellness/update-today.ts',
+      'examples/workouts/create-in-folder.ts',
+    ]);
+  });
+
+  it('the download example writes its file privately and refuses to overwrite', () => {
+    // The FIT file is written to a freshly created directory, readable only by the current
+    // user, and never onto a path something else pre-created.
+    const text = read('examples/guides/download-files.ts');
+    for (const needle of ['mkdtempSync(', 'mode: 0o600', "flag: 'wx'"]) {
+      expect(text, `download-files.ts lacks ${needle}`).toContain(needle);
+    }
   });
 });

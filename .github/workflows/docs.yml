@@ -9,10 +9,9 @@ on:
 permissions:
   contents: read
 
-# One docs run per ref. Pushes to main therefore queue and complete in order, so an older
-# build can never finish after — and overwrite — a newer one; they are never cancelled.
-# PR runs are grouped per branch and a superseded PR run is cancelled, since only the tip
-# of a pull request is worth building.
+# One docs run per ref. A superseded PR run is cancelled, since only the tip of a pull
+# request is worth building; runs on main are never cancelled, so every pushed commit is
+# built. Ordering is handled by the deploy job below, not here.
 concurrency:
   group: docs-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -43,17 +42,35 @@ jobs:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
-    # The deploy job also serialises on the Pages environment, which is shared with any
-    # other workflow that publishes Pages; the ref-level group above orders main's own runs.
+    # Deploys serialise on the Pages environment, which is shared with any other workflow
+    # that publishes Pages. `queue: max` makes waiting deploy jobs line up FIFO instead of
+    # cancelling one another, so no deploy is dropped; the gate step below then skips a
+    # deploy whose commit is no longer main's head, so an older build can never overwrite
+    # a newer one. (`queue` cannot be combined with cancel-in-progress: true.)
     concurrency:
       group: pages
       cancel-in-progress: false
+      queue: max
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - name: Check this commit is still main's head
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head="$(gh api "repos/${{ github.repository }}/branches/main" --jq .commit.sha)"
+          if [ "$head" = "${{ github.sha }}" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "superseded by $head; not deploying"
+          fi
       - id: deployment
+        if: steps.gate.outputs.current == 'true'
         uses: actions/deploy-pages@v4

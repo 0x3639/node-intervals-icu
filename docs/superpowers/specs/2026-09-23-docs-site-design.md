@@ -112,8 +112,17 @@ hand changes the authenticated account.
   HTTP 422 for power curves without it and the example otherwise has to
   document a field the type does not carry; and the `athleteId` JSDoc in
   `src/types/config.ts` is corrected from "defaults to 'me'" to "defaults to
-  '0' (the authenticated athlete)", which is what the client actually does. No
-  other source changes.
+  '0' (the authenticated athlete)", which is what the client actually does.
+  Two further exceptions were added in review, both because writing the pages
+  showed that the documented contract could not work: `CurveOptions` is
+  rewritten to the spec's curve query (`newest`, `curves`, `type`,
+  `subMaxEfforts`, `now`, `filters`; the previous `oldest`/`id` fields are not
+  parameters of any curve route), with `PowerCurveOptions` (required `type`)
+  and `PaceCurveOptions` (adds `gap`) beside it, so the guide can describe the
+  `curves` window syntax the API actually takes; and
+  `FolderService.updatePlanWorkouts` takes one `Workout` body plus the
+  required `oldest`/`newest` query pair the route declares, instead of an
+  array and no query, which the API cannot accept. No other source changes.
 - Documentation is required for classes, interfaces, methods, type aliases,
   enums and functions (`requiredToBeDocumented`); interface *properties* are
   not required, since about 1,100 of them carry no comment today and

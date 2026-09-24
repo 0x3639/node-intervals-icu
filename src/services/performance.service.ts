@@ -3,7 +3,7 @@ import type {
   PowerCurveSet, PaceCurveSet, HRCurveSet, PowerHRCurve,
   ActivityPowerCurvePayload, ActivityHRCurvePayload,
   ActivityPaceCurvesOptions, ActivityPaceCurves,
-  ActivityType, CurveOptions,
+  ActivityType, CurveOptions, PowerCurveOptions, PaceCurveOptions,
 } from '../types/index.js';
 
 /**
@@ -20,10 +20,13 @@ export class PerformanceService {
 
   // ── Power Curves ──
 
-  /** Get athlete-level power curves (best efforts over time) */
-  async getPowerCurves(options?: CurveOptions, athleteId?: string): Promise<PowerCurveSet> {
+  /**
+   * Get athlete-level power curves (best efforts over time). `type` is required: the API
+   * returns HTTP 422 without it. The window comes from `options.curves` (default: the past year).
+   */
+  async getPowerCurves(options: PowerCurveOptions, athleteId?: string): Promise<PowerCurveSet> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PowerCurveSet>({ method: 'GET', url: `/athlete/${id}/power-curves`, params: options as Record<string, unknown> });
+    return this.httpClient.request<PowerCurveSet>({ method: 'GET', url: `/athlete/${id}/power-curves`, params: { ...options } as Record<string, unknown> });
   }
 
   /** Compare power curves across activities */
@@ -42,18 +45,18 @@ export class PerformanceService {
 
   // ── Pace Curves ──
 
-  /** Get athlete-level pace curves */
-  async getPaceCurves(options?: CurveOptions, athleteId?: string): Promise<PaceCurveSet> {
+  /** Get athlete-level pace curves. The window comes from `options.curves` (default: the past year). */
+  async getPaceCurves(options?: PaceCurveOptions, athleteId?: string): Promise<PaceCurveSet> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<PaceCurveSet>({ method: 'GET', url: `/athlete/${id}/pace-curves`, params: options as Record<string, unknown> });
+    return this.httpClient.request<PaceCurveSet>({ method: 'GET', url: `/athlete/${id}/pace-curves`, params: { ...options } as Record<string, unknown> });
   }
 
   // ── HR Curves ──
 
-  /** Get athlete-level HR curves */
+  /** Get athlete-level HR curves. The window comes from `options.curves` (default: the past year). */
   async getHRCurves(options?: CurveOptions, athleteId?: string): Promise<HRCurveSet> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<HRCurveSet>({ method: 'GET', url: `/athlete/${id}/hr-curves`, params: options as Record<string, unknown> });
+    return this.httpClient.request<HRCurveSet>({ method: 'GET', url: `/athlete/${id}/hr-curves`, params: { ...options } as Record<string, unknown> });
   }
 
   /** Compare HR curves across activities */

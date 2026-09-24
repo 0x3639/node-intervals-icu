@@ -4,6 +4,10 @@
  * when the upload response carries an activity id. If the response carries no
  * id, the activity stays on the account and has to be deleted by hand.
  *
+ * If the create call itself fails after the server committed it, nothing is cleaned
+ * up: search the account for `Created by the SDK example` (or `Uploaded by the SDK
+ * example`) and delete it by hand.
+ *
  * CI never runs this example. Running it by hand changes the authenticated
  * account (briefly).
  *
@@ -31,9 +35,13 @@ if (!filePath) {
 // maxRetries: 0 — a create that committed before a 5xx would be repeated by a retry, and only the last response's id would be cleaned up.
 const client = new IntervalsClient({ apiKey, maxRetries: 0 });
 
+// A unique marker in the name: if the upload fails after the server committed it, this
+// is what to search the account for.
+const marker = `Uploaded by the SDK example ${Date.now()}`;
+
 const file = readFileSync(filePath);
 const uploaded = await client.activities.uploadActivity(file, basename(filePath), {
-  name: 'Uploaded from the SDK',
+  name: marker,
 });
 
 // UploadResponse reports the created activities in `activities`, and a single-activity

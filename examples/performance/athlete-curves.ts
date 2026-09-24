@@ -17,24 +17,33 @@ if (!apiKey) {
 // #region main
 const client = new IntervalsClient({ apiKey });
 
-const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+// The curve routes pick their window with `curves`, not a date range: '1y' is the past
+// year, '42d' the past 42 days, 's0' the current season, 'all' all time, and
+// 'r.2026-01-01.2026-03-31' an explicit range. The API requires `type` for power-curves
+// (HTTP 422 without it); pace-curves and hr-curves work without it.
+const powerCurves = await client.performance.getPowerCurves({ curves: ['1y'], type: 'Ride' });
+console.log(`Power curves: ${powerCurves.list?.length ?? 0}`);
+
+const paceCurves = await client.performance.getPaceCurves({ curves: ['1y'] });
+console.log(`Pace curves: ${paceCurves.list?.length ?? 0}`);
+
+const hrCurves = await client.performance.getHRCurves({ curves: ['1y'] });
+console.log(`HR curves: ${hrCurves.list?.length ?? 0}`);
+
+// getPowerHRCurve is the exception: it takes an explicit start/end date range. The API
+// keys dates by the athlete's local date, not the machine's, so the bounds are formatted
+// in the athlete's time zone ('en-CA' formats as YYYY-MM-DD; an undefined timeZone falls
+// back to the machine's own zone, which is the right fallback when none is set).
+const me = await client.athletes.getAthlete();
+const localDateIn = (date: Date, timeZone?: string): string =>
+  new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
 const now = new Date(); // one timestamp for both bounds
 const yearAgo = new Date(now);
 yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-const newest = localDate(now);
-const oldest = localDate(yearAgo);
 
-// The API requires `type` for power-curves (HTTP 422 without it); pace-curves and
-// hr-curves work without it.
-const powerCurves = await client.performance.getPowerCurves({ oldest, newest, type: 'Ride' });
-console.log(`Power curves: ${powerCurves.list?.length ?? 0}`);
-
-const paceCurves = await client.performance.getPaceCurves({ oldest, newest });
-console.log(`Pace curves: ${paceCurves.list?.length ?? 0}`);
-
-const hrCurves = await client.performance.getHRCurves({ oldest, newest });
-console.log(`HR curves: ${hrCurves.list?.length ?? 0}`);
-
-const powerHR = await client.performance.getPowerHRCurve({ start: oldest, end: newest });
+const powerHR = await client.performance.getPowerHRCurve({
+  start: localDateIn(yearAgo, me.timezone),
+  end: localDateIn(now, me.timezone),
+});
 console.log(`Power vs HR: ${powerHR.bpm?.length ?? 0} point(s)`);
 // #endregion main
