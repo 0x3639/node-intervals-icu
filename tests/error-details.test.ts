@@ -50,3 +50,40 @@ describe('IntervalsAPIError.details', () => {
     expect(err.details).toEqual({ error: 'slow down' });
   });
 });
+
+describe('IntervalsAPIError.details — body shapes', () => {
+  const handler = new ErrorHandler();
+  const tracker = new RateLimitTracker();
+
+  it('keeps an HTML error page out of the message but in details', () => {
+    const html = '<html><body><h1>502 Bad Gateway</h1></body></html>';
+    const err = handler.handleError(axiosError(502, html), tracker);
+    expect(err.message).toBe('Request failed with status code 502');
+    expect(err.details).toBe(html);
+  });
+
+  it('caps a long explanation at 200 characters in the message', () => {
+    const long = 'x'.repeat(500);
+    const err = handler.handleError(axiosError(400, { error: long }), tracker);
+    expect(err.message).toBe(`Request failed with status code 400: ${'x'.repeat(200)}…`);
+    expect(err.details).toEqual({ error: long });
+  });
+
+  it('decodes a binary JSON body (download routes) into details and the message', () => {
+    const buf = Buffer.from(JSON.stringify({ status: 500, error: 'No activities found' }));
+    const err = handler.handleError(axiosError(500, buf), tracker);
+    expect(err.message).toBe('Request failed with status code 500: No activities found');
+    expect(err.details).toEqual({ status: 500, error: 'No activities found' });
+  });
+
+  it('decodes a binary text body', () => {
+    const err = handler.handleError(axiosError(500, new TextEncoder().encode('boom').buffer), tracker);
+    expect(err.message).toBe('Request failed with status code 500: boom');
+    expect(err.details).toBe('boom');
+  });
+
+  it('ignores arrays and numbers as bodies', () => {
+    expect(handler.handleError(axiosError(400, [1, 2]), tracker).message).toBe('Request failed with status code 400');
+    expect(handler.handleError(axiosError(400, 7), tracker).message).toBe('Request failed with status code 400');
+  });
+});

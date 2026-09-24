@@ -130,10 +130,21 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
   const CHAT_TO = process.env.INTERVALS_LIVE_CHAT_TO;
 
   it('sendMessage to the caller is rejected with 422 and the reason is on the error', async () => {
-    await expect(c().chats.sendMessage({ to_athlete_id: athleteId(), content: 'never sent', type: 'TEXT' })).rejects.toMatchObject({
-      status: 422,
-      details: { error: 'Cannot send message to self' },
-    });
+    // Marked and cleaned up like every other write: if the API ever starts accepting
+    // self-sends, the assertion fails but no stray message is left behind.
+    const content = `phase 3 live test self-send ${Date.now()}`;
+    try {
+      await expect(c().chats.sendMessage({ to_athlete_id: athleteId(), content, type: 'TEXT' })).rejects.toMatchObject({
+        status: 422,
+        details: { error: 'Cannot send message to self' },
+      });
+    } finally {
+      for (const chat of await c().chats.listChats()) {
+        if (typeof chat.id !== 'number') continue;
+        const hit = (await c().chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content);
+        if (typeof hit?.id === 'number') await c().chats.deleteMessage(chat.id, hit.id);
+      }
+    }
   });
 
   it.skipIf(!CHAT_TO)('updateMessage and deleteMessage act on a message this test sent to INTERVALS_LIVE_CHAT_TO', async () => {

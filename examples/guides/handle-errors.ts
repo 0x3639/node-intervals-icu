@@ -21,6 +21,8 @@ try {
 } catch (err) {
   if (err instanceof IntervalsAPIError) {
     console.log(`status=${err.status} code=${err.code} message=${err.message} retryAfter=${err.retryAfter}`);
+    // `details` is the body the API sent with the error, e.g. { status: 422, error: '...' } on a validation failure.
+    if (err.details !== undefined) console.log('details:', JSON.stringify(err.details));
   } else {
     throw err;
   }
