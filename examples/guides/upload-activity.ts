@@ -45,8 +45,12 @@ try {
   console.log(`Uploaded, id=${created.join(', ') || 'not reported in the response'}`);
 } finally {
   for (const id of created) {
-    await client.activities.deleteActivity(id);
-    console.log(`Deleted activity ${id}`);
+    try {
+      await client.activities.deleteActivity(id);
+      console.log(`Deleted activity ${id}`);
+    } catch (err) {
+      console.error(`Could not delete activity ${id}; remove it by hand:`, err);
+    }
   }
   if (created.length === 0) {
     console.log('The upload response carried no activity id; the uploaded activity remains on the account');
