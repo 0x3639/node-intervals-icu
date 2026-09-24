@@ -124,7 +124,36 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
     expect(restored.id).toBe(chatId);
   });
 
-  it('updateMessage and deleteMessage act on a message this test sent to the caller', async () => {
+  // The API refuses a message to yourself (422 "Cannot send message to self", probed
+  // 2026-09-24), so the round trip needs a consenting recipient: set INTERVALS_LIVE_CHAT_TO
+  // to that athlete's id. They receive one message, which is edited and then deleted.
+  const CHAT_TO = process.env.INTERVALS_LIVE_CHAT_TO;
+
+  it('sendMessage to the caller is rejected with 422 and the reason is on the error', async () => {
+    // Marked and cleaned up like every other write: if the API ever starts accepting
+    // self-sends, the assertion fails but no stray message is left behind.
+    const content = `phase 3 live test self-send ${Date.now()}`;
+    let accepted = false;
+    try {
+      await c().chats.sendMessage({ to_athlete_id: athleteId(), content, type: 'TEXT' });
+      accepted = true;
+    } catch (err) {
+      expect(err).toMatchObject({ status: 422, details: { error: 'Cannot send message to self' } });
+    } finally {
+      // Only a message the API accepted needs finding and deleting; the expected rejection
+      // leaves nothing behind, so the chat scan is skipped.
+      if (accepted) {
+        for (const chat of await c().chats.listChats()) {
+          if (typeof chat.id !== 'number') continue;
+          const hit = (await c().chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content);
+          if (typeof hit?.id === 'number') await c().chats.deleteMessage(chat.id, hit.id);
+        }
+      }
+    }
+    expect(accepted).toBe(false);
+  });
+
+  it.skipIf(!CHAT_TO)('updateMessage and deleteMessage act on a message this test sent to INTERVALS_LIVE_CHAT_TO', async () => {
     const content = `phase 3 live test ${Date.now()}`;
     const edited = `${content} (edited)`;
     let chatId: number | undefined;
@@ -142,7 +171,7 @@ describe.skipIf(!LIVE_WRITE)('live (write): phase 3 chat mutations', () => {
       }
     };
     try {
-      const sent = await c().chats.sendMessage({ to_athlete_id: athleteId(), content, type: 'TEXT' });
+      const sent = await c().chats.sendMessage({ to_athlete_id: CHAT_TO as string, content, type: 'TEXT' });
       // `chat_id` is not in the vendored Message schema; read it defensively from the raw
       // response and fall back to the new chat's id. Verified only when LIVE_WRITE runs.
       chatId = (sent.message as { chat_id?: number } | undefined)?.chat_id ?? sent.new_chat?.id;

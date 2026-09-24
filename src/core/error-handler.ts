@@ -10,15 +10,62 @@ export class IntervalsAPIError extends Error implements APIError {
   code?: string;
   /** Seconds to wait before retrying, from the Retry-After header */
   retryAfter?: number;
+  /** The response body the API sent with the error, when there was one */
+  details?: unknown;
 
-  constructor(message: string, status?: number, code?: string, retryAfter?: number) {
+  constructor(message: string, status?: number, code?: string, retryAfter?: number, details?: unknown) {
     super(message);
     this.name = 'IntervalsAPIError';
     this.status = status;
     this.code = code;
     this.retryAfter = retryAfter;
+    this.details = details;
     Object.setPrototypeOf(this, IntervalsAPIError.prototype);
   }
+}
+
+/** Longest server explanation appended to an error message (code points; an ellipsis follows a cut). `details` keeps the whole body. */
+const MAX_SERVER_TEXT = 200;
+
+/**
+ * Binary downloads (`responseType: 'arraybuffer'`) deliver error bodies as bytes. Decode
+ * them so a JSON or text explanation is usable like any other; leave other bodies as is.
+ */
+function decodeBody(data: unknown): unknown {
+  const isBinary = data instanceof ArrayBuffer || (typeof Buffer !== 'undefined' && Buffer.isBuffer(data));
+  if (!isBinary) return data;
+  const text = Buffer.from(data as ArrayBuffer).toString('utf8');
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+/**
+ * A candidate explanation, trimmed; empty, whitespace-only and HTML values (a gateway's
+ * 502/504 error page, sometimes wrapped in a JSON field) are noise in a message and are
+ * dropped — `details` still carries them.
+ */
+function usableText(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const trimmed = value.trim();
+  return trimmed && !trimmed.startsWith('<') ? trimmed : undefined;
+}
+
+/** The human-readable part of an error body: `error` or `message` of an object, or a short non-HTML text body. */
+function extractServerText(body: unknown): string | undefined {
+  let text: string | undefined;
+  if (typeof body === 'string') {
+    text = usableText(body);
+  } else if (body && typeof body === 'object') {
+    const { error, message } = body as { error?: unknown; message?: unknown };
+    text = usableText(error) ?? usableText(message);
+  }
+  if (!text) return undefined;
+  // Slice by code point so a surrogate pair is never split.
+  const points = Array.from(text);
+  return points.length > MAX_SERVER_TEXT ? `${points.slice(0, MAX_SERVER_TEXT).join('')}…` : text;
 }
 
 /**
@@ -29,7 +76,12 @@ export class ErrorHandler {
   handleError(error: AxiosError, rateLimitTracker: RateLimitTracker): IntervalsAPIError {
     if (error.response) {
       const status = error.response.status;
-      const message = (error.response.data as { message?: string })?.message || error.message;
+      const details = decodeBody(error.response.data);
+      // The API explains validation failures in the body, as `error` (e.g. 422
+      // `{ status: 422, error: 'Cannot send message to self' }`); some responses use
+      // `message`. Surface whichever is present so a 422 is never a bare status code.
+      const serverText = extractServerText(details);
+      const message = serverText ? `${error.message}: ${serverText}` : error.message;
       
       if (status === 429) {
         const resetTime = rateLimitTracker.getReset();
@@ -51,19 +103,20 @@ export class ErrorHandler {
           `Rate limit exceeded. ${resetTime ? `Resets at ${resetTime.toISOString()}` : ''}`,
           status,
           'RATE_LIMIT_EXCEEDED',
-          retryAfter
+          retryAfter,
+          details
         );
       }
       
       if (status === 401) {
-        return new IntervalsAPIError('Invalid API key or authentication failed', status, 'AUTH_FAILED');
+        return new IntervalsAPIError('Invalid API key or authentication failed', status, 'AUTH_FAILED', undefined, details);
       }
       
       if (status === 404) {
-        return new IntervalsAPIError('Resource not found', status, 'NOT_FOUND');
+        return new IntervalsAPIError('Resource not found', status, 'NOT_FOUND', undefined, details);
       }
       
-      return new IntervalsAPIError(message, status);
+      return new IntervalsAPIError(message, status, undefined, undefined, details);
     }
     
     if (error.code === 'ECONNABORTED') {
