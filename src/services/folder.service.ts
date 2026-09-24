@@ -34,10 +34,22 @@ export class FolderService {
     await this.httpClient.request<void>({ method: 'DELETE', url: `/athlete/${id}/folders/${folderId}` });
   }
 
-  /** Update workouts in a plan folder (reorder, add, remove) */
-  async updatePlanWorkouts(folderId: number, data: Partial<Workout>[], athleteId?: string): Promise<Workout[]> {
+  /**
+   * Update the plan's workouts dated between `oldest` and `newest`. The API currently
+   * changes only `hide_from_athlete`, so the body is typed to that one field; widen it
+   * when the route accepts more.
+   *
+   * `range.oldest` and `range.newest` are the plan day numbers the spec declares (int32),
+   * not calendar dates: a plan's workouts are placed by `day` relative to the plan start.
+   */
+  async updatePlanWorkouts(
+    folderId: number,
+    data: { hide_from_athlete: boolean },
+    range: { oldest: number; newest: number },
+    athleteId?: string,
+  ): Promise<Workout[]> {
     const id = athleteId || this.defaultAthleteId;
-    return this.httpClient.request<Workout[]>({ method: 'PUT', url: `/athlete/${id}/folders/${folderId}/workouts`, data });
+    return this.httpClient.request<Workout[]>({ method: 'PUT', url: `/athlete/${id}/folders/${folderId}/workouts`, params: range, data });
   }
 
   /** Get athletes a folder is shared with */

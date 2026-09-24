@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/MIGRATION.md` for the full migration guide.
+Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/guides/migrating-to-v3.md` for the full migration guide.
 
 ### Removed
 - `client.fitness` (`getFitness`, `getSummaries`): the routes never existed. Use `client.athletes.getSummary()`.
@@ -28,6 +28,9 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - `client.activities.downloadFitFiles()` sends POST; `updateStreamsCSV()` sends PUT.
 - `IHttpClient.download(url, options)` replaces `download(url, params)`: query params go in `options.params` (object or `URLSearchParams`), `options.method` may be `POST`, `options.data` is a JSON body. `upload()` accepts `method`. Breaking only for custom `IHttpClient` implementations.
 - `PowerModel` now has the spec's field names (`criticalPower`, `wPrime`, `pMax`, `inputPointIndexes`, `ftp`, `type`); the previous `cp`/`w_prime`/`p_max`/`ftp_watts`/`ftp_secs`/`r2` fields were never returned by the API. The `[key: string]: unknown` index signature is gone and `PowerModelType` narrows from `string` to `'MS_2P' | 'MORTON_3P' | 'FFT_CURVES' | 'ECP'`.
+- `CurveOptions` (athlete-level curve query) is now exported; `docs/MIGRATION.md` moved to `docs/guides/migrating-to-v3.md`.
+- `CurveOptions` corrected to the spec before its first public release: it now carries `newest`, `curves`, `type`, `subMaxEfforts` and `now` (`filters` is left out until the encoding of an object-valued query array is verified); the previous `oldest`, `id` and boolean `subMaxEfforts` fields did not exist on the API. The curve routes pick their window with `curves` (`1y`, `42d`, `s0`, `all`, `r.2023-10-01.2023-10-31`, optionally `-kj0`/`-kj1`), not with a date range. New `PowerCurveOptions` (required `type` — `getPowerCurves()` returns HTTP 422 without it — plus `includeRanks` and `pmType`) and `PaceCurveOptions` (adds `gap`); `getHRCurves()` keeps `CurveOptions`. The spec's required `f1`/`f2`/`f3` filter arrays are omitted: the API answers without them.
+- `FolderService.updatePlanWorkouts(folderId, data, range, athleteId?)` now sends a single `{ hide_from_athlete }` body (the only field the route changes today) and the required `oldest`/`newest` query pair the route declares (plan day numbers, int32). It previously sent an array and no query, so it could not work; per the spec, only `hide_from_athlete` is applied.
 
 ### Added
 - `client.analytics` (`AnalyticsService`): `getPowerHistogram()`, `getHRHistogram()`, `getPaceHistogram()`, `getGAPHistogram()`, `getTimeAtHR()`, `getIntervalStats()`, `getPowerSpikeModel()`, `getCurves()` / `getCurvesCSV()`, `getMMPModel()`. Activity ids are URL-encoded in paths. Types `Bucket`, `TimeAtHRPlot`, `ActivityPowerCurvesOptions` (`fatigue` is a list of `normal`/`kj0`/`kj1`), `ActivityPaceCurvesOptions`, and `ActivityPaceCurves` (the observed `{ distances, gap, curves }` response; the spec declares no schema). The CSV pace-curves form needs `distances` (observed HTTP 500 without it).
@@ -51,6 +54,7 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - CI workflow running lint, typecheck, tests and build on Node 18, 20, 22
 - `spec/undocumented-routes.json`: verified live routes absent from the spec (shared-event create/update/delete)
 - `AUDIT.md`: live verdicts for the 16 disputed routes
+- Documentation site (TypeDoc reference + guides) built by `npm run docs` and deployed to GitHub Pages; every guide example is a typechecked file under `examples/`.
 
 ## [2.2.1] - 2025-03-04
 
@@ -74,7 +78,7 @@ Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking 
 - Numeric activity ID backward-compat shim (`client.getActivity(12345)`) — activity IDs are strictly `string` now
 
 ### Added
-- [Migration Guide](./docs/MIGRATION.md) with full table of removed methods and before/after examples
+- [Migration Guide](./docs/guides/migrating-to-v3.md) with full table of removed methods and before/after examples
 
 ## [2.0.0] - 2025-03-03
 

@@ -69,7 +69,7 @@ and with these file names: `athletes`, `activities`, `events`, `wellness`,
 `workouts`, `sport-settings`, `folders`, `gear`, `chats`, `weather`, `routes`,
 `custom-items`, `shared-events`, `performance`, `search`, `analytics`. Each
 page has: a two-sentence description of the service's scope; a table of its
-methods with `{@link}` to the reference; two to four examples embedded with
+methods with `{@link}` to the reference; one to four examples embedded with
 `{@includeCode}`; a "Behaviour notes" list linking to `api-behaviour.md`
 rows where relevant. Mutating examples (chats, shared events, deletes) carry
 a one-line note: CI never runs any example, and running a mutating example by
@@ -77,16 +77,28 @@ hand changes the authenticated account.
 
 ### Examples (`examples/`)
 
-- `examples/basic-usage.ts` stays as is.
+- `examples/basic-usage.ts` stays as is apart from using local dates (its
+  `oldest`/`newest` window is built with a local `YYYY-MM-DD` formatter rather
+  than `toISOString()`, like every other example).
 - New files under `examples/<service>/<name>.ts` (for service pages) and
   `examples/guides/<name>.ts` (for task guides). Each file: header comment
   with the `tsx` run line; reads `INTERVALS_API_KEY` (and optionally
   `INTERVALS_ATHLETE_ID`) from the environment; exits with a message if
   missing; handles the empty-data case in code; imports from
   `'../../src/index.js'`.
+- `examples/_shared/` holds helper modules shared by several examples rather
+  than runnable examples: no run header, no environment read, no client and no
+  top-level `await`. `examples/_shared/local-date.ts` (`localDateIn`,
+  `shiftDays`) formats and steps `YYYY-MM-DD` dates in the athlete's time zone
+  and is covered by `tests/examples/local-date.test.ts`; the guards in
+  `tests/docs/guides.test.ts` exclude the directory from the per-example checks
+  and assert the helpers are side-effect free.
 - `tsconfig.examples.json` `include` widens to `examples/**/*.ts`.
 - Guides embed with `{@includeCode ../../examples/<path>}`; a `#region`
-  marker may be used to embed only the interesting part.
+  marker may be used to embed only the interesting part. Guides never contain
+  fenced TypeScript, with one exemption: `migrating-to-v3.md` compares removed
+  and renamed v1/v2 APIs, which cannot compile against the current SDK, so its
+  before/after snippets stay fenced.
 
 ### Reference
 
@@ -101,7 +113,29 @@ hand changes the authenticated account.
   "not documented" warning. `CurveOptions`, a non-exported options interface
   in `src/services/performance.service.ts` that exported methods reference,
   moves to `src/types/performance.ts` and is exported from both barrels (TypeDoc
-  otherwise warns that it is not included). No other source changes.
+  otherwise warns that it is not included). Two other source changes are
+  documented exceptions, both needed for the docs to be correct rather than for
+  TypeDoc: `CurveOptions` gains `type?: ActivityType`, because the API returns
+  HTTP 422 for power curves without it and the example otherwise has to
+  document a field the type does not carry; and the `athleteId` JSDoc in
+  `src/types/config.ts` is corrected from "defaults to 'me'" to "defaults to
+  '0' (the authenticated athlete)", which is what the client actually does.
+  Two further exceptions were added in review, both because writing the pages
+  showed that the documented contract could not work. `CurveOptions` is
+  rewritten to the spec's curve query — `newest`, `curves`, `type`,
+  `subMaxEfforts`, `now`; the previous `oldest`/`id` fields are not parameters
+  of any curve route, and the spec's `filters` is deliberately left out because
+  the query encoding of an object-valued array is unverified against the API —
+  with `PowerCurveOptions` (required `type`, `includeRanks`, `pmType` typed as
+  the `PowerModelType` enum) and `PaceCurveOptions` (`includeRanks`, `pmType`
+  typed as the `PaceModelType` enum, `gap`) beside it, so the guide can
+  describe the `curves` window syntax the API actually takes. And
+  `FolderService.updatePlanWorkouts(folderId, { hide_from_athlete }, { oldest,
+  newest })` takes the one field the route changes plus the required
+  `oldest`/`newest` query pair, which the spec declares as int32 plan *days*
+  (a workout's `day` offset from the plan start) and not calendar dates,
+  instead of an array body and no query, which the API cannot accept. No other
+  source changes.
 - Documentation is required for classes, interfaces, methods, type aliases,
   enums and functions (`requiredToBeDocumented`); interface *properties* are
   not required, since about 1,100 of them carry no comment today and

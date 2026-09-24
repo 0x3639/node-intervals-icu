@@ -1,0 +1,78 @@
+name: Docs
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One docs run per ref. A running build is never cancelled on main; a superseded PR run is.
+# GitHub keeps at most one pending run per group and replaces it with the newest, so a
+# burst of pushes to main skips the intermediate commits: the newest commit is always built,
+# which is all the site needs. The deploy job below queues FIFO and deploys only while its
+# commit is still main's head, so an older build can never overwrite a newer one.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: "Build docs (TypeDoc warnings are errors) and check internal links"
+        run: npm run docs:check
+      - name: Upload Pages artifact
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-dist
+
+  deploy:
+    # Only main deploys, including manual dispatches: a dispatch from another branch builds but does not publish.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    # Deploys serialise on the Pages environment, which is shared with any other workflow
+    # that publishes Pages. `queue: max` makes waiting deploy jobs line up FIFO instead of
+    # cancelling one another, so no deploy is dropped; the gate step below then skips a
+    # deploy whose commit is no longer main's head, so an older build can never overwrite
+    # a newer one. (`queue` cannot be combined with cancel-in-progress: true.)
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check this commit is still main's head
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head="$(gh api "repos/${{ github.repository }}/branches/main" --jq .commit.sha)"
+          if [ "$head" = "${{ github.sha }}" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "superseded by $head; not deploying"
+          fi
+      - id: deployment
+        if: steps.gate.outputs.current == 'true'
+        uses: actions/deploy-pages@v4

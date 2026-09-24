@@ -107,6 +107,10 @@ Good documentation is crucial. When contributing:
 - Include code examples for new functionality
 - Keep documentation clear and concise
 
+### Documentation site
+
+The public documentation site (TypeDoc reference + guides) is built with `npm run docs`; open `docs-dist/index.html` to preview it locally. Guides live under `docs/guides/` and each code example embedded in a guide is a real, typechecked file under `examples/`, included with `{@includeCode}` — never write example code directly into a guide's Markdown. `npm run docs:check` builds the site and checks its internal links; it runs in CI, so run it locally before opening a PR that touches guides, JSDoc, or `examples/`.
+
 ## 🤝 Code of Conduct
 
 - Be respectful and inclusive

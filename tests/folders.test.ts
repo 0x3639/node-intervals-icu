@@ -21,9 +21,12 @@ const mockFolders = [
 
 describe('IntervalsClient - Folders', () => {
   let client: IntervalsClient;
+  let seen: any[] = [];
 
   beforeEach(() => {
+    seen = [];
     setupAxiosMock(mockedAxios, async (config: any) => {
+      seen.push(config);
       if (config.url.endsWith('/folders') && config.method === 'GET') {
         return mockFolders;
       }
@@ -69,6 +72,15 @@ describe('IntervalsClient - Folders', () => {
 
   it('should delete a folder', async () => {
     await expect(client.folders.delete(10)).resolves.toBeUndefined();
+  });
+
+  it('updatePlanWorkouts PUTs one workout body with the oldest/newest day range as query params', async () => {
+    await client.folders.updatePlanWorkouts(10, { hide_from_athlete: true }, { oldest: 0, newest: 13 });
+    expect(seen[0].method).toBe('PUT');
+    expect(seen[0].url).toBe('/athlete/test-athlete-id/folders/10/workouts');
+    expect(seen[0].params).toEqual({ oldest: 0, newest: 13 });
+    expect(seen[0].data).toEqual({ hide_from_athlete: true });
+    expect(Array.isArray(seen[0].data)).toBe(false);
   });
 
   it('should get shared-with info', async () => {

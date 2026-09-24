@@ -96,6 +96,7 @@ export type {
   SharedEvent,
 
   // Performance
+  CurveOptions, PowerCurveOptions, PaceCurveOptions,
   PowerModel, PaceModel, Rank, HRPlot, DataCurvePt,
   PowerCurve, PowerCurveSet, PaceCurve, PaceCurveSet,
   HRCurve, HRCurveSet, PowerHRCurve,

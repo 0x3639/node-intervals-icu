@@ -78,6 +78,56 @@ export interface PowerCurve {
   compound_score_5m?: number;
 }
 
+/**
+ * Query shared by the athlete-level curve routes (power-curves, pace-curves, hr-curves),
+ * and the full query for hr-curves. The routes select their window with `curves` (relative
+ * periods or explicit ranges), not with an oldest/newest pair.
+ *
+ * The spec marks the `f1`, `f2` and `f3` comparison-filter arrays as required, but the API
+ * answers without them, so they are omitted here; see the API behaviour guide.
+ */
+export interface CurveOptions {
+  // `filters` (ActivityFilter[]) is deliberately absent: the query encoding of an object-valued
+  // array is unverified against the API (axios would bracket-index it). Same as ActivityPaceCurvesOptions.
+  /** Newest local date (ISO-8601) the curves are computed back from; defaults to today */
+  newest?: string;
+  /**
+   * Curves to return (default: the past year). Each entry is one of `1y`/`2y` (past year,
+   * past 2 years…), `42d` (past 42 days…), `s0`/`s1` (current season, previous season…),
+   * `all` (all time), or `r.2023-10-01.2023-10-31` (an explicit date range). An entry may
+   * carry a `-kj0` or `-kj1` suffix to return the matching fatigued curve.
+   */
+  curves?: string[];
+  /**
+   * The sport (Ride, Run etc.) whose activities feed the curves. Required for power curves.
+   */
+  type?: ActivityType;
+  /** Number of sub-maximal efforts to return per duration (integer, default 0) */
+  subMaxEfforts?: number;
+  /** Current local date (ISO-8601) */
+  now?: string;
+}
+
+/** Query for `GET /athlete/{id}/power-curves`, which requires `type` (HTTP 422 without it) */
+export interface PowerCurveOptions extends CurveOptions {
+  /** The sport (Ride, Run etc.); the API requires it for power curves */
+  type: ActivityType;
+  /** Include the athlete's ranking for each effort (default false) */
+  includeRanks?: boolean;
+  /** Power model to fit: `MS_2P`, `MORTON_3P`, `FFT_CURVES` or `ECP` */
+  pmType?: PowerModelType;
+}
+
+/** Query for `GET /athlete/{id}/pace-curves` */
+export interface PaceCurveOptions extends CurveOptions {
+  /** Include the athlete's ranking for each effort (default false) */
+  includeRanks?: boolean;
+  /** Pace model to fit: `CS` */
+  pmType?: PaceModelType;
+  /** Return gradient-adjusted pace curves (default false) */
+  gap?: boolean;
+}
+
 /** Power curve set response */
 export interface PowerCurveSet {
   list?: PowerCurve[];

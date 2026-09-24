@@ -105,6 +105,7 @@ export type TIZOrder =
 
 /** Pace/power model types */
 export type PaceModelType = 'CS';
+/** Power-duration model family used by the API's power models */
 export type PowerModelType = 'MS_2P' | 'MORTON_3P' | 'FFT_CURVES' | 'ECP';
 
 /** Data curve type (pace curves) */
