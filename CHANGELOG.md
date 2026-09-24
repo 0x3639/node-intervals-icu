@@ -14,7 +14,7 @@ Release candidate. Everything below is the 3.0.0 series relative to `intervals-i
 Fork of `intervals-icu` v2.2.1 by [0x3639](https://github.com/0x3639). Breaking changes land in the 3.0.0 series; see `docs/guides/migrating-to-v3.md` for the full migration guide.
 
 ### Added
-- `IntervalsAPIError.details` carries the response body the API sent with an error, and the body's `error` (or `message`) text is appended to `message` (previously a body `message` replaced the axios text; it is now appended after it, capped at 200 characters, HTML bodies excluded), so a `422` explains itself (e.g. `Cannot send message to self`). Binary error bodies from download routes are decoded first.
+- `IntervalsAPIError.details` carries the response body the API sent with an error, and the body's `error` (or `message`) text is appended to `message` (previously a body `message` replaced the axios text; it is now appended after it, cut to 200 characters plus an ellipsis, HTML bodies excluded), so a `422` explains itself (e.g. `Cannot send message to self`). Binary error bodies from download routes are decoded first.
 
 ### Security
 - Every GitHub Actions workflow pins its actions to a full commit SHA (the major tag is kept as a comment).

@@ -87,3 +87,43 @@ describe('IntervalsAPIError.details — body shapes', () => {
     expect(handler.handleError(axiosError(400, 7), tracker).message).toBe('Request failed with status code 400');
   });
 });
+
+describe('IntervalsAPIError.details — edge cases', () => {
+  const handler = new ErrorHandler();
+  const tracker = new RateLimitTracker();
+
+  it('pins the fixed 404 and 429 messages exactly', () => {
+    expect(handler.handleError(axiosError(404, { error: 'gone' }), tracker).message).toBe('Resource not found');
+    const e429 = handler.handleError(axiosError(429, { error: 'slow' }), tracker);
+    expect(e429.message.startsWith('Rate limit exceeded.')).toBe(true);
+  });
+
+  it('prefers `error` over `message` when both are present', () => {
+    const err = handler.handleError(axiosError(422, { error: 'the reason', message: 'generic' }), tracker);
+    expect(err.message).toBe('Request failed with status code 422: the reason');
+  });
+
+  it('ignores whitespace-only and non-string fields, and falls back to `message`', () => {
+    expect(handler.handleError(axiosError(400, { error: 7, message: 'm' }), tracker).message).toBe('Request failed with status code 400: m');
+    expect(handler.handleError(axiosError(400, { error: '', message: '' }), tracker).message).toBe('Request failed with status code 400');
+    expect(handler.handleError(axiosError(400, '   '), tracker).message).toBe('Request failed with status code 400');
+  });
+
+  it('handles malformed, empty and HTML binary bodies', () => {
+    const malformed = handler.handleError(axiosError(500, Buffer.from('{not json')), tracker);
+    expect(malformed.message).toBe('Request failed with status code 500: {not json');
+    expect(malformed.details).toBe('{not json');
+    const empty = handler.handleError(axiosError(500, Buffer.alloc(0)), tracker);
+    expect(empty.message).toBe('Request failed with status code 500');
+    expect(empty.details).toBe('');
+    const html = handler.handleError(axiosError(502, Buffer.from('<html>502</html>')), tracker);
+    expect(html.message).toBe('Request failed with status code 502');
+    expect(html.details).toBe('<html>502</html>');
+  });
+
+  it('cuts by code point, never splitting a surrogate pair', () => {
+    const emoji = '😀'.repeat(250);
+    const err = handler.handleError(axiosError(400, { error: emoji }), tracker);
+    expect(err.message).toBe(`Request failed with status code 400: ${'😀'.repeat(200)}…`);
+  });
+});

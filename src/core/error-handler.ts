@@ -24,7 +24,7 @@ export class IntervalsAPIError extends Error implements APIError {
   }
 }
 
-/** Longest server explanation appended to an error message; `details` keeps the whole body. */
+/** Longest server explanation appended to an error message (code points; an ellipsis follows a cut). `details` keeps the whole body. */
 const MAX_SERVER_TEXT = 200;
 
 /**
@@ -54,7 +54,9 @@ function extractServerText(body: unknown): string | undefined {
     text = [error, message].find((v): v is string => typeof v === 'string' && v.length > 0);
   }
   if (!text) return undefined;
-  return text.length > MAX_SERVER_TEXT ? `${text.slice(0, MAX_SERVER_TEXT)}…` : text;
+  // Slice by code point so a surrogate pair is never split.
+  const points = Array.from(text);
+  return points.length > MAX_SERVER_TEXT ? `${points.slice(0, MAX_SERVER_TEXT).join('')}…` : text;
 }
 
 /**
