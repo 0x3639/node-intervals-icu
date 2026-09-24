@@ -17,6 +17,8 @@ The SDK retries a request automatically when the response status is `429`, `502`
 
 When a 429 response carries a `Retry-After` header, the parsed `retryAfter` value (in seconds) is used as the delay for that attempt. Otherwise the delay doubles with each attempt (`retryDelayMs * 2^attempt`) and is scaled by a random jitter factor between 0.5 and 1.0, to avoid many clients retrying in lockstep.
 
+Retries apply to every request regardless of method, POST and PUT included. A create or upload the server committed before answering `502`, `503` or `504` is therefore repeated by the retry, leaving a duplicate that the caller never sees: only the last response's id comes back. For non-idempotent calls set `maxRetries: 0` (or build a second client for writes) and reconcile afterwards by listing the affected range before cleaning up, rather than trusting the single id you were handed. The mutating examples in this documentation all construct their client with `maxRetries: 0` for that reason.
+
 ## Rate limits
 
 The client tracks the `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers from the most recent response and exposes them through {@link IntervalsClient.getRateLimitRemaining} and `getRateLimitReset()`:

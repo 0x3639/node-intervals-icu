@@ -20,11 +20,18 @@ if (!apiKey) {
 }
 
 // #region main
-const client = new IntervalsClient({ apiKey });
+// maxRetries: 0 — a create that committed before a 5xx would be repeated by a retry, and only the last response's id would be cleaned up.
+const client = new IntervalsClient({ apiKey, maxRetries: 0 });
 
-const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const now = new Date();
-const today = localDate(now);
+// The API keys calendar events by the athlete's local date, not the machine's. A machine
+// in a different time zone (or a CI runner on UTC) would otherwise create the event on the
+// wrong day. `en-CA` formats as YYYY-MM-DD; an undefined timeZone means the machine's own
+// zone, which is the right fallback when the athlete has not set one.
+const localDateIn = (date: Date, timeZone?: string): string =>
+  new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+
+const me = await client.athletes.getAthlete();
+const today = localDateIn(new Date(), me.timezone);
 
 const event = await client.events.createEvent({
   category: 'NOTE',

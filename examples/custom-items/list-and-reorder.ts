@@ -19,7 +19,8 @@ if (!apiKey) {
 }
 
 // #region main
-const client = new IntervalsClient({ apiKey });
+// maxRetries: 0 — a create that committed before a 5xx would be repeated by a retry, and only the last response's id would be cleaned up.
+const client = new IntervalsClient({ apiKey, maxRetries: 0 });
 
 const items = await client.customItems.list();
 console.log(`${items.length} custom items`);

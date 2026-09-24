@@ -3,7 +3,7 @@ title: Authentication
 ---
 # Authentication
 
-`IntervalsClient` accepts either an API key or an OAuth access token in {@link IntervalsConfig}; the two are mutually exclusive.
+`IntervalsClient` accepts either an API key or an OAuth access token in {@link IntervalsConfig}. Pass one, not both: when both are set the bearer token wins and the API key is silently ignored — the client builds a single `Authorization` header and checks `accessToken` first.
 
 ## API key
 

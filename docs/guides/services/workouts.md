@@ -16,8 +16,8 @@ title: Workouts
 | {@link WorkoutService.updateWorkout} | Update an existing workout |
 | {@link WorkoutService.deleteWorkout} | Delete a workout |
 | {@link WorkoutService.duplicateWorkouts} | Duplicate workouts |
-| {@link WorkoutService.convertWorkout} | Convert a workout definition to .zwo (Zwift), .mrc, .erg or .fit |
-| {@link WorkoutService.convertWorkoutForAthlete} | Same as convertWorkout but resolves the athlete's own settings (FTP, zones) |
+| {@link WorkoutService.convertWorkout} | Convert a workout definition to .zwo (Zwift), .mrc, .erg or .fit; resolves power targets from the authenticated athlete's settings, per the spec |
+| {@link WorkoutService.convertWorkoutForAthlete} | The same conversion for a specific athlete id, e.g. a coached athlete |
 | {@link WorkoutService.listWorkoutTags} | Every tag that has been applied to workouts in the athlete's library |
 
 ## Examples
@@ -39,4 +39,5 @@ CI never runs this example; running it by hand changes the authenticated account
 ## Behaviour notes
 
 - {@link WorkoutService.convertWorkout}'s `WorkoutConversionInput` requires `name`, `description`, `type` and `workout_doc`; a body missing `workout_doc` returns HTTP 500. See [API behaviour](../api-behaviour.md).
+- Whose settings resolve the power targets is not live-verified: the live suite checks that both routes convert, not whose settings apply. The claim that the global route uses the authenticated athlete's settings comes from `spec/openapi.json`'s description of `POST /api/v1/download-workout{ext}` ("The athlete to use is extracted from the bearer token and used to resolve power targets").
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

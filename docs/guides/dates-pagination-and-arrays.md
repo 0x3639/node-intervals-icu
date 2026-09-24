@@ -5,7 +5,11 @@ title: Dates, pagination and arrays
 
 ## Dates are local-date strings
 
-Every date-range parameter in the SDK (`oldest`, `newest`, `start`, `end`, and similar) is a local calendar date string in `YYYY-MM-DD` form, not a full timestamp and not the output of `toISOString()`. Both bounds are inclusive. Building both ends of a window from a single `Date` avoids a window that silently shifts if the two bounds are computed a moment apart (for example across midnight):
+A local calendar date string in `YYYY-MM-DD` form works on every date-range parameter in the SDK (`oldest`, `newest`, `start`, `end`, and similar), and it is what all the examples here use. Both bounds are inclusive, and the date is read in the athlete's own time zone, so build it from the athlete's `timezone` rather than the machine's when the exact day matters.
+
+A few parameters accept more than a bare date. `spec/openapi.json` marks `start` and `end` on `GET /athlete/{id}/athlete-summary{ext}` — the route behind {@link AthleteService.getSummary}, in both its JSON and `.csv` forms — as "Local date and optional time (ISO-8601)", so those also take a local date-time such as `2026-09-24T06:00:00`. They are the only parameters the spec describes that way; every other date-range parameter is documented as a plain local date.
+
+What never works is `toISOString()` output. Its `Z` suffix makes it a UTC instant rather than a local date, which is a different thing from what these routes expect; slice a `YYYY-MM-DD` out of a local-formatted date instead. Building both ends of a window from a single `Date` avoids a window that silently shifts if the two bounds are computed a moment apart (for example across midnight):
 
 {@includeCode ../../examples/guides/date-windows.ts#main}
 
@@ -17,11 +21,29 @@ List routes page with `oldest`/`newest` and, where the route's options include i
 
 ## Array parameters
 
-An option typed as an array (`tags`, `category`, `types`, `fatigue`, ...) is sent as repeated query keys — `tags=race&tags=long` — not axios's default bracket/index notation (`tags[0]=race`). The SDK configures this explicitly (`paramsSerializer: { indexes: null }` in the HTTP client) because the API is a Spring backend that binds repeated keys to a list parameter but does not understand indexed or bracketed ones.
+Every array-valued option is passed to the SDK as a real array. Never join the values yourself: the SDK decides, per parameter, whether the wire format is one comma-joined value or a repeated key, and a string you joined by hand would be joined or escaped a second time.
+
+### Options the SDK comma-joins
+
+A few named options are joined into a single value before the request is sent, because the route expects one value rather than a repeated key:
+
+| Option | Method | Sent as |
+|---|---|---|
+| `fields` | {@link ActivityService.listActivities} | `fields=name,type` |
+| `ids` | {@link ActivityService.downloadFitFiles} | `ids=a,b` |
+| `types` | {@link ActivityService.getStreams} | `types=watts,heartrate` |
+| `category` | {@link EventService.listEvents}, {@link EventService.deleteEventsRange} | `category=WORKOUT,NOTE` |
+| activity ids | {@link PerformanceService.getActivityPowerCurves}, {@link PerformanceService.getActivityHRCurves} | `id=a,b` |
+
+{@link ActivityService.getActivities} also comma-joins, but into the URL path rather than the query string — see [Ids in paths](#ids-in-paths) below.
+
+The comma join for `ids` on `POST /athlete/{id}/download-fit-files` is confirmed against the live API (see the [Files](./files.md) guide and `AUDIT.md`): a probe found identical results for `?ids=a,b` and `?ids=a&ids=b`.
+
+### Every other array option
+
+Any array option not in the table above reaches axios un-joined and is serialized as repeated query keys — `tags=race&tags=long` — not axios's default bracket/index notation (`tags[0]=race`). The SDK configures this explicitly (`paramsSerializer: { indexes: null }` in the HTTP client) because the API is a Spring backend that binds repeated keys to a list parameter but does not understand indexed or bracketed ones. `tags` on {@link AthleteService.getSummary} and `types`/`fatigue` on {@link AnalyticsService.getCurves} are sent this way.
 
 {@includeCode ../../examples/guides/array-params.ts#main}
-
-Some routes also accept a single comma-joined value for the same parameter. This is confirmed for `ids` on `POST /athlete/{id}/download-fit-files` (see the [Files](./files.md) guide and `AUDIT.md`): a live probe found identical results for `?ids=a,b` and `?ids=a&ids=b`. Whether every other array parameter also accepts a comma list has not been probed live, so this guide states only what is verified: the SDK always sends repeated keys, which is accepted everywhere it has been tried.
 
 ## Ids in paths
 

@@ -55,7 +55,11 @@ export class WorkoutService {
   /**
    * Convert a workout definition to .zwo (Zwift), .mrc, .erg or .fit.
    * The workout is sent in the body; it does not need to exist in the library.
-   * Uses the global endpoint (no athlete-specific settings such as FTP).
+   * Uses the global endpoint, which the spec says still resolves power targets from the
+   * authenticated athlete's settings ("The athlete to use is extracted from the bearer
+   * token and used to resolve power targets"). Use `convertWorkoutForAthlete` to resolve
+   * against a specific athlete id instead. Not live-verified: the live suite checks that
+   * both routes convert, not whose settings apply.
    *
    * `WorkoutConversionInput` requires `name`, `description`, `type` and `workout_doc`:
    * live probes (`AUDIT.md`) showed a body with all four converts and a body without
@@ -67,7 +71,7 @@ export class WorkoutService {
     return this.httpClient.download(`/download-workout${format}`, { method: 'POST', data: workout });
   }
 
-  /** Same as convertWorkout but resolves the athlete's own settings (FTP, zones). */
+  /** The same conversion as convertWorkout, but for a specific athlete id (e.g. a coached athlete) rather than the authenticated one. */
   async convertWorkoutForAthlete(workout: WorkoutConversionInput, format: WorkoutFormat, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;
     return this.httpClient.download(`/athlete/${id}/download-workout${format}`, { method: 'POST', data: workout });

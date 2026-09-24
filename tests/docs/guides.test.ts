@@ -35,6 +35,18 @@ function guideFiles(): string[] {
   return out;
 }
 
+function exampleFiles(): string[] {
+  const out: string[] = [];
+  const walk = (d: string) => {
+    for (const e of readdirSync(join(ROOT, d), { withFileTypes: true })) {
+      if (e.isDirectory()) walk(`${d}/${e.name}`);
+      else if (e.name.endsWith('.ts')) out.push(`${d}/${e.name}`);
+    }
+  };
+  walk('examples');
+  return out;
+}
+
 describe('documentation guides', () => {
   it('every service accessor on IntervalsClient has a service page', () => {
     // The scan is regex-based: pin the count so a refactor that stops matching the
@@ -94,5 +106,19 @@ describe('documentation guides', () => {
       }
     }
     expect(problems).toEqual([]);
+  });
+
+  it('every mutating example disables retries', () => {
+    // The SDK retries 429/502/503/504 for every method, POST included, so a create the
+    // server committed before answering a 5xx would be repeated by the retry and only the
+    // last response's id would be cleaned up. Mutating examples must opt out.
+    const MUTATORS = /\.(sendMessage|createEvent|createReminder|createWorkout|uploadActivity|updateWellness|reorder|createEventsBulk|createWellness)\(/;
+    // Block comments are stripped first: a mutating call shown inside a `/* ... */` block
+    // (examples/basic-usage.ts section 8) is prose, not a write, and must not be flagged.
+    const gaps = exampleFiles().filter((f) => {
+      const text = read(f);
+      return MUTATORS.test(text.replace(/\/\*[\s\S]*?\*\//g, '')) && !text.includes('maxRetries: 0');
+    });
+    expect(gaps).toEqual([]);
   });
 });

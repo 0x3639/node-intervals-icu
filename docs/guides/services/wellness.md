@@ -28,7 +28,9 @@ List the last 30 days of wellness records, print the most recent week, and fetch
 
 Update today's wellness entry with a weight, read it back, then put the previous weight back.
 
-CI never runs this example; running it by hand changes the authenticated account: it writes a demo weight to today's record and restores the previous one in a `finally` block. If today's record had no weight yet, the demo value stays — `WellnessInput.weight` is typed `number | undefined`, so the SDK cannot clear the field again.
+CI never runs this example; running it by hand changes the authenticated account: it writes a demo weight to today's record and restores the previous one in a `finally` block. It writes only when it can restore — `WellnessInput.weight` is typed `number | undefined`, so the SDK cannot clear the field again, and a demo value written to a record that had no weight would stay there for good. When today's record has no weight yet the example says so and exits without writing.
+
+"Today" is resolved in the athlete's own time zone (`Athlete.timezone`), not the machine's: the API keys wellness records by the athlete's local date.
 
 {@includeCode ../../../examples/wellness/update-today.ts#main}
 

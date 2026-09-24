@@ -33,6 +33,7 @@ if (activities.length < 2) {
   console.log('Fewer than two activities in the last 7 days; skipping getActivities/getCurves');
 } else {
   const ids = [activities[0]!.id!, activities[1]!.id!];
+  // `ids` is comma-joined by the SDK into the URL path here, not sent as a query parameter.
   const fetched = await client.activities.getActivities(ids);
   console.log(`getActivities(${JSON.stringify(ids)}) returned ${fetched.length} activities`);
 

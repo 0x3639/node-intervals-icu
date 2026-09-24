@@ -1,12 +1,16 @@
 /**
  * Download a few file formats for the most recent activity and write the FIT
- * file to a temp directory.
+ * file to a freshly created private temp directory.
+ *
+ * The example does not delete the file it writes: producing a file you can open
+ * is the point, so the FIT file is left behind for inspection and its path is
+ * printed. Remove the directory yourself when you are done with it.
  *
  * Run:
  *   export INTERVALS_API_KEY="your-api-key"
  *   npx tsx examples/guides/download-files.ts
  */
-import { writeFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { IntervalsClient } from '../../src/index.js';
@@ -36,9 +40,13 @@ if (!activity) {
   const id = activity.id!;
 
   const fit = await client.activities.downloadFitFile(id);
-  const fitPath = join(tmpdir(), `${id}.fit`);
-  writeFileSync(fitPath, fit);
-  console.log(`FIT file: ${fit.length} bytes, written to ${fitPath}`);
+  // A fresh directory with a random name, rather than a predictable path in the shared
+  // temp directory: nothing else can pre-create or read the file. `wx` refuses to write
+  // to an existing path and 0o600 keeps the file readable only by the current user.
+  const outDir = mkdtempSync(join(tmpdir(), 'intervals-icu-'));
+  const fitPath = join(outDir, `${id}.fit`);
+  writeFileSync(fitPath, fit, { mode: 0o600, flag: 'wx' });
+  console.log(`FIT file: ${fit.length} bytes, written to ${fitPath} (left in place for inspection)`);
 
   const gpx = await client.activities.downloadGPX(id);
   console.log(`GPX file: ${gpx.length} bytes`);

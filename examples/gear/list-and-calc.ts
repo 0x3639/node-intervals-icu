@@ -1,7 +1,7 @@
 /**
  * List the athlete's gear, recalculate totals for the first item, then
  * download all gear as CSV. Does not change the account: every call is a
- * read.
+ * GET.
  *
  * Run:
  *   export INTERVALS_API_KEY="your-api-key"

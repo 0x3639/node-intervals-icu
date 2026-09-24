@@ -7,10 +7,10 @@
  * Provide either `apiKey` (for personal use) or `accessToken` (from OAuth flow).
  */
 export interface IntervalsConfig {
-  /** API key for basic authentication (personal use). Mutually exclusive with accessToken. */
+  /** API key for basic authentication (personal use). Ignored when `accessToken` is also set. */
   apiKey?: string;
 
-  /** OAuth access token for bearer authentication. Mutually exclusive with apiKey. */
+  /** OAuth access token for bearer authentication. Takes precedence: when both are set the bearer token is used and `apiKey` is silently ignored. */
   accessToken?: string;
 
   /** Athlete ID (defaults to '0' (the authenticated athlete), which the API resolves from the credentials). */
