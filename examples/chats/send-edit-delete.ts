@@ -23,6 +23,10 @@ if (!apiKey) {
 const client = new IntervalsClient({ apiKey });
 
 const me = await client.athletes.getAthlete();
+if (!me.id) {
+  console.error('Could not resolve the authenticated athlete id.');
+  process.exit(1);
+}
 const content = `Created by the SDK example ${Date.now()}`;
 const edited = `${content} (edited)`;
 
