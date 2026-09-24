@@ -88,6 +88,8 @@ export interface CurveOptions {
   id?: string[];
   /** Include sub-max curves */
   subMaxEfforts?: boolean;
+  /** Activity type; the API requires it for power curves and accepts it for pace and HR curves */
+  type?: ActivityType;
 }
 
 /** Power curve set response */

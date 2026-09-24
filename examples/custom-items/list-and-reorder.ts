@@ -27,10 +27,12 @@ for (const item of items) {
   console.log(`- ${item.id}  ${item.type ?? 'unknown type'}  ${item.name ?? ''}`);
 }
 
-if (items.length === 0 || items.some((item) => item.id === undefined)) {
+// flatMap drops (and narrows away) any item the API returned without an id.
+const order = items.flatMap((item, index) => (typeof item.id === 'number' ? [{ id: item.id, index }] : []));
+
+if (order.length !== items.length || order.length === 0) {
   console.log('No custom items (or one is missing an id); skipping reorder');
 } else {
-  const order = items.map((item, index) => ({ id: item.id!, index }));
   await client.customItems.reorder(order);
   console.log(`Reordered ${order.length} custom items (no-op: same order)`);
 }

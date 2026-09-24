@@ -62,8 +62,8 @@ export class ActivityService {
 
   /**
    * Download a zip of Intervals.icu-generated FIT files for the given activities.
-   * The API exposes this as POST with query parameters (see AUDIT.md). `ids` is a
-   * comma-joined value, confirmed live against the real API (see AUDIT.md).
+   * The API exposes this as POST with query parameters (see `AUDIT.md`). `ids` is a
+   * comma-joined value, confirmed live against the real API (see `AUDIT.md`).
    */
   async downloadFitFiles(activityIds: string[], options?: { power?: boolean; hr?: boolean }, athleteId?: string): Promise<Buffer> {
     const id = athleteId || this.defaultAthleteId;

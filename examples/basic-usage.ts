@@ -19,10 +19,11 @@ async function main() {
   // athleteId defaults to '0' (the authenticated athlete)
   const client = new IntervalsClient({ apiKey });
 
+  const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const oldest = thirtyDaysAgo.toISOString().split('T')[0];
-  const newest = now.toISOString().split('T')[0];
+  const oldest = localDate(thirtyDaysAgo);
+  const newest = localDate(now);
 
   try {
     // 1. Athlete

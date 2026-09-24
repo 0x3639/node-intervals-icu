@@ -22,7 +22,7 @@ title: Performance
 
 ### Athlete-level curves
 
-Fetch the athlete's power, pace and HR curves for the last year, and the power-vs-heart-rate curve over the same range. `type` is not in the {@link CurveOptions} interface, but the live API requires it for {@link PerformanceService.getPowerCurves} (power-curves); {@link PerformanceService.getPaceCurves} and {@link PerformanceService.getHRCurves} work without it.
+Fetch the athlete's power, pace and HR curves for the last year, and the power-vs-heart-rate curve over the same range. {@link CurveOptions} carries a `type`: the API requires it for {@link PerformanceService.getPowerCurves} (power-curves) and returns HTTP 422 without it, while {@link PerformanceService.getPaceCurves} and {@link PerformanceService.getHRCurves} accept it but work without it.
 
 {@includeCode ../../../examples/performance/athlete-curves.ts#main}
 
@@ -35,6 +35,7 @@ Best pace over a set of distances across the athlete's runs in the last year, as
 ## Behaviour notes
 
 - {@link PerformanceService.getActivityPaceCurvesCSV} requires a non-empty `distances` array; the JSON form ({@link PerformanceService.getActivityPaceCurves}) does not.
-- {@link PerformanceService.getActivityPaceCurves} and {@link PerformanceService.getActivityPaceCurvesCSV} return HTTP 403 "Access denied" for the default athlete alias `0`; the example resolves the real id with `athletes.getAthlete()` first and passes `athleteId` explicitly.
+- {@link PerformanceService.getActivityPaceCurves} and {@link PerformanceService.getActivityPaceCurvesCSV} return HTTP 403 "Access denied" for the default athlete alias `0`; the example resolves the real id with `athletes.getAthlete()` first and passes `athleteId` explicitly. See the [API behaviour](../api-behaviour.md) row for `GET /athlete/{id}/activity-pace-curves`.
+- {@link PerformanceService.getPowerCurves} needs `CurveOptions.type`; without it the API returns HTTP 422.
 - The element shape of `ActivityPaceCurves.curves` was not observed on the test account, so the example prints what comes back rather than any specific fields.
 - See [API behaviour](../api-behaviour.md) for the cross-service list.

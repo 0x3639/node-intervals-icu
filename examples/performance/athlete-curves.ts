@@ -24,10 +24,9 @@ yearAgo.setFullYear(yearAgo.getFullYear() - 1);
 const newest = localDate(now);
 const oldest = localDate(yearAgo);
 
-// `type` is not in the CurveOptions interface, but the live API requires it for power-curves
-// (400/422 without it, per the vendored spec); pace-curves and hr-curves work without it.
-const powerCurveOptions = { oldest, newest, type: 'Ride' as const };
-const powerCurves = await client.performance.getPowerCurves(powerCurveOptions);
+// The API requires `type` for power-curves (HTTP 422 without it); pace-curves and
+// hr-curves work without it.
+const powerCurves = await client.performance.getPowerCurves({ oldest, newest, type: 'Ride' });
 console.log(`Power curves: ${powerCurves.list?.length ?? 0}`);
 
 const paceCurves = await client.performance.getPaceCurves({ oldest, newest });

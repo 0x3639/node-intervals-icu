@@ -13,7 +13,7 @@ export interface IntervalsConfig {
   /** OAuth access token for bearer authentication. Mutually exclusive with apiKey. */
   accessToken?: string;
 
-  /** Athlete ID (defaults to 'me' for the authenticated athlete). Use '0' to auto-detect from token. */
+  /** Athlete ID (defaults to '0' (the authenticated athlete), which the API resolves from the credentials). */
   athleteId?: string;
 
   /** Base URL for the API (defaults to https://intervals.icu/api/v1) */

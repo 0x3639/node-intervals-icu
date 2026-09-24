@@ -58,7 +58,7 @@ export class WorkoutService {
    * Uses the global endpoint (no athlete-specific settings such as FTP).
    *
    * `WorkoutConversionInput` requires `name`, `description`, `type` and `workout_doc`:
-   * live probes (AUDIT.md) showed a body with all four converts and a body without
+   * live probes (`AUDIT.md`) showed a body with all four converts and a body without
    * `workout_doc` returns HTTP 500; the fields were not probed individually, so all four
    * are required as a conservative contract. A convenient source of `workout_doc` is an
    * existing calendar workout event's `workout_doc` field.

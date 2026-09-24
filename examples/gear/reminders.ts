@@ -35,13 +35,18 @@ if (!item || item.id === undefined) {
     threshold: 5000,
     message: 'Created by the SDK example',
   });
-  console.log(`Created reminder id=${reminder.id}`);
+  if (typeof reminder.id !== 'number') {
+    console.error('The API did not return an id for the created reminder; it may need deleting by hand.');
+    process.exit(1);
+  }
+  const reminderId = reminder.id;
+  console.log(`Created reminder id=${reminderId}`);
 
   try {
     console.log(`Reminder message: ${reminder.message}`);
   } finally {
-    await client.gear.deleteReminder(item.id, reminder.id!);
-    console.log(`Deleted reminder ${reminder.id}`);
+    await client.gear.deleteReminder(item.id, reminderId);
+    console.log(`Deleted reminder ${reminderId}`);
   }
 }
 // #endregion main

@@ -23,7 +23,8 @@ const first = weather.forecasts?.[0];
 if (!first) {
   console.log('No forecast available for this athlete');
 } else {
-  console.log(`Forecast for ${first.time ?? 'unknown time'}: temp=${first.temp ?? 'n/a'} feels_like=${first.feels_like ?? 'n/a'} humidity=${first.humidity ?? 'n/a'}`);
+  console.log(`Forecast for ${first.time ?? 'unknown time'}:`);
+  console.log(`  temp=${first.temp ?? 'n/a'} feels_like=${first.feels_like ?? 'n/a'} humidity=${first.humidity ?? 'n/a'}`);
 }
 
 const config = await client.weather.getWeatherConfig();

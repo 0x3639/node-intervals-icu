@@ -11,8 +11,19 @@ import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, dirname, resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ATTR_RE = /\b(?:href|src)=["']([^"']+)["']/g;
+// The lookbehind keeps `data-href`, `data-src` and friends out: only a real `href`/`src`
+// attribute (preceded by whitespace or the start of the tag) counts as a link.
+const ATTR_RE = /(?<![-\w])(?:href|src)=["']([^"']+)["']/g;
 const SKIP_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i;
+
+/** `decodeURIComponent`, tolerating a literal `%` that is not a valid escape sequence */
+function decodePath(target) {
+  try {
+    return decodeURIComponent(target);
+  } catch {
+    return target;
+  }
+}
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
@@ -33,7 +44,8 @@ export function findBrokenLinks(dir) {
       if (SKIP_RE.test(raw)) continue;
       const target = raw.split('#')[0].split('?')[0];
       if (target === '') continue;
-      const abs = target.startsWith('/') ? join(root, target) : resolve(dirname(file), decodeURIComponent(target));
+      const decoded = decodePath(target);
+      const abs = target.startsWith('/') ? join(root, decoded) : resolve(dirname(file), decoded);
       if (!existsSync(abs)) broken.push({ file: relative(root, file).split(sep).join('/'), href: raw });
     }
   }

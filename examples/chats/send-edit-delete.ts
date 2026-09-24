@@ -41,11 +41,16 @@ let msgId = sent.message?.id ?? sent.id;
 if (typeof chatId !== 'number' || typeof msgId !== 'number') {
   for (const chat of await client.chats.listChats()) {
     if (typeof chat.id !== 'number') continue;
-    const hit = (await client.chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content);
-    if (typeof hit?.id === 'number') {
-      chatId = chat.id;
-      msgId = hit.id;
-      break;
+    // One unreadable chat must not abandon the search: the message still needs deleting.
+    try {
+      const hit = (await client.chats.listMessages(chat.id, { limit: 20 })).find((m) => m.content === content);
+      if (typeof hit?.id === 'number') {
+        chatId = chat.id;
+        msgId = hit.id;
+        break;
+      }
+    } catch {
+      continue;
     }
   }
 }

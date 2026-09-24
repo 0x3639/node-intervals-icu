@@ -35,11 +35,13 @@ Uploads take a `Buffer | Blob | Uint8Array` plus a filename, and are sent as `mu
 - {@link FolderService.importWorkout} — creates a library workout from a file, in a given folder.
 - {@link CustomItemService.uploadImage} — attaches an image to a custom item.
 
+CI never runs this example; running it by hand changes the authenticated account: it uploads a real activity and deletes it again in a `finally` block. If the upload response carries no activity id, the activity stays on the account and has to be deleted by hand.
+
 {@includeCode ../../examples/guides/upload-activity.ts#main}
 
 ## Converting workouts
 
-{@link WorkoutService.convertWorkout} and {@link WorkoutService.convertWorkoutForAthlete} take a {@link WorkoutConversionInput} body and a target {@link WorkoutFormat}. All four of `name`, `description`, `type` and `workout_doc` are required on that type, not just `workout_doc`: live probes recorded in AUDIT.md found that a body missing `workout_doc` gets HTTP 500 from the API, and the remaining fields were not probed individually, so the SDK treats all four as required as a conservative contract. A calendar workout event's own `workout_doc` field (from {@link EventService.listEvents}) is a convenient source for a real body, since a library or calendar workout already carries all four fields together. See [API behaviour](./api-behaviour.md) for the probe record.
+{@link WorkoutService.convertWorkout} and {@link WorkoutService.convertWorkoutForAthlete} take a {@link WorkoutConversionInput} body and a target {@link WorkoutFormat}. All four of `name`, `description`, `type` and `workout_doc` are required on that type, not just `workout_doc`: live probes recorded in `AUDIT.md` found that a body missing `workout_doc` gets HTTP 500 from the API, and the remaining fields were not probed individually, so the SDK treats all four as required as a conservative contract. A calendar workout event's own `workout_doc` field (from {@link EventService.listEvents}) is a convenient source for a real body, since a library or calendar workout already carries all four fields together. See [API behaviour](./api-behaviour.md) for the probe record.
 
 {@includeCode ../../examples/guides/convert-workout.ts#main}
 

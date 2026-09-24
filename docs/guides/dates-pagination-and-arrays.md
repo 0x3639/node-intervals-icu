@@ -21,8 +21,18 @@ An option typed as an array (`tags`, `category`, `types`, `fatigue`, ...) is sen
 
 {@includeCode ../../examples/guides/array-params.ts#main}
 
-Some routes also accept a single comma-joined value for the same parameter. This is confirmed for `ids` on `POST /athlete/{id}/download-fit-files` (see the [Files](./files.md) guide and AUDIT.md): a live probe found identical results for `?ids=a,b` and `?ids=a&ids=b`. Whether every other array parameter also accepts a comma list has not been probed live, so this guide states only what is verified: the SDK always sends repeated keys, which is accepted everywhere it has been tried.
+Some routes also accept a single comma-joined value for the same parameter. This is confirmed for `ids` on `POST /athlete/{id}/download-fit-files` (see the [Files](./files.md) guide and `AUDIT.md`): a live probe found identical results for `?ids=a,b` and `?ids=a&ids=b`. Whether every other array parameter also accepts a comma list has not been probed live, so this guide states only what is verified: the SDK always sends repeated keys, which is accepted everywhere it has been tried.
 
 ## Ids in paths
 
-{@link ActivityService.getActivities} takes a list of ids and joins them into the URL path with commas after URL-encoding each one individually (`ids.map(encodeURIComponent).join(',')`), rather than sending them as a query parameter. More generally, every caller-supplied id that the Phase 3 methods interpolate into a path segment is passed through `encodeURIComponent` first, so a `#`, `?`, `/` or `%` inside an id is encoded and cannot be misread as a path separator or the start of a query string.
+{@link ActivityService.getActivities} takes a list of ids and joins them into the URL path with commas after URL-encoding each one individually (`ids.map(encodeURIComponent).join(',')`), rather than sending them as a query parameter.
+
+Encoding is not applied SDK-wide. These are the methods that pass a caller-supplied path segment through `encodeURIComponent`, so that a `#`, `?`, `/` or `%` inside the value cannot be misread as a path separator or the start of a query string:
+
+- {@link ActivityService.getActivities}, {@link ActivityService.downloadGPX}, {@link ActivityService.deleteTombstone}
+- {@link AnalyticsService.getPowerHistogram}, {@link AnalyticsService.getHRHistogram}, {@link AnalyticsService.getPaceHistogram}, {@link AnalyticsService.getGAPHistogram}, {@link AnalyticsService.getTimeAtHR}, {@link AnalyticsService.getIntervalStats}, {@link AnalyticsService.getPowerSpikeModel}, {@link AnalyticsService.getCurves}, {@link AnalyticsService.getCurvesCSV}
+- {@link AthleteService.getSettings}
+- {@link GearService.calc}
+- {@link SportSettingsService.listMatchingActivities}, {@link SportSettingsService.getPaceDistances}
+
+Every other method interpolates ids into the path as they are given, so encode a value yourself if it can contain a character that is not URL-safe.

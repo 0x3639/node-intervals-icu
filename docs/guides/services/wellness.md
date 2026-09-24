@@ -26,9 +26,9 @@ List the last 30 days of wellness records, print the most recent week, and fetch
 
 ### Update today
 
-Update today's wellness entry with a weight, then read it back.
+Update today's wellness entry with a weight, read it back, then put the previous weight back.
 
-CI never runs this example; running it by hand changes the authenticated account.
+CI never runs this example; running it by hand changes the authenticated account: it writes a demo weight to today's record and restores the previous one in a `finally` block. If today's record had no weight yet, the demo value stays — `WellnessInput.weight` is typed `number | undefined`, so the SDK cannot clear the field again.
 
 {@includeCode ../../../examples/wellness/update-today.ts#main}
 

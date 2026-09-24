@@ -31,13 +31,18 @@ const event = await client.events.createEvent({
   start_date_local: today,
   name: 'Created by the SDK example',
 });
-console.log(`Created event id=${event.id}`);
+if (typeof event.id !== 'number') {
+  console.error('The API did not return an id for the created event; it may need deleting by hand.');
+  process.exit(1);
+}
+const eventId = event.id;
+console.log(`Created event id=${eventId}`);
 
 try {
-  const updated = await client.events.updateEvent(event.id!, { description: 'Edited by the SDK example' });
+  const updated = await client.events.updateEvent(eventId, { description: 'Edited by the SDK example' });
   console.log(`Updated description: ${updated.description}`);
 } finally {
-  await client.events.deleteEvent(event.id!);
-  console.log(`Deleted event ${event.id}`);
+  await client.events.deleteEvent(eventId);
+  console.log(`Deleted event ${eventId}`);
 }
 // #endregion main

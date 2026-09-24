@@ -35,15 +35,6 @@ Comprehensive guide for publishing the library to NPM Registry. Includes:
 - GitHub: [@paladini](https://github.com/paladini)
 - NPM: [npmjs.com/~paladini](https://www.npmjs.com/~paladini)
 
-## Key Features
-
-The library is designed to be:
-- ✅ **Lightweight**: Minimal dependencies and small bundle size
-- ✅ **TypeScript-first**: Full type definitions included
-- ✅ **Dual package**: Works with both CommonJS and ES Modules
-- ✅ **Tree-shakeable**: ESM format allows optimal bundling
-- ✅ **Developer-friendly**: Comprehensive JSDoc comments
-
 ## Quick Links
 
 - [Main README](../README.md) - User-facing documentation

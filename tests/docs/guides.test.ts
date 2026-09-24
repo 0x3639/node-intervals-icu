@@ -37,8 +37,18 @@ function guideFiles(): string[] {
 
 describe('documentation guides', () => {
   it('every service accessor on IntervalsClient has a service page', () => {
+    // The scan is regex-based: pin the count so a refactor that stops matching the
+    // accessor declarations fails here instead of silently checking nothing.
+    expect(accessors()).toHaveLength(16);
     const missing = accessors().map(([a]) => `docs/guides/services/${kebab(a)}.md`).filter((p) => !existsSync(join(ROOT, p)));
     expect(missing).toEqual([]);
+  });
+
+  it('services.md lists every service page as a front-matter child', () => {
+    const fm = /^---\n([\s\S]*?)\n---/.exec(read('docs/guides/services.md'));
+    const children = [...(fm?.[1] ?? '').matchAll(/^\s+- (\S+)/gm)].map((m) => m[1].replace(/^\.\/services\//, ''));
+    const pages = readdirSync(join(ROOT, 'docs/guides/services')).filter((f) => f.endsWith('.md'));
+    expect([...children].sort()).toEqual([...pages].sort());
   });
 
   it('every service page lists every public method of its service as a {@link}', () => {

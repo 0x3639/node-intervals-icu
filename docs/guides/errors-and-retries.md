@@ -13,7 +13,7 @@ Every request that fails is rejected with an {@link IntervalsAPIError}, never a 
 
 ## What is retried
 
-The SDK retries a request automatically when the response status is `429`, `502`, `503`, or `504`. Up to `maxRetries` attempts are made (default 3; set 0 to disable retries), with a delay between attempts controlled by `retryDelayMs` (default 1000ms, per {@link IntervalsConfig}).
+The SDK retries a request automatically when the response status is `429`, `502`, `503`, or `504`. Up to `maxRetries` retries after the initial attempt are made (default 3, so at most four requests in total; set 0 to disable retries), with a delay between attempts controlled by `retryDelayMs` (default 1000ms, per {@link IntervalsConfig}).
 
 When a 429 response carries a `Retry-After` header, the parsed `retryAfter` value (in seconds) is used as the delay for that attempt. Otherwise the delay doubles with each attempt (`retryDelayMs * 2^attempt`) and is scaled by a random jitter factor between 0.5 and 1.0, to avoid many clients retrying in lockstep.
 
